@@ -1,0 +1,187 @@
+#!/usr/bin/env python
+
+import sys, os, getopt, subprocess
+sys.path.append(os.path.join(os.path.dirname(__file__), 'tools'))
+import debugpin, run_sniper
+
+
+HOME = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0])))
+
+
+def usage():
+  print 'Collect SIFT instruction trace'
+  print 'Usage:'
+  print '  %s  -o <output file (default=trace)>  [--roi] [-f <fast-forward instrs (default=none)] [-d <detailed instrs (default=all)] [-b <block size (instructions, default=all)> [-e <syscall emulation> (default=0)] [-r <use response files (default=0)>] [--gdb|--gdb-wait|--gdb-quit] [--follow] [--routine-tracing] [--outputdir <outputdir (.)>] [--stop-address <insn end address>] { --pinball=<pinball-basename> | --pid <pid> | -- <cmdline> }' % sys.argv[0]
+  sys.exit(2)
+
+# From http://stackoverflow.com/questions/6767649/how-to-get-process-status-using-pid
+def procStatus(pid):
+    for line in open("/proc/%d/status" % pid).readlines():
+        if line.startswith("State:"):
+            return line.split(":",1)[1].strip().split(' ')[0]
+    return None
+
+# From http://stackoverflow.com/questions/5568646/usleep-in-python
+import time
+usleep = lambda x: time.sleep(x/1000000.0)
+
+outputfile = 'trace'
+use_roi = False
+roi_mpi = False
+fastforward = 0
+detailed = 0
+blocksize = 0
+syscallemulation = 0
+siftcountoffset = 0
+useresponsefiles = 0
+use_gdb = False
+gdb_wait = False
+gdb_quit = False
+gdb_screen = False
+use_follow = False
+use_pa = False
+use_routine_tracing = False
+pinball = None
+pinplay_addrtrans = False
+outputdir = '.'
+verbose = False
+extra_args = []
+use_pid = None
+pid_continue = False
+stop_address = 0
+
+if not sys.argv[1:]:
+  usage()
+
+try:
+  opts, cmdline = getopt.getopt(sys.argv[1:], "hvo:d:f:b:e:s:r:X:", [ "roi", "roi-mpi", "gdb", "gdb-wait", "gdb-quit", "gdb-screen", "follow", "pa", "routine-tracing", "pinball=", "outputdir=", "pinplay-addr-trans", "pid=", "stop-address=", "pid-continue" ])
+except getopt.GetoptError, e:
+  # print help information and exit:
+  print e
+  usage()
+for o, a in opts:
+  if o == '-h':
+    usage()
+    sys.exit()
+  if o == '-v':
+    verbose = True
+  if o == '-o':
+    outputfile = a
+  if o == '--roi':
+    use_roi = True
+  if o == '--roi-mpi':
+    roi_mpi = True
+  if o == '-f':
+    fastforward = long(float(a))
+  if o == '-d':
+    detailed = long(float(a))
+  if o == '-b':
+    blocksize = long(float(a))
+  if o == '-e':
+    syscallemulation = long(float(a))
+  if o == '-s':
+    siftcountoffset = long(float(a))
+  if o == '-r':
+    useresponsefiles = int(a) and 1 or 0
+  if o == '--gdb':
+    use_gdb = True
+  if o == '--gdb-wait':
+    use_gdb = True
+    gdb_wait = True
+  if o == '--gdb-quit':
+    use_gdb = True
+    gdb_wait = False
+    gdb_quit = True
+  if o == '--gdb-screen':
+    gdb_screen = 1
+  if o == '--pinplay-addr-trans':
+    pinplay_addrtrans = True
+  if o == '--follow':
+    use_follow = True
+  if o == '--pa':
+    use_pa = True
+  if o == '--routine-tracing':
+    use_routine_tracing = True
+  if o == '--pinball':
+    if not os.path.exists('%s.address' % a):
+      print >> sys.stderr, 'Unable to locate a pinball at (%s), make sure that (%s.address) exists.' % (a, a)
+      sys.exit(1)
+    pinball = a
+  if o == '--outputdir':
+    outputdir = a
+  if o == '-X':
+    extra_args.append(a)
+  if o == '--pid':
+    use_pid = int(a)
+  if o == '--stop-address':
+    stop_address = int(a,0)
+  if o == '--pid-continue':
+    pid_continue = True
+
+outputdir = os.path.realpath(outputdir)
+if not os.path.exists(outputdir):
+  try:
+    os.makedirs(outputdir)
+  except OSError:
+    print >> sys.stderr, 'Failed to create output directory', outputdir
+    sys.exit(-1)
+
+configfile = os.path.join(HOME, 'config/sniper.py')
+config = {}
+execfile(configfile, {}, config)
+
+arch = config.get('target', 'intel64')
+
+# convert paths in config to absolute paths
+for d in ('pin_home',):
+  absdir = os.path.join(HOME, config[d])
+  if not os.path.isdir(absdir):
+    sys.stderr.write('Cannot find %s %s, please check %s\n' % (d, absdir, configfile))
+    sys.exit(-1)
+  exec "%s = '%s'" % (d, absdir)
+sim_root = HOME
+
+
+# convert to absolute path
+outputfile = os.path.realpath(os.path.join(outputfile))
+
+pinoptions = '-mt -injection child -xyzzy -enable_vsm 0'
+if use_pid:
+  pinoptions += (' -pid %d' % (use_pid))
+if use_gdb:
+  pinoptions += ' -pause_tool 1'
+if use_follow:
+  pinoptions += ' -follow_execv'
+pinballoptions = ''
+if pinball:
+  pinballoptions += '-replay -replay:basename "%s" -pinplay:msgfile "%s" -replay:resultfile "%s"' % (pinball, os.path.join(outputdir,'pinball_replay.app%d' % siftcountoffset), os.path.join(outputdir,'pinball_result.app%d' % siftcountoffset))
+  if pinplay_addrtrans:
+    pinballoptions += " -replay:addr_trans"
+  else:
+    pinoptions += ' -xyzzy -reserve_memory "%s.address"' % pinball
+  # Replace the command line with the null app for use with PinPlay
+  cmdline = ['%(pin_home)s/extras/pinplay/bin/%(arch)s/nullapp' % locals()]
+
+env = run_sniper.setup_env(HOME, pin_home, arch)
+
+value_roi = use_roi and 1 or 0
+value_roi_mpi = roi_mpi and 1 or 0
+value_pa = use_pa and 1 or 0
+value_routine_tracing = use_routine_tracing and 1 or 0
+value_verbose = verbose and 1 or 0
+extra_args = ' '.join(extra_args)
+cmd = '%(pin_home)s/%(arch)s/bin/pinbin %(pinoptions)s -t %(HOME)s/sift/recorder/sift_recorder -verbose %(value_verbose)d -debug %(gdb_screen)d -roi %(value_roi)d -roi-mpi %(value_roi_mpi)d -f %(fastforward)d -d %(detailed)d -b %(blocksize)d -o %(outputfile)s -e %(syscallemulation)d -s %(siftcountoffset)d -r %(useresponsefiles)d -pa %(value_pa)d -rtntrace %(value_routine_tracing)d -stop %(stop_address)d %(pinballoptions)s %(extra_args)s -- ' % locals() + ' '.join(cmdline)
+
+if verbose:
+  print '[SIFT_RECORDER]', 'Running', cmd
+  sys.stdout.flush()
+if use_gdb:
+  debugpin.execute_gdb(cmd = cmd, env = env, pin_home = pin_home, arch = arch, quiet = True, wait = gdb_wait, quit = gdb_quit)
+else:
+  subproc = subprocess.Popen([ 'bash', '-c', cmd ], env = env)
+  if use_pid and pid_continue:
+    import signal
+    while procStatus(use_pid).strip() != 'T':
+      usleep(100)
+    os.kill(use_pid, signal.SIGCONT)
+  pid, rc, usage = os.wait4(subproc.pid, 0)
