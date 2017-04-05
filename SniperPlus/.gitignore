@@ -25,6 +25,7 @@ graphite.out
 cpi-stack.jpg
 output_files
 tools/cpistack-collect/cpistack-*
+sniper-benchmarks.tbz
 
 # compiled libraries
 lib/libcarbon_sim.a
@@ -51,3 +52,5 @@ pin_kit
 linux_2_6_32
 mcpat
 python_kit
+lib
+benchmarks
