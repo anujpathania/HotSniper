@@ -54,6 +54,7 @@ def usage():
   print
   sys.exit(2)
 
+
 standalone = False
 ncores = 1
 outputdir = '.'
@@ -585,6 +586,8 @@ if tracegen:
       filename = '%s%s.app%d.th%d.sift' % (traceprefix, f, r, 0)
       os.mkfifo(filename)
       tracegen['tracefiles_created'].append(filename)
+
+
   # Start app(s) with trace recorder in a thread
   def run_sift_recorder(tracecmd):
     if verbose:

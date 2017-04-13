@@ -3,8 +3,10 @@
 #include "core_manager.h"
 #include "performance_model.h"
 #include "os_compat.h"
-
 #include <sstream>
+#include <iostream>
+
+using namespace std;
 
 // Pinned scheduler.
 // Each thread has is pinned to a specific core (m_thread_affinity).
@@ -201,6 +203,7 @@ void SchedulerPinnedBase::threadExit(thread_id_t thread_id, SubsecondTime time)
 
 void SchedulerPinnedBase::periodic(SubsecondTime time)
 {
+
    SubsecondTime delta = time - m_last_periodic;
 
    for(core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); ++core_id)

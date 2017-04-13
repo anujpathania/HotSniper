@@ -11,6 +11,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <iostream>
+
+using namespace std;
+
 TraceManager::TraceManager()
    : m_monitor(new Monitor(this))
    , m_threads(0)
@@ -59,12 +63,11 @@ void TraceManager::setupTraceFiles(int index)
    }
 }
 
-void TraceManager::init()
-{
-   for (UInt32 i = 0 ; i < m_num_apps ; i++ )
-   {
-      newThread(i /*app_id*/, true /*first*/, false /*init_fifo*/, false /*spawn*/, SubsecondTime::Zero(), INVALID_THREAD_ID);
-   }
+void TraceManager::init() {
+
+	for (UInt32 i = 0 ; i < m_num_apps ; i++ ) {
+		newThread(i /*app_id*/, true /*first*/, false /*init_fifo*/, false /*spawn*/, SubsecondTime::Zero(), INVALID_THREAD_ID);
+ 	}
 }
 
 String TraceManager::getFifoName(app_id_t app_id, UInt64 thread_num, bool response, bool create)
@@ -83,7 +86,7 @@ thread_id_t TraceManager::createThread(app_id_t app_id, SubsecondTime time, thre
    return newThread(app_id, false /*first*/, true /*init_fifo*/, true /*spawn*/, time, creator_thread_id);
 }
 
-thread_id_t TraceManager::newThread(app_id_t app_id, bool first, bool init_fifo, bool spawn, SubsecondTime time, thread_id_t creator_thread_id)
+thread_id_t TraceManager::newThread(app_id_t app_id, bool first, bool init_fifo, bool spawn, SubsecondTime time, thread_id_t creator_thread_id, String app_name)
 {
    // Internal version: assume we're already holding the lock
 
@@ -120,7 +123,8 @@ thread_id_t TraceManager::newThread(app_id_t app_id, bool first, bool init_fifo,
    }
 
    m_num_threads_running++;
-   Thread *thread = Sim()->getThreadManager()->createThread(app_id, creator_thread_id);
+   Thread *thread = Sim()->getThreadManager()->createThread(app_id, creator_thread_id, app_name);
+	
    TraceThread *tthread = new TraceThread(thread, time, tracefile, responsefile, app_id, init_fifo /*cleaup*/);
    m_threads.push_back(tthread);
 

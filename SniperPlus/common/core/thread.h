@@ -3,6 +3,8 @@
 
 #include "cond.h"
 #include "subsecond_time.h"
+#include <iostream>
+using namespace std;
 
 class Core;
 class SyscallMdl;
@@ -30,7 +32,7 @@ class Thread
       UInt64 m_va2pa_arg;
 
    public:
-      Thread(thread_id_t thread_id, app_id_t app_id);
+      Thread(thread_id_t thread_id, app_id_t app_id, String app_name="X");
       ~Thread();
 
       struct {
