@@ -25,7 +25,6 @@ graphite.out
 cpi-stack.jpg
 output_files
 tools/cpistack-collect/cpistack-*
-sniper-benchmarks.tbz
 
 # compiled libraries
 lib/libcarbon_sim.a

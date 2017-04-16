@@ -23,20 +23,19 @@ Step 2: Sucessfully Compile Sniper. You will have to install PIN and several oth
 
 $ make
 
-Step 3: Make sure Sniper is working properly.
+Step 3: Compile Benchmarks (Downgrading Perl removes PARSEC compilations error - https://groups.google.com/forum/#!msg/snipersim/LF_VfebuLSI/AVdiq4y0hk8J). Working benchmarks with sim-small input option: blackscholes, bodytrack, canneal, dedup, facesim, ferret, fluidanimate, raytrace, streamcluster,swaptions, x264
 
-$ cd SniperPlus/test/fft
+$ tar -xvzf benchmarks.tar.gz
 
-Step 4: Compile Benchmarks (Downgrading Perl removes PARSEC compilations error - https://groups.google.com/forum/#!msg/snipersim/LF_VfebuLSI/AVdiq4y0hk8J). Working benchmarks with sim-small input option: blackscholes, bodytrack, canneal, dedup, facesim, ferret, fluidanimate, raytrace, streamcluster,swaptions, x264
-
-$ wget http://snipersim.org/packages/sniper-benchmarks.tbz
-$ tar xjf sniper-benchmarks.tbz
 $ cd benchmarks
+
 $ export SNIPER_ROOT=/path/to/sniper
+
 $ make - j 4
 
 Step 5: Test PARSEC benchmarks in multi-program mode.
-$ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parsec-bodytrack-test-1 --no-roi 
+
+$ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parsec-bodytrack-test-1 --no-roi --sim-end=last
 
 
 # Feature Enhancements
