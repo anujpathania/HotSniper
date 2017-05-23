@@ -293,6 +293,11 @@ def power_stack(power_dat, powertype = 'total', nocollapse = False):
       return getcomponent('Area') + getcomponent('Area Overhead')
     else:
       raise ValueError('Unknown powertype %s' % powertype)
+  
+  #for core in power_dat['Core']:
+   #corePower = getpower(core, 'Instruction Fetch Unit/Instruction Cache')
+   #print "Power", corePower
+
   data = {
     'l2':               sum([ getpower(cache) for cache in power_dat.get('L2', []) ])  # shared L2
                         + sum([ getpower(core, 'L2') for core in power_dat['Core'] ]), # private L2
@@ -324,6 +329,24 @@ def power_stack(power_dat, powertype = 'total', nocollapse = False):
                             ]),
   }
   data['core-other'] = getpower(power_dat['Processor']) - (sum(data.values()) - data['dram'])
+
+  #Code added for SniperPlus: Anuj
+  print "\n\n--- Sniper Plus Power Statistics ---"
+
+  print "\n\tSystem Statistics - \n"
+  print "\t\tNumber of Cores in System: ", len (power_dat['Core'])
+
+  print "\n\tPer Core Statistics - \n"
+
+  id = 0
+  for core in power_dat['Core']:
+   id = id + 1
+   corePower = getpower(core, 'Execution Unit/Instruction Scheduler') + getpower(core, 'Execution Unit/Register Files') + getpower(core, 'Execution Unit/Results Broadcast Bus') + getpower(core, 'Renaming Unit') + getpower(core, 'Instruction Fetch Unit/Branch Predictor') + getpower(core, 'Instruction Fetch Unit/Branch Target Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Decoder') + getpower(core, 'Instruction Fetch Unit/Instruction Cache') + getpower(core, 'Load Store Unit/Data Cache') + getpower(core, 'Execution Unit/Complex ALUs') + getpower(core, 'Execution Unit/Floating Point Units') + getpower(core, 'Execution Unit/Integer ALUs') + getpower(core, 'Load Store Unit/LoadQ') + getpower(core, 'Load Store Unit/StoreQ') + getpower(core, 'Memory Management Unit')
+   print "\t\tCore", id,"Power :", corePower
+
+  print "\n\n--- Sniper Original Statistics ---\n"
+
+
   return buildstack.merge_items({ 0: data }, all_items, nocollapse = nocollapse)
 
 
