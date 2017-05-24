@@ -13,6 +13,8 @@ List of our publications based on this tool -
 
 1. [TACO' 17] Defragmentation of Tasks in Many-Core Architecture.
 
+
+
 # Build Instructions (Tested on Ubuntu 16.04)
 
 Step 1: Go into the Sniper Code Directory
@@ -38,9 +40,10 @@ Step 5: Test PARSEC benchmarks in multi-program mode.
 $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parsec-bodytrack-test-1 --no-roi --sim-end=last
 
 
+
 # Feature Enhancements
 
-Feature 1: Open Scheduler (Major Files of Interest "scheduler_open.cc", "scheduler_open.h", "base.cfg"
++ Feature 1: Open Scheduler (Major Files of Interest "scheduler_open.cc", "scheduler_open.h", "base.cfg"
 
 * This scheduler allows support for open system workloads. Scheduler can be set in "base.cfg" along with configuration parameters. 
 
@@ -78,6 +81,38 @@ Supported value: "uniform" (uniform distribution). Expect out of the box support
 * Note that Open Scheduler will only work with multi-program mode i.e. with option --benchmarks
 
 * Note for Open Scheduler to work it requires to know beforehand, in worst case, how many threads the benchmark would produce as it only supports one thread per core execution model. This needs to be profiled (use static scheduler). For many benchmark+input this is done in function "coreRequirementTranslation" in file "scheduler_open.cc". Add more enteries if you want to support them.
+
+
+
++ Feature 2: Periodic Power Tracing (Major Files of Interest "tools/mcpat.py", "periodic-power.py")
+
+* This allows for you to obtain a power trace giving power of different components at a customizable intervals. You can add or remove elements in power trace by modifying "tools/mcpat.py".
+
+* Currently following elements are tracked for each core -
+
+L2 - Private L2
+IS - Instruction Scheduler
+RF - Register Files
+RBB - Result Broadcast Bus
+RU - Renaming Unit
+BP - Branch Predictor
+BTB - Branch Target Buffer
+IB - Instruction Buffer
+ID - Instruction Decoder
+IC - Instruction Cache
+DC - Data Cache
+CALU - Complex ALU
+FALU - Floating Point ALU
+IALU - Integer ALU
+LU - Load Unit
+SU - Store Unit
+MMU - Memory Management Unit
+Total - Total Power
+
+* Example to run this command -
+
+$ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats -speriodic-power:10000
+
 
 
 # Hotspot Integration (Expected Soon).

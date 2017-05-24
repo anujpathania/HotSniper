@@ -67,6 +67,7 @@ def compute_dram_power(nread, nwrite, t, config):
   return (power_socket_dyn * sockets, power_socket_stat * sockets)
 
 
+  
 def dram_power(results, config):
   return compute_dram_power(
     sum(results['dram.reads']),
@@ -330,41 +331,95 @@ def power_stack(power_dat, powertype = 'total', nocollapse = False):
   }
   data['core-other'] = getpower(power_dat['Processor']) - (sum(data.values()) - data['dram'])
 
-  #Code added for SniperPlus: Anuj
-  print "\n\n--- Sniper Plus Power Statistics ---"
+  
+  logFileName = file("PeriodicPowerLog.txt", 'a');
 
-  print "\n\tSystem Statistics - \n"
-  print "\t\tNumber of Cores in System: ", len (power_dat['Core'])
 
-  print "\n\tPer Core Statistics - \n"
-
-  id = 0
+  if os.stat("PeriodicPowerLog.txt").st_size == 0:
+   id = 0
+   Headings = ""
+   for core in power_dat['Core']:
+    Headings += "Core"+str(id)+"-L2\t" # Private L2
+    Headings += "Core"+str(id)+"-IS\t" # Instruction Scheduler
+    Headings += "Core"+str(id)+"-RF\t" # Register Files
+    Headings += "Core"+str(id)+"-RBB\t" # Result Broadcast Bus
+    Headings += "Core"+str(id)+"-RU\t" # Renaming Unit
+    Headings += "Core"+str(id)+"-BP\t" # Branch Predictor
+    Headings += "Core"+str(id)+"-BTB\t" # Branch Target Buffer
+    Headings += "Core"+str(id)+"-IB\t" # Instruction Buffer
+    Headings += "Core"+str(id)+"-ID\t" # Instruction Decoder
+    Headings += "Core"+str(id)+"-IC\t" # Instruction Cache
+    Headings += "Core"+str(id)+"-DC\t" # Data Cache 
+    Headings += "Core"+str(id)+"-CALU\t" # Complex ALU
+    Headings += "Core"+str(id)+"-FALU\t" # Floating Point ALU
+    Headings += "Core"+str(id)+"-IALU\t" # Integer ALU
+    Headings += "Core"+str(id)+"-LU\t" # Load Unit
+    Headings += "Core"+str(id)+"-SU\t" # Store Unit
+    Headings += "Core"+str(id)+"-MMU\t" # Memory Management Unit
+    Headings += "Core"+str(id)+"-Total\t" # Total Power
+    id = id+1
+   logFileName.write (Headings+"\n")
+   
+  Readings = ""
+  
   for core in power_dat['Core']:
-   id = id + 1
-   
    totalPower = getpower(core, 'L2') + getpower(core, 'Execution Unit/Instruction Scheduler') + getpower(core, 'Execution Unit/Register Files') + getpower(core, 'Execution Unit/Results Broadcast Bus') + getpower(core, 'Renaming Unit') + getpower(core, 'Instruction Fetch Unit/Branch Predictor') + getpower(core, 'Instruction Fetch Unit/Branch Target Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Decoder') + getpower(core, 'Instruction Fetch Unit/Instruction Cache') + getpower(core, 'Load Store Unit/Data Cache') + getpower(core, 'Execution Unit/Complex ALUs') + getpower(core, 'Execution Unit/Floating Point Units') + getpower(core, 'Execution Unit/Integer ALUs') + getpower(core, 'Load Store Unit/LoadQ') + getpower(core, 'Load Store Unit/StoreQ') + getpower(core, 'Memory Management Unit')
-   
-   print "\n\t\tCore", id,"Power -"
-   print "\t\t\tPrivate L2:\t\t\t", getpower(core, 'L2'), "W"
-   print "\t\t\tInstruction Scheduler:\t\t", getpower(core, 'Execution Unit/Instruction Scheduler'), "W"
-   print "\t\t\tRegiter Files:\t\t\t", getpower(core, 'Execution Unit/Register Files'), "W"
-   print "\t\t\tBroadCast Bus:\t\t\t", getpower(core, 'Execution Unit/Results Broadcast Bus'), "W"
-   print "\t\t\tRenaming Unit:\t\t\t", getpower(core, 'Renaming Unit'), "W"
-   print "\t\t\tBranch Predictor:\t\t", getpower(core, 'Instruction Fetch Unit/Branch Predictor'), "W"
-   print "\t\t\tBranch Target Buffer:\t\t", getpower(core, 'Instruction Fetch Unit/Branch Target Buffer'), "W"
-   print "\t\t\tInstruction Buffer:\t\t", getpower(core, 'Instruction Fetch Unit/Instruction Buffer'), "W"
-   print "\t\t\tInstruction Decoder:\t\t", getpower(core, 'Instruction Fetch Unit/Instruction Decoder'), "W"
-   print "\t\t\tInstruction Cache:\t\t", getpower(core, 'Instruction Fetch Unit/Instruction Cache'), "W"
-   print "\t\t\tData Cache:\t\t\t", getpower(core, 'Load Store Unit/Data Cache'), "W"
-   print "\t\t\tComplext ALUs:\t\t\t", getpower(core, 'Execution Unit/Complex ALUs'), "W"
-   print "\t\t\tFloating Point ALUs:\t\t", getpower(core, 'Execution Unit/Floating Point Units'), "W"
-   print "\t\t\tInteger ALUs:\t\t\t", getpower(core, 'Execution Unit/Integer ALUs'), "W"
-   print "\t\t\tLoad Unit:\t\t\t", getpower(core, 'Load Store Unit/LoadQ'), "W"
-   print "\t\t\tStore Unit:\t\t\t", getpower(core, 'Load Store Unit/StoreQ'), "W"
-   print "\t\t\tMemory Management Unit:\t\t", getpower(core, 'Memory Management Unit'), "W"
-   print "\t\t\tTotal:\t\t\t\t", totalPower, "W"
+   Readings += str(getpower(core, 'L2'))+"\t" 
+   Readings += str(getpower(core, 'Execution Unit/Instruction Scheduler'))+"\t" 
+   Readings += str(getpower(core, 'Execution Unit/Register Files'))+"\t" 
+   Readings += str(getpower(core, 'Execution Unit/Results Broadcast Bus'))+"\t" 
+   Readings += str(getpower(core, 'Renaming Unit'))+"\t" 
+   Readings += str(getpower(core, 'Instruction Fetch Unit/Branch Predictor'))+"\t" 
+   Readings += str(getpower(core, 'Instruction Fetch Unit/Branch Target Buffer'))+"\t" 
+   Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Buffer'))+"\t" 
+   Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Decoder'))+"\t" 
+   Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Cache'))+"\t" 
+   Readings += str(getpower(core, 'Load Store Unit/Data Cache'))+"\t" 
+   Readings += str(getpower(core, 'Execution Unit/Complex ALUs'))+"\t" 
+   Readings += str(getpower(core, 'Execution Unit/Floating Point Units'))+"\t" 
+   Readings += str(getpower(core, 'Execution Unit/Integer ALUs'))+"\t" 
+   Readings += str(getpower(core, 'Load Store Unit/LoadQ'))+"\t" 
+   Readings += str(getpower(core, 'Load Store Unit/StoreQ'))+"\t" 
+   Readings += str(getpower(core, 'Memory Management Unit'))+"\t" 
+   Readings += str(totalPower) +"\t"
+  logFileName.write (Readings+"\n")
 
-  print "\n\n--- Sniper Original Statistics ---\n"
+
+
+  #Code added for SniperPlus: Anuj
+  #print "\n\n--- Sniper Plus Power Statistics ---"
+  #print "\n\tSystem Statistics - \n"
+  #print "\t\tNumber of Cores in System: ", len (power_dat['Core'])
+
+  #print "\n\tPer Core Statistics - \n"
+
+  #id = 0
+  #for core in power_dat['Core']:
+   #id = id + 1
+   
+   #totalPower = getpower(core, 'L2') + getpower(core, 'Execution Unit/Instruction Scheduler') + getpower(core, 'Execution Unit/Register Files') + getpower(core, 'Execution Unit/Results Broadcast Bus') + getpower(core, 'Renaming Unit') + getpower(core, 'Instruction Fetch Unit/Branch Predictor') + getpower(core, 'Instruction Fetch Unit/Branch Target Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Decoder') + getpower(core, 'Instruction Fetch Unit/Instruction Cache') + getpower(core, 'Load Store Unit/Data Cache') + getpower(core, 'Execution Unit/Complex ALUs') + getpower(core, 'Execution Unit/Floating Point Units') + getpower(core, 'Execution Unit/Integer ALUs') + getpower(core, 'Load Store Unit/LoadQ') + getpower(core, 'Load Store Unit/StoreQ') + getpower(core, 'Memory Management Unit')
+   
+   #print "\n\t\tCore", id,"Power -"
+   #print "\t\t\tPrivate L2:\t\t\t", getpower(core, 'L2'), "W"
+   #print "\t\t\tInstruction Scheduler:\t\t", getpower(core, 'Execution Unit/Instruction Scheduler'), "W"
+   #print "\t\t\tRegiter Files:\t\t\t", getpower(core, 'Execution Unit/Register Files'), "W"
+   #print "\t\t\tBroadCast Bus:\t\t\t", getpower(core, 'Execution Unit/Results Broadcast Bus'), "W"
+   #print "\t\t\tRenaming Unit:\t\t\t", getpower(core, 'Renaming Unit'), "W"
+   #print "\t\t\tBranch Predictor:\t\t", getpower(core, 'Instruction Fetch Unit/Branch Predictor'), "W"
+   #print "\t\t\tBranch Target Buffer:\t\t", getpower(core, 'Instruction Fetch Unit/Branch Target Buffer'), "W"
+   #print "\t\t\tInstruction Buffer:\t\t", getpower(core, 'Instruction Fetch Unit/Instruction Buffer'), "W"
+   #print "\t\t\tInstruction Decoder:\t\t", getpower(core, 'Instruction Fetch Unit/Instruction Decoder'), "W"
+   #print "\t\t\tInstruction Cache:\t\t", getpower(core, 'Instruction Fetch Unit/Instruction Cache'), "W"
+   #print "\t\t\tData Cache:\t\t\t", getpower(core, 'Load Store Unit/Data Cache'), "W"
+   #print "\t\t\tComplext ALUs:\t\t\t", getpower(core, 'Execution Unit/Complex ALUs'), "W"
+   #print "\t\t\tFloating Point ALUs:\t\t", getpower(core, 'Execution Unit/Floating Point Units'), "W"
+   #print "\t\t\tInteger ALUs:\t\t\t", getpower(core, 'Execution Unit/Integer ALUs'), "W"
+   #print "\t\t\tLoad Unit:\t\t\t", getpower(core, 'Load Store Unit/LoadQ'), "W"
+   #print "\t\t\tStore Unit:\t\t\t", getpower(core, 'Load Store Unit/StoreQ'), "W"
+   #print "\t\t\tMemory Management Unit:\t\t", getpower(core, 'Memory Management Unit'), "W"
+   #print "\t\t\tTotal:\t\t\t\t", totalPower, "W"
+
+  #print "\n\n--- Sniper Original Statistics ---\n"
 
 
   return buildstack.merge_items({ 0: data }, all_items, nocollapse = nocollapse)
