@@ -865,15 +865,8 @@ int coreRequirementTranslation (String compositionString) {
 		requirement = 16;
 
 
-	else if (compositionString == "parsec-x264-simsmall-1")
-		requirement = 2;
-	else if (compositionString == "parsec-x264-simsmall-2")
-		requirement = 3;
-	else if (compositionString == "parsec-x264-simsmall-3")
-		requirement = 4;
-
-	else if (compositionString == "parsec-x264-simsmall-1")
-		requirement = 2;
+	else if (compositionString == "parsec-x264-simsmall-1" || compositionString == "parsec-x264-test-1")
+		requirement = 1;
 	else if (compositionString == "parsec-x264-simsmall-2")
 		requirement = 3;
 	else if (compositionString == "parsec-x264-simsmall-3")

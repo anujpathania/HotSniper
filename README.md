@@ -128,6 +128,16 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 
   MMU - Memory Management Unit
 
+  IFU - Instruction Fetch Unit
+
+  LSU - Load Store Unit
+
+  EU  - Execution Unit
+
+  TP - Total Power
+
+* You can toggle  tracking of any of the above indiviusual elements by modifying in "[periodic_power]" property "base.cfg". By default all elements tracking is set to true.
+
 * Example to run Perioidic Power Tracing at 10000 ns intervals -
 
 $ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats -speriodic-power:10000
