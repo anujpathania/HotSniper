@@ -88,7 +88,7 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 
 # Feature 2: Periodic Power Tracing 
 
-* Major Files of Interest "tools/mcpat.py", "periodic-power.py"
+* Major Files of Interest "tools/mcpat.py", "scripts/periodic-power.py"
 
 * This allows for you to obtain a power trace giving power of different components at a customizable intervals. You can add or remove elements in power trace by modifying "tools/mcpat.py".
 
@@ -141,5 +141,7 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 * Example to run Perioidic Power Tracing at 10000 ns intervals -
 
 $ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats -speriodic-power:10000
+
+* The dump would be created in benchmarks folder in file with name - "PeriodicPower.log"
 
 # Hotspot Integration (Expected Soon).

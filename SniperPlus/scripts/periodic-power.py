@@ -35,7 +35,7 @@ class StatTrace:
       print 'Stat %s[*].%s not found' % (stat_component, stat_name)
       return
 
-    logFileName = file(os.path.join(sim.config.output_dir, 'PeriodicPowerLog.txt'), 'w');
+    #logFileName = file(os.path.join(sim.config.output_dir, 'PeriodicPower.log'), 'w');
 
     if filename:
       self.fd = file(os.path.join(sim.config.output_dir, filename), 'w')

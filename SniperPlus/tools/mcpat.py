@@ -332,59 +332,73 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   data['core-other'] = getpower(power_dat['Processor']) - (sum(data.values()) - data['dram'])
 
   
-  logFileName = file("PeriodicPowerLog.txt", 'a');
+  logFileName = file("PeriodicPower.log", 'a');
+  instantaneousFileName = file("InstantaneousPower.log", 'w');
 
 
-  if os.stat("PeriodicPowerLog.txt").st_size == 0:
-   id = 0
-   Headings = ""
-   for core in power_dat['Core']:
-    if sniper_config.get_config_bool(cfg, "periodic_power/l2"):  
-     Headings += "Core"+str(id)+"-L2\t" # Private L2
-    if sniper_config.get_config_bool(cfg, "periodic_power/is"):
-     Headings += "Core"+str(id)+"-IS\t" # Instruction Scheduler
-    if sniper_config.get_config_bool(cfg, "periodic_power/rf"):
-     Headings += "Core"+str(id)+"-RF\t" # Register Files
-    if sniper_config.get_config_bool(cfg, "periodic_power/rbb"):
-     Headings += "Core"+str(id)+"-RBB\t" # Result Broadcast Bus
-    if sniper_config.get_config_bool(cfg, "periodic_power/ru"):
-     Headings += "Core"+str(id)+"-RU\t" # Renaming Unit
-    if sniper_config.get_config_bool(cfg, "periodic_power/bp"):
-     Headings += "Core"+str(id)+"-BP\t" # Branch Predictor
-    if sniper_config.get_config_bool(cfg, "periodic_power/btb"):
-     Headings += "Core"+str(id)+"-BTB\t" # Branch Target Buffer
-    if sniper_config.get_config_bool(cfg, "periodic_power/ib"):
-     Headings += "Core"+str(id)+"-IB\t" # Instruction Buffer
-    if sniper_config.get_config_bool(cfg, "periodic_power/id"):
-     Headings += "Core"+str(id)+"-ID\t" # Instruction Decoder
-    if sniper_config.get_config_bool(cfg, "periodic_power/ic"):
-     Headings += "Core"+str(id)+"-IC\t" # Instruction Cache
-    if sniper_config.get_config_bool(cfg, "periodic_power/dc"):
-     Headings += "Core"+str(id)+"-DC\t" # Data Cache 
-    if sniper_config.get_config_bool(cfg, "periodic_power/calu"):
-     Headings += "Core"+str(id)+"-CALU\t" # Complex ALU
-    if sniper_config.get_config_bool(cfg, "periodic_power/falu"):
-     Headings += "Core"+str(id)+"-FALU\t" # Floating Point ALU
-    if sniper_config.get_config_bool(cfg, "periodic_power/ialu"):
-     Headings += "Core"+str(id)+"-IALU\t" # Integer ALU
-    if sniper_config.get_config_bool(cfg, "periodic_power/lu"):
-     Headings += "Core"+str(id)+"-LU\t" # Load Unit
-    if sniper_config.get_config_bool(cfg, "periodic_power/su"):
-     Headings += "Core"+str(id)+"-SU\t" # Store Unit
-    if sniper_config.get_config_bool(cfg, "periodic_power/mmu"):
-     Headings += "Core"+str(id)+"-MMU\t" # Memory Management Unit
-    if sniper_config.get_config_bool(cfg, "periodic_power/ifu"):
-     Headings += "Core"+str(id)+"-IFU\t" # Instruction Fetch Unit
-    if sniper_config.get_config_bool(cfg, "periodic_power/lsu"):
-     Headings += "Core"+str(id)+"-LSU\t" # Load Store Unit
-    if sniper_config.get_config_bool(cfg, "periodic_power/eu"):
-     Headings += "Core"+str(id)+"-EU\t" # Execution Unit
-    if sniper_config.get_config_bool(cfg, "periodic_power/tp"):
-     Headings += "Core"+str(id)+"-TP\t" # Total Power
-    id = id+1
+  
+  id = 0
+  Headings = ""
+
+  if sniper_config.get_config_bool(cfg, "periodic_power/l3"):  
+    Headings += "L3\t" # Private L3
+
+  for core in power_dat['Core']:
+   if sniper_config.get_config_bool(cfg, "periodic_power/l2"):  
+    Headings += "Core"+str(id)+"-L2\t" # Private L2
+   if sniper_config.get_config_bool(cfg, "periodic_power/is"):
+    Headings += "Core"+str(id)+"-IS\t" # Instruction Scheduler
+   if sniper_config.get_config_bool(cfg, "periodic_power/rf"):
+    Headings += "Core"+str(id)+"-RF\t" # Register Files
+   if sniper_config.get_config_bool(cfg, "periodic_power/rbb"):
+    Headings += "Core"+str(id)+"-RBB\t" # Result Broadcast Bus
+   if sniper_config.get_config_bool(cfg, "periodic_power/ru"):
+    Headings += "Core"+str(id)+"-RU\t" # Renaming Unit
+   if sniper_config.get_config_bool(cfg, "periodic_power/bp"):
+    Headings += "Core"+str(id)+"-BP\t" # Branch Predictor
+   if sniper_config.get_config_bool(cfg, "periodic_power/btb"):
+    Headings += "Core"+str(id)+"-BTB\t" # Branch Target Buffer
+   if sniper_config.get_config_bool(cfg, "periodic_power/ib"):
+    Headings += "Core"+str(id)+"-IB\t" # Instruction Buffer
+   if sniper_config.get_config_bool(cfg, "periodic_power/id"):
+    Headings += "Core"+str(id)+"-ID\t" # Instruction Decoder
+   if sniper_config.get_config_bool(cfg, "periodic_power/ic"):
+    Headings += "Core"+str(id)+"-IC\t" # Instruction Cache
+   if sniper_config.get_config_bool(cfg, "periodic_power/dc"):
+    Headings += "Core"+str(id)+"-DC\t" # Data Cache 
+   if sniper_config.get_config_bool(cfg, "periodic_power/calu"):
+    Headings += "Core"+str(id)+"-CALU\t" # Complex ALU
+   if sniper_config.get_config_bool(cfg, "periodic_power/falu"):
+    Headings += "Core"+str(id)+"-FALU\t" # Floating Point ALU
+   if sniper_config.get_config_bool(cfg, "periodic_power/ialu"):
+    Headings += "Core"+str(id)+"-IALU\t" # Integer ALU
+   if sniper_config.get_config_bool(cfg, "periodic_power/lu"):
+    Headings += "Core"+str(id)+"-LU\t" # Load Unit
+   if sniper_config.get_config_bool(cfg, "periodic_power/su"):
+    Headings += "Core"+str(id)+"-SU\t" # Store Unit
+   if sniper_config.get_config_bool(cfg, "periodic_power/mmu"):
+    Headings += "Core"+str(id)+"-MMU\t" # Memory Management Unit
+   if sniper_config.get_config_bool(cfg, "periodic_power/ifu"):
+    Headings += "Core"+str(id)+"-IFU\t" # Instruction Fetch Unit
+   if sniper_config.get_config_bool(cfg, "periodic_power/lsu"):
+    Headings += "Core"+str(id)+"-LSU\t" # Load Store Unit
+   if sniper_config.get_config_bool(cfg, "periodic_power/eu"):
+    Headings += "Core"+str(id)+"-EU\t" # Execution Unit
+   if sniper_config.get_config_bool(cfg, "periodic_power/tp"):
+    Headings += "Core"+str(id)+"-TP\t" # Total Power
+   id = id+1
+   
+  if os.stat("PeriodicPower.log").st_size == 0:
    logFileName.write (Headings+"\n")
    
+  instantaneousFileName.write (Headings+"\n")
+   
   Readings = ""
+
+  L3Power = sum([ getpower(cache) for cache in power_dat.get('L3', []) ]) 
+
+  if sniper_config.get_config_bool(cfg, "periodic_power/l3"):  
+    Readings += str(L3Power)+"\t"  # Private L3
   
   for core in power_dat['Core']:
 
@@ -396,10 +410,12 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
    LSUPower =  getpower(core, 'Load Store Unit/Data Cache') + getpower(core, 'Load Store Unit/LoadQ') + getpower(core, 'Load Store Unit/StoreQ')
 
 
-   EUPower = getpower(core, 'Execution Unit/Instruction Scheduler') + getpower(core, 'Execution Unit/Register Files') + getpower(core, 'Execution Unit/Results Broadcast Bus') + getpower(core, 'Execution Unit/Complex ALUs') + getpower(core, 'Execution Unit/Floating Point Units') + getpower(core, 'Execution Unit/Integer ALUs') 
+   EUPower = getpower(core, 'Execution Unit/Instruction Scheduler') + getpower(core, 'Execution Unit/Register Files') + getpower(core, 'Execution Unit/Results Broadcast Bus') + getpower(core, 'Execution Unit/Complex ALUs') + getpower(core, 'Execution Unit/Floating Point Units') + getpower(core, 'Execution Unit/Integer ALUs')
+
+   
 
 
-
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/l2"):  
     Readings += str(getpower(core, 'L2'))+"\t"  # Private L2
    if sniper_config.get_config_bool(cfg, "periodic_power/is"):
@@ -444,7 +460,7 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
     Readings += str(totalPower) +"\t" # Total Power
 
   logFileName.write (Readings+"\n")
-
+  instantaneousFileName.write (Readings+"\n")
 
 
 
