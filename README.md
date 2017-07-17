@@ -25,7 +25,7 @@ $ cd SniperPlus
 
 $ make
 
-* Step 3: Compile Benchmarks (Downgrading Perl removes PARSEC compilations error - https://groups.google.com/forum/#!msg/snipersim/LF_VfebuLSI/AVdiq4y0hk8J). Working benchmarks with sim-small input option: blackscholes, bodytrack, canneal, dedup, facesim, ferret, fluidanimate, raytrace, streamcluster,swaptions, x264
+* Step 3: Compile Benchmarks (Downgrading Perl removes PARSEC compilations error - https://groups.google.com/forum/#!msg/snipersim/LF_VfebuLSI/AVdiq4y0hk8J). Working benchmarks with sim-small input option: blackscholes, bodytrack, canneal, dedup, facesim, ferret, fluidanimate, raytrace, streamcluster,swaptions, x264. Use the version given with SniperPlus not original Sniper.
 
 $ tar -xvzf benchmarks.tar.gz
 
@@ -86,15 +86,33 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 
 
 
-# Feature 2: Periodic Power Tracing 
+# Feature 2: Periodic Power (using McPAT) & Temperature Tracing (using HotSpot)
 
 * Major Files of Interest "tools/mcpat.py", "scripts/periodic-power.py"
 
-* This allows for you to obtain a power trace giving power of different components at a customizable intervals. You can add or remove elements in power trace by modifying "tools/mcpat.py".
+* This allows for you to obtain a power and thermal trace giving power of different components at a customizable intervals. You can add or remove elements in power trace by modifying "tools/mcpat.py".
 
-* Currently following elements are tracked for each core -
+* Compile HotSpot (Use the one shipped with SniperPlus not the original).
 
-  L2 - Private L2
+$ cd SniperPlus
+
+$ tar -xvzf hotspot.tar.gz
+
+$ cd hotspot
+
+$ make
+
+$ cd ../benchmarks
+
+* Currently following elements are tracked for each core. You can toggle  tracking of any of the above indiviusual elements by modifying in "[periodic_power]" property "base.cfg". By default all elements tracking is set to true.
+
+  System Level:
+
+  L3 - L3 Cache
+
+  Core Level:
+
+  L2 - L2 Cache
 
   IS - Instruction Scheduler
 
@@ -136,12 +154,13 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 
   TP - Total Power
 
-* You can toggle  tracking of any of the above indiviusual elements by modifying in "[periodic_power]" property "base.cfg". By default all elements tracking is set to true.
+* You need to add the correct floorplan (including all the power values you are tracking) to Hotspot folder. For example see "/SniperPlus/hotspot/gainestown_2.flp" that comes with default. You need to mention the floorplan to be used in the config file "base.cfg".
+
+	[periodic_thermal]
+	floorplan = gainestown_2.flp
 
 * Example to run Perioidic Power Tracing at 10000 ns intervals -
 
 $ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats -speriodic-power:10000
 
-* The dump would be created in benchmarks folder in file with name - "PeriodicPower.log"
-
-# Hotspot Integration (Expected Soon).
+* The power and thermal dump would be created in benchmarks folder in file with name - "PeriodicPower.log" and "PeriodicThermal.log"

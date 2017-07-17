@@ -332,9 +332,9 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   data['core-other'] = getpower(power_dat['Processor']) - (sum(data.values()) - data['dram'])
 
   
-  logFileName = file("PeriodicPower.log", 'a');
-  instantaneousFileName = file("InstantaneousPower.log", 'w');
-
+  powerLogFileName = file("PeriodicPower.log", 'a');
+  powerInstantaneousFileName = file("InstantaneousPower.log", 'w');
+  thermalLogFileName = file("PeriodicThermal.log", 'a');
 
   
   id = 0
@@ -344,54 +344,78 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
     Headings += "L3\t" # Private L3
 
   for core in power_dat['Core']:
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/l2"):  
     Headings += "Core"+str(id)+"-L2\t" # Private L2
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/is"):
     Headings += "Core"+str(id)+"-IS\t" # Instruction Scheduler
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/rf"):
     Headings += "Core"+str(id)+"-RF\t" # Register Files
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/rbb"):
     Headings += "Core"+str(id)+"-RBB\t" # Result Broadcast Bus
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/ru"):
     Headings += "Core"+str(id)+"-RU\t" # Renaming Unit
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/bp"):
     Headings += "Core"+str(id)+"-BP\t" # Branch Predictor
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/btb"):
     Headings += "Core"+str(id)+"-BTB\t" # Branch Target Buffer
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/ib"):
     Headings += "Core"+str(id)+"-IB\t" # Instruction Buffer
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/id"):
     Headings += "Core"+str(id)+"-ID\t" # Instruction Decoder
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/ic"):
     Headings += "Core"+str(id)+"-IC\t" # Instruction Cache
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/dc"):
-    Headings += "Core"+str(id)+"-DC\t" # Data Cache 
+    Headings += "Core"+str(id)+"-DC\t" # Data Cache
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/calu"):
     Headings += "Core"+str(id)+"-CALU\t" # Complex ALU
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/falu"):
     Headings += "Core"+str(id)+"-FALU\t" # Floating Point ALU
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/ialu"):
     Headings += "Core"+str(id)+"-IALU\t" # Integer ALU
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/lu"):
     Headings += "Core"+str(id)+"-LU\t" # Load Unit
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/su"):
     Headings += "Core"+str(id)+"-SU\t" # Store Unit
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/mmu"):
     Headings += "Core"+str(id)+"-MMU\t" # Memory Management Unit
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/ifu"):
     Headings += "Core"+str(id)+"-IFU\t" # Instruction Fetch Unit
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/lsu"):
     Headings += "Core"+str(id)+"-LSU\t" # Load Store Unit
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/eu"):
     Headings += "Core"+str(id)+"-EU\t" # Execution Unit
+   
    if sniper_config.get_config_bool(cfg, "periodic_power/tp"):
     Headings += "Core"+str(id)+"-TP\t" # Total Power
+
    id = id+1
    
   if os.stat("PeriodicPower.log").st_size == 0:
-   logFileName.write (Headings+"\n")
-   
-  instantaneousFileName.write (Headings+"\n")
+   powerLogFileName.write (Headings+"\n")
+   thermalLogFileName.write (Headings+"\n")
+   thermalLogFileName.close ()
+
+  powerInstantaneousFileName.write (Headings+"\n")
    
   Readings = ""
 
@@ -459,8 +483,37 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
    if sniper_config.get_config_bool(cfg, "periodic_power/tp"):
     Readings += str(totalPower) +"\t" # Total Power
 
-  logFileName.write (Readings+"\n")
-  instantaneousFileName.write (Readings+"\n")
+  
+  
+  powerInstantaneousFileName.write (Readings+"\n")
+  powerInstantaneousFileName.close ()
+
+  
+
+  #Hotspot Integration Code
+
+  floorplan = sniper_config.get_config(cfg, "periodic_thermal/floorplan")
+  
+  intervalFileName = file("Interval.dat", 'r')
+  interval_ns = float(intervalFileName.read()) * 0.00001
+  intervalFileName.close ()
+
+  if os.stat("PeriodicPower.log").st_size == 0:
+   os.system("../hotspot/hotspot -c ../hotspot/hotspot.config -f ../hotspot/"+floorplan+" -sampling_intvl " + str (interval_ns)  + " -p InstantaneousPower.log -o InstantaneousTemperature.log -model_type grid > Temperature.init")
+  else: 
+   os.system("../hotspot/hotspot -c ../hotspot/hotspot.config -f ../hotspot/"+floorplan+" -init_file Temperature.init -p InstantaneousPower.log -o InstantaneousTemperature.log -model_type grid > DeleteMe.init")
+   os.system("cp DeleteMe.init Temperature.init")
+   os.system("rm DeleteMe.init")
+   
+  os.system ("cat PeriodicThermal.log | sed -n '2p' InstantaneousTemperature.log >> PeriodicThermal.log")
+  
+  os.system("rm InstantaneousPower.log")
+  os.system("rm InstantaneousTemperature.log")
+  
+
+  powerLogFileName.write (Readings+"\n")
+  
+  
 
 
 

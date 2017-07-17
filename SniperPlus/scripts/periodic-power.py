@@ -16,6 +16,11 @@ class StatTrace:
     filename = 'Temp'
     interval_ns = long(args.get(0, 10000))
 
+    intervalFileName = file("Interval.dat", 'w')
+    intervalFileName.write (args.get(0, "10000"))
+    intervalFileName.close ()
+    
+
     if '.' not in stat:
       print 'Stat name needs to be of the format <component>.<statname>, now %s' % stat
       return
@@ -35,7 +40,8 @@ class StatTrace:
       print 'Stat %s[*].%s not found' % (stat_component, stat_name)
       return
 
-    #logFileName = file(os.path.join(sim.config.output_dir, 'PeriodicPower.log'), 'w');
+    powerLogFileName = file(os.path.join(sim.config.output_dir, 'PeriodicPower.log'), 'w'); #Empties the previous data, if any.
+    thermalLogFileName = file(os.path.join(sim.config.output_dir, 'PeriodicThermal.log'), 'w'); #Empties the previous data, if any.
 
     if filename:
       self.fd = file(os.path.join(sim.config.output_dir, filename), 'w')
@@ -51,6 +57,7 @@ class StatTrace:
       'stat': [ self.getStatsGetter(stat_component, core, stat_name) for core in range(sim.config.ncores) ],
     }
     sim.util.Every(interval_ns * sim.util.Time.NS, self.periodic, statsdelta = self.sd, roi_only = True)
+    
 
   def periodic(self, time, time_delta):
     if self.isTerminal:
