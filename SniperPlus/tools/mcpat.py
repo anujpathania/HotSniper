@@ -507,8 +507,8 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
    
   os.system ("cat PeriodicThermal.log | sed -n '2p' InstantaneousTemperature.log >> PeriodicThermal.log")
   
-  os.system("rm InstantaneousPower.log")
-  os.system("rm InstantaneousTemperature.log")
+  #os.system("rm InstantaneousPower.log")
+  #os.system("rm InstantaneousTemperature.log")
   
 
   powerLogFileName.write (Readings+"\n")

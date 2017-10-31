@@ -164,3 +164,5 @@ $ cd ../benchmarks
 $ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats -speriodic-power:10000
 
 * The power and thermal dump would be created in benchmarks folder in file with name - "PeriodicPower.log" and "PeriodicThermal.log"
+
+* The instantaneous- power and thermal value can also be read in the Sniper program code itself using "getPowerOfComponent" and "getTemperatureOfComponent" function in "scheduler_open.cc", respectively. This can be used to feedback power and thermal information to your scheduler for taking decisions.

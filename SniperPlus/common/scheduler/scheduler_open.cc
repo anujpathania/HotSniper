@@ -13,6 +13,8 @@
 #include <vector>
 
 #include <iostream>
+#include <fstream>
+
 using namespace std;
 
 long schedulingEpoch; //Stores the scheduling epoch defined by the user.
@@ -122,8 +124,90 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
  		exit (1);
 	}
 
+	
+
 }
 
+
+/** getPowerOfComponent
+    Returns the latest power consumption of a component being tracked using base.cfg. Return -1 if power value not found.
+*/
+double getPowerOfComponent (string component) {
+
+	ifstream powerLogFile("InstantaneousPower.log");
+
+
+	
+    	string header;
+	string footer;
+
+  	if (powerLogFile.good()) {
+    		getline(powerLogFile, header);
+    		getline(powerLogFile, footer);
+  	}
+
+	
+	std::istringstream issHeader(header);
+	std::istringstream issFooter(footer);
+	std::string token;
+
+	while(getline(issHeader, token, '\t')) {
+
+		std::string value;
+		getline(issFooter, value, '\t');
+
+		if (token == component) {
+		
+			return stod (value);
+
+		}
+
+	}
+
+
+	return -1;
+
+}
+
+/** getPowerOfComponent
+    Returns the latest temperature of a component being tracked using base.cfg. Return -1 if power value not found.
+*/
+double getTemperatureOfComponent (string component) {
+
+	ifstream powerLogFile("InstantaneousTemperature.log");
+
+
+	
+    	string header;
+	string footer;
+
+  	if (powerLogFile.good()) {
+    		getline(powerLogFile, header);
+    		getline(powerLogFile, footer);
+  	}
+
+	
+	std::istringstream issHeader(header);
+	std::istringstream issFooter(footer);
+	std::string token;
+
+	while(getline(issHeader, token, '\t')) {
+
+		std::string value;
+		getline(issFooter, value, '\t');
+
+		if (token == component) {
+		
+			return stod (value);
+
+		}
+
+	}
+
+
+	return -1;
+
+}
 
 
 
