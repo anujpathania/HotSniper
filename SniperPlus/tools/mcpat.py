@@ -505,7 +505,7 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
    os.system("cp DeleteMe.init Temperature.init")
    os.system("rm DeleteMe.init")
    
-  os.system ("cat PeriodicThermal.log | sed -n '2p' InstantaneousTemperature.log >> PeriodicThermal.log")
+  os.system ("sed -n '2p' InstantaneousTemperature.log >> PeriodicThermal.log")
   
   #os.system("rm InstantaneousPower.log")
   #os.system("rm InstantaneousTemperature.log")
