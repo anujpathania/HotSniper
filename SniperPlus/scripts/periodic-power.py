@@ -56,6 +56,7 @@ class StatTrace:
       'ffwd_time': [ self.getStatsGetter('fastforward_performance_model', core, 'fastforwarded_time') for core in range(sim.config.ncores) ],
       'stat': [ self.getStatsGetter(stat_component, core, stat_name) for core in range(sim.config.ncores) ],
     }
+
     sim.util.Every(interval_ns * sim.util.Time.NS, self.periodic, statsdelta = self.sd, roi_only = True)
     
 

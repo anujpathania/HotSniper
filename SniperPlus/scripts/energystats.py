@@ -35,7 +35,13 @@ class Power:
 class EnergyStats:
   def setup(self, args):
     args = dict(enumerate((args or '').split(':')))
-    interval_ns = long(args.get(0, None) or 1000000) # Default power update every 1 ms
+
+    #interval_ns = long(args.get(0, None) or 1000000) # Default power update every 1 ms
+
+    intervalFileName = file("Interval.dat", 'r')
+    interval_ns = float(intervalFileName.read())
+    intervalFileName.close ()
+    
     sim.util.Every(interval_ns * sim.util.Time.NS, self.periodic, roi_only = True)
     self.dvfs_table = build_dvfs_table(int(sim.config.get('power/technology_node')))
     #
@@ -73,23 +79,20 @@ class EnergyStats:
     if sim.stats.time() == self.time_last_power:
       # Time did not advance: don't recompute
       return
-    if not self.power or (sim.stats.time() - self.time_last_power >= 10 * sim.util.Time.US):
-      # Time advanced significantly, or no power result yet: compute power
-      #   Save snapshot
-      current = 'energystats-temp%s' % ('B' if self.name_last and self.name_last[-1] == 'A' else 'A')
-      self.in_stats_write = True
-      sim.stats.write(current)
-      self.in_stats_write = False
-      #   If we also have a previous snapshot: update power
-      if self.name_last:
-        power = self.run_power(self.name_last, current)
-        self.update_power(power)
-      #   Clean up previous last
-      if self.name_last:
-        sim.util.db_delete(self.name_last)
-      #   Update new last
-      self.name_last = current
-      self.time_last_power = sim.stats.time()
+    current = 'energystats-temp%s' % ('B' if self.name_last and self.name_last[-1] == 'A' else 'A')
+    self.in_stats_write = True
+    sim.stats.write(current)
+    self.in_stats_write = False
+    #   If we also have a previous snapshot: update power
+    if self.name_last:
+      power = self.run_power(self.name_last, current)
+      self.update_power(power)
+    #   Clean up previous last
+    if self.name_last:
+      sim.util.db_delete(self.name_last)
+    #   Update new last
+    self.name_last = current
+    self.time_last_power = sim.stats.time()
     # Increment energy
     self.update_energy()
 

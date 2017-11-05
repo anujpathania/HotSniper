@@ -498,10 +498,11 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   interval_ns = float(intervalFileName.read()) * 0.00001
   intervalFileName.close ()
 
+
   if os.stat("PeriodicPower.log").st_size == 0:
-   os.system("../hotspot/hotspot -c ../hotspot/hotspot.config -f ../hotspot/"+floorplan+" -sampling_intvl " + str (interval_ns)  + " -p InstantaneousPower.log -o InstantaneousTemperature.log -model_type grid > Temperature.init")
+   os.system("../hotspot/hotspot -c ../hotspot/hotspot.config -f ../hotspot/"+floorplan+" -sampling_intvl " + str (interval_ns)  + " -p InstantaneousPower.log -o InstantaneousTemperature.log  > Temperature.init")
   else: 
-   os.system("../hotspot/hotspot -c ../hotspot/hotspot.config -f ../hotspot/"+floorplan+" -init_file Temperature.init -p InstantaneousPower.log -o InstantaneousTemperature.log -model_type grid > DeleteMe.init")
+   os.system("../hotspot/hotspot -c ../hotspot/hotspot.config -f ../hotspot/"+floorplan+" -init_file Temperature.init -p InstantaneousPower.log -o InstantaneousTemperature.log  > DeleteMe.init")
    os.system("cp DeleteMe.init Temperature.init")
    os.system("rm DeleteMe.init")
    
