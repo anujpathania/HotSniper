@@ -1,4 +1,4 @@
-# SniperPlus
+# HotSniper
 An enchanced multi/many-core simulator derived from Sniper MultiCore Simulator (http://snipersim.org).
 
 Sniper Version used as base - Sniper 6.1
@@ -12,6 +12,7 @@ For Queries: anuj.pathania@kit.edu
 List of our publications based on this tool -
 
 1. [TACO' 17] Defragmentation of Tasks in Many-Core Architecture.
+2. [DATE' 18] Task Scheduling for Many-Cores with S-NUCA Caches.
 
 
 
@@ -19,13 +20,13 @@ List of our publications based on this tool -
 
 * Step 1: Go into the Sniper Code Directory
 
-$ cd SniperPlus
+$ cd HotSniper
 
-* Step 2: Sucessfully Compile Sniper. You will have to install PIN and several other repositories to make this work. If you face a problem, email me only if it the problem present in the SniperPlus and not in original Sniper 6.1. Works best with pin-2.14-71313, gcc-4.8 and g++-4.8.
+* Step 2: Sucessfully Compile Sniper. You will have to install PIN and several other repositories to make this work. If you face a problem, email me only if it the problem present in the HotSniper and not in original Sniper 6.1. Works best with pin-2.14-71313, gcc-4.8 and g++-4.8.
 
 $ make
 
-* Step 3: Compile Benchmarks (Downgrading Perl removes PARSEC compilations error - https://groups.google.com/forum/#!msg/snipersim/LF_VfebuLSI/AVdiq4y0hk8J). Working benchmarks with sim-small input option: blackscholes, bodytrack, canneal, dedup, facesim, ferret, fluidanimate, raytrace, streamcluster,swaptions, x264. Use the version given with SniperPlus not original Sniper.
+* Step 3: Compile Benchmarks (Downgrading Perl removes PARSEC compilations error - https://groups.google.com/forum/#!msg/snipersim/LF_VfebuLSI/AVdiq4y0hk8J). Working benchmarks with sim-small input option: blackscholes, bodytrack, canneal, dedup, facesim, ferret, fluidanimate, raytrace, streamcluster,swaptions, x264. Use the version given with HotSniper not original Sniper.
 
 $ tar -xvzf benchmarks.tar.gz
 
@@ -92,9 +93,9 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 
 * This allows for you to obtain a power and thermal trace giving power of different components at a customizable intervals. You can add or remove elements in power trace by modifying "tools/mcpat.py".
 
-* Compile HotSpot (Use the one shipped with SniperPlus not the original).
+* Compile HotSpot (Use the one shipped with HotSniper not the original).
 
-$ cd SniperPlus
+$ cd HotSniper
 
 $ tar -xvzf hotspot.tar.gz
 
@@ -154,7 +155,7 @@ $ cd ../benchmarks
 
   TP - Total Power
 
-* You need to add the correct floorplan (including all the power values you are tracking) to Hotspot folder. For example see "/SniperPlus/hotspot/gainestown_2.flp" that comes with default. You need to mention the floorplan to be used in the config file "base.cfg".
+* You need to add the correct floorplan (including all the power values you are tracking) to Hotspot folder. For example see "/HotSniper/hotspot/gainestown_2.flp" that comes with default. You need to mention the floorplan to be used in the config file "base.cfg".
 
 	[periodic_thermal]
 	floorplan = gainestown_2.flp
