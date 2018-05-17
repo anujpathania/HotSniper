@@ -2,6 +2,7 @@
 
 import os, sys, math, re, collections, buildstack, gnuplot, getopt, pprint, sniper_lib, sniper_config, sniper_stats
 import math
+from cpistack import cpistack_compute
 
 #ISSUE_WIDTH = 4
 #ALU_per_core = 6
@@ -136,6 +137,41 @@ def main(jobid, resultsdir, outputfile, powertype = 'dynamic', config = None, no
   power, nuca_at_level = edit_XML(stats, results['results'], results['config'])
   power = map(lambda v: v[0], power)
   file(tempfile, "w").write('\n'.join(power))
+
+  # Log Performance Counters
+  cpiStack = cpistack_compute(data=results)
+
+  ncores = int(results['config']['general/total_cores'])
+  performance_counters_file = 'InstantaneousPerformanceCounters.log'
+  performance_counters_periodic_file = 'PeriodicPerformanceCounters.log'
+  cpi = [sum(cpiStack.get_data('cpi')[i].values()) for i in range(ncores)]
+  base_utilization = [cpiStack.get_data('cpi')[i]['base'] / c for i, c in enumerate(cpi)]
+  extended_utilization = [sum(cpiStack.get_data('cpi')[i].get(key, 0) for key in ('base', 'dispatch_width', 'depend-int', 'depend-fp', 'branch')) / c for i, c in enumerate(cpi)]
+  cpi_ifetch = [cpiStack.get_data('cpi')[i].get('ifetch', 0) for i in range(ncores)]
+  cpi_mem_nuca = [cpiStack.get_data('cpi')[i].get('mem-nuca', 0) for i in range(ncores)]
+
+  for filename, write_header, mode in ((performance_counters_file, True, 'w'),
+                                       (performance_counters_periodic_file, os.stat(performance_counters_periodic_file).st_size == 0, 'a')):
+    with open(filename, mode) as f:
+      if write_header:
+        f.write('Metric\t')
+        f.write('\t'.join('Core{}'.format(i) for i in range(ncores)))
+        f.write('\n')
+      f.write('Utilization\t')
+      f.write('\t'.join('{:.6f}'.format(u) for u in base_utilization))
+      f.write('\n')
+      f.write('ExtendedUtilization\t')
+      f.write('\t'.join('{:.6f}'.format(u) for u in extended_utilization))
+      f.write('\n')
+      f.write('CPImemnuca\t')
+      f.write('\t'.join('{:.6f}'.format(v) for v in cpi_mem_nuca))
+      f.write('\n')
+      f.write('CPIifetch\t')
+      f.write('\t'.join('{:.6f}'.format(v) for v in cpi_ifetch))
+      f.write('\n')
+      f.write('CPI\t')
+      f.write('\t'.join('{:.6f}'.format(c) for c in cpi))
+      f.write('\n')
 
   # Run McPAT
   mcpat_run(tempfile, outputfile + '.txt')
@@ -274,12 +310,30 @@ def main(jobid, resultsdir, outputfile, powertype = 'dynamic', config = None, no
     return {'labels': plot_labels, 'power_data': plot_data, 'ncores': ncores, 'time_s': seconds}
 
 
+def scale_power(suffix, power, size_nm):
+  if suffix == 'Runtime Dynamic':
+    if size_nm >= 22:
+      return power
+    elif size_nm == 14:
+      return 0.89**2 * 0.64 * power
+    elif size_nm == 10:
+      return 0.81**2 * 0.39 * power
+    elif size_nm == 8:
+      return 0.74**2 * 0.24 * power
+    else:
+      raise Exception('do not know how to scale power to {} nm'.format(size_nm))
+  elif suffix in ('Subthreshold Leakage with power gating', 'Gate Leakage'):
+    return power
+  else:
+    raise Exception('do not know how to scale power: {}'.format(suffix))
+
 
 def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
+  size_nm = int(sniper_config.get_config(cfg, "power/technology_node"))
   def getpower(powers, key = None):
     def getcomponent(suffix):
-      if key: return powers.get(key+'/'+suffix, 0)
-      else: return powers.get(suffix, 0)
+      if key: return scale_power(suffix, powers.get(key+'/'+suffix, 0), size_nm)
+      else: return scale_power(suffix, powers.get(suffix, 0), size_nm)
     if powertype == 'dynamic':
       return getcomponent('Runtime Dynamic')
     elif powertype == 'static':
@@ -424,67 +478,56 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   if sniper_config.get_config_bool(cfg, "periodic_power/l3"):  
     Readings += str(L3Power)+"\t"  # Private L3
   
-  for core in power_dat['Core']:
+  amtCores = len(power_dat['Core'])
+  for i, core in enumerate(power_dat['Core']):
+    totalPower = getpower(core)
+    IFUPower =  getpower(core, 'Instruction Fetch Unit/Branch Predictor') + getpower(core, 'Instruction Fetch Unit/Branch Target Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Decoder') + getpower(core, 'Instruction Fetch Unit/Instruction Cache') 
+    LSUPower =  getpower(core, 'Load Store Unit/Data Cache') + getpower(core, 'Load Store Unit/LoadQ') + getpower(core, 'Load Store Unit/StoreQ')
+    EUPower = getpower(core, 'Execution Unit/Instruction Scheduler') + getpower(core, 'Execution Unit/Register Files') + getpower(core, 'Execution Unit/Results Broadcast Bus') + getpower(core, 'Execution Unit/Complex ALUs') + getpower(core, 'Execution Unit/Floating Point Units') + getpower(core, 'Execution Unit/Integer ALUs')
 
+    if sniper_config.get_config_bool(cfg, "periodic_power/l2"):  
+      Readings += str(getpower(core, 'L2'))+"\t"  # Private L2
+    if sniper_config.get_config_bool(cfg, "periodic_power/is"):
+      Readings += str(getpower(core, 'Execution Unit/Instruction Scheduler'))+"\t" # Instruction Scheduler
+    if sniper_config.get_config_bool(cfg, "periodic_power/rf"):
+      Readings += str(getpower(core, 'Execution Unit/Register Files'))+"\t"  # Register Files
+    if sniper_config.get_config_bool(cfg, "periodic_power/rbb"):
+      Readings += str(getpower(core, 'Execution Unit/Results Broadcast Bus'))+"\t"  # Result Broadcast Bus
+    if sniper_config.get_config_bool(cfg, "periodic_power/ru"):
+      Readings += str(getpower(core, 'Renaming Unit'))+"\t" # Renaming Unit
+    if sniper_config.get_config_bool(cfg, "periodic_power/bp"):
+      Readings += str(getpower(core, 'Instruction Fetch Unit/Branch Predictor'))+"\t"  # Branch Predictor
+    if sniper_config.get_config_bool(cfg, "periodic_power/btb"):
+      Readings += str(getpower(core, 'Instruction Fetch Unit/Branch Target Buffer'))+"\t"  # Branch Target Buffer
+    if sniper_config.get_config_bool(cfg, "periodic_power/ib"):
+      Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Buffer'))+"\t" # Instruction Buffer
+    if sniper_config.get_config_bool(cfg, "periodic_power/id"):
+      Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Decoder'))+"\t"  # Instruction Decoder
+    if sniper_config.get_config_bool(cfg, "periodic_power/ic"):
+      Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Cache'))+"\t"  # Instruction Cache
+    if sniper_config.get_config_bool(cfg, "periodic_power/dc"):
+      Readings += str(getpower(core, 'Load Store Unit/Data Cache'))+"\t" # Data Cache 
+    if sniper_config.get_config_bool(cfg, "periodic_power/calu"):
+      Readings += str(getpower(core, 'Execution Unit/Complex ALUs'))+"\t"  # Complex ALU
+    if sniper_config.get_config_bool(cfg, "periodic_power/falu"):
+      Readings += str(getpower(core, 'Execution Unit/Floating Point Units'))+"\t"  # Floating Point ALU
+    if sniper_config.get_config_bool(cfg, "periodic_power/ialu"):
+      Readings += str(getpower(core, 'Execution Unit/Integer ALUs'))+"\t"  # Integer ALU
+    if sniper_config.get_config_bool(cfg, "periodic_power/lu"): # Load Unit
+      Readings += str(getpower(core, 'Load Store Unit/LoadQ'))+"\t" 
+    if sniper_config.get_config_bool(cfg, "periodic_power/su"):  # Store Unit
+      Readings += str(getpower(core, 'Load Store Unit/StoreQ'))+"\t"  
+    if sniper_config.get_config_bool(cfg, "periodic_power/mmu"): # Memory Management Unit
+      Readings += str(getpower(core, 'Memory Management Unit'))+"\t"  # Memory Management Unit
+    if sniper_config.get_config_bool(cfg, "periodic_power/ifu"):
+      Readings += str(IFUPower) +"\t" # Instruction Fetch Unit
+    if sniper_config.get_config_bool(cfg, "periodic_power/lsu"):
+      Readings += str(LSUPower) +"\t"  # Load Store Unit
+    if sniper_config.get_config_bool(cfg, "periodic_power/eu"):
+      Readings += str(EUPower) +"\t"  # Execution Unit
+    if sniper_config.get_config_bool(cfg, "periodic_power/tp"):
+      Readings += str(totalPower) +"\t" # Total Power
 
-   totalPower = getpower(core, 'L2') + getpower(core, 'Execution Unit/Instruction Scheduler') + getpower(core, 'Execution Unit/Register Files') + getpower(core, 'Execution Unit/Results Broadcast Bus') + getpower(core, 'Renaming Unit') + getpower(core, 'Instruction Fetch Unit/Branch Predictor') + getpower(core, 'Instruction Fetch Unit/Branch Target Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Decoder') + getpower(core, 'Instruction Fetch Unit/Instruction Cache') + getpower(core, 'Load Store Unit/Data Cache') + getpower(core, 'Execution Unit/Complex ALUs') + getpower(core, 'Execution Unit/Floating Point Units') + getpower(core, 'Execution Unit/Integer ALUs') + getpower(core, 'Load Store Unit/LoadQ') + getpower(core, 'Load Store Unit/StoreQ') + getpower(core, 'Memory Management Unit')
-
-   IFUPower =  getpower(core, 'Instruction Fetch Unit/Branch Predictor') + getpower(core, 'Instruction Fetch Unit/Branch Target Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Buffer') + getpower(core, 'Instruction Fetch Unit/Instruction Decoder') + getpower(core, 'Instruction Fetch Unit/Instruction Cache') 
-
-   LSUPower =  getpower(core, 'Load Store Unit/Data Cache') + getpower(core, 'Load Store Unit/LoadQ') + getpower(core, 'Load Store Unit/StoreQ')
-
-
-   EUPower = getpower(core, 'Execution Unit/Instruction Scheduler') + getpower(core, 'Execution Unit/Register Files') + getpower(core, 'Execution Unit/Results Broadcast Bus') + getpower(core, 'Execution Unit/Complex ALUs') + getpower(core, 'Execution Unit/Floating Point Units') + getpower(core, 'Execution Unit/Integer ALUs')
-
-   
-
-
-   
-   if sniper_config.get_config_bool(cfg, "periodic_power/l2"):  
-    Readings += str(getpower(core, 'L2'))+"\t"  # Private L2
-   if sniper_config.get_config_bool(cfg, "periodic_power/is"):
-    Readings += str(getpower(core, 'Execution Unit/Instruction Scheduler'))+"\t" # Instruction Scheduler
-   if sniper_config.get_config_bool(cfg, "periodic_power/rf"):
-    Readings += str(getpower(core, 'Execution Unit/Register Files'))+"\t"  # Register Files
-   if sniper_config.get_config_bool(cfg, "periodic_power/rbb"):
-    Readings += str(getpower(core, 'Execution Unit/Results Broadcast Bus'))+"\t"  # Result Broadcast Bus
-   if sniper_config.get_config_bool(cfg, "periodic_power/ru"):
-    Readings += str(getpower(core, 'Renaming Unit'))+"\t" # Renaming Unit
-   if sniper_config.get_config_bool(cfg, "periodic_power/bp"):
-    Readings += str(getpower(core, 'Instruction Fetch Unit/Branch Predictor'))+"\t"  # Branch Predictor
-   if sniper_config.get_config_bool(cfg, "periodic_power/btb"):
-    Readings += str(getpower(core, 'Instruction Fetch Unit/Branch Target Buffer'))+"\t"  # Branch Target Buffer
-   if sniper_config.get_config_bool(cfg, "periodic_power/ib"):
-    Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Buffer'))+"\t" # Instruction Buffer
-   if sniper_config.get_config_bool(cfg, "periodic_power/id"):
-    Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Decoder'))+"\t"  # Instruction Decoder
-   if sniper_config.get_config_bool(cfg, "periodic_power/ic"):
-    Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Cache'))+"\t"  # Instruction Cache
-   if sniper_config.get_config_bool(cfg, "periodic_power/dc"):
-    Readings += str(getpower(core, 'Load Store Unit/Data Cache'))+"\t" # Data Cache 
-   if sniper_config.get_config_bool(cfg, "periodic_power/calu"):
-    Readings += str(getpower(core, 'Execution Unit/Complex ALUs'))+"\t"  # Complex ALU
-   if sniper_config.get_config_bool(cfg, "periodic_power/falu"):
-    Readings += str(getpower(core, 'Execution Unit/Floating Point Units'))+"\t"  # Floating Point ALU
-   if sniper_config.get_config_bool(cfg, "periodic_power/ialu"):
-    Readings += str(getpower(core, 'Execution Unit/Integer ALUs'))+"\t"  # Integer ALU
-   if sniper_config.get_config_bool(cfg, "periodic_power/lu"): # Load Unit
-    Readings += str(getpower(core, 'Load Store Unit/LoadQ'))+"\t" 
-   if sniper_config.get_config_bool(cfg, "periodic_power/su"):  # Store Unit
-    Readings += str(getpower(core, 'Load Store Unit/StoreQ'))+"\t"  
-   if sniper_config.get_config_bool(cfg, "periodic_power/mmu"): # Memory Management Unit
-    Readings += str(getpower(core, 'Memory Management Unit'))+"\t"  # Memory Management Unit
-   if sniper_config.get_config_bool(cfg, "periodic_power/ifu"):
-    Readings += str(IFUPower) +"\t" # Instruction Fetch Unit
-   if sniper_config.get_config_bool(cfg, "periodic_power/lsu"):
-    Readings += str(LSUPower) +"\t"  # Load Store Unit
-   if sniper_config.get_config_bool(cfg, "periodic_power/eu"):
-    Readings += str(EUPower) +"\t"  # Execution Unit
-   if sniper_config.get_config_bool(cfg, "periodic_power/tp"):
-    Readings += str(totalPower) +"\t" # Total Power
-
-  
-  
   powerInstantaneousFileName.write (Readings+"\n")
   powerInstantaneousFileName.close ()
 
@@ -526,6 +569,8 @@ def edit_XML(statsobj, stats, cfg):
 
   ncores = int(cfg['general/total_cores'])
   technology_node = int(sniper_config.get_config_default(cfg, 'power/technology_node', 45))
+  if technology_node < 22:
+    technology_node = 22  # McPAT does not support smaller technology nodes. We will do the scaling from 22nm to the target technology node manually (scale_power).
 
   l3_cacheSharedCores = long(sniper_config.get_config_default(cfg, 'perf_model/l3_cache/shared_cores', 0))
   l2_cacheSharedCores = long(sniper_config.get_config_default(cfg, 'perf_model/l2_cache/shared_cores', 0))

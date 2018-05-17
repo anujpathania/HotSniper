@@ -204,6 +204,35 @@ double SchedulerOpen::getTemperatureOfComponent (string component) {
 	return -1;
 }
 
+/**
+ * Get a performance metric for the given core.
+ * Available performance metrics can be checked in InstantaneousPerformanceCounters.log
+ */
+double SchedulerOpen::getPerformanceCounterOfCore(int coreId, std::string metric) {
+	ifstream performanceCounterLogFile("InstantaneousPerformanceCounters.log");
+    string line;
+
+	// first find the line in the logfile that contains the desired metric
+	bool metricFound = false;
+	while (!metricFound) {
+  		if (performanceCounterLogFile.good()) {
+			getline(performanceCounterLogFile, line);
+			metricFound = (line.substr(0, metric.size()) == metric);
+		} else {
+			return -1;
+		}
+	}
+	
+	// then split the (coreId + 1)-th value from this line (first value is metric name)
+ 	std::istringstream issLine(line);
+
+	std::string value;
+	for (int i = 0; i < coreId + 2; i++) {
+		getline(issLine, value, '\t');
+	}
+
+	return stod(value);
+}
 
 
 /** taskFrontOfQueue

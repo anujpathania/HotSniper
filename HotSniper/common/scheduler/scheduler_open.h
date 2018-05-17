@@ -24,6 +24,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		double getPowerOfComponent (std::string component);
 		double getPowerOfCore(int coreId);
 		double getTemperatureOfComponent (std::string component);
+		double getPerformanceCounterOfCore(int coreId, std::string metric);
 		bool defaultLogic (int taskID, SubsecondTime time);
 		int getCoreNb(int y, int x);
 		int getCoreNb(std::pair<int,int> core);

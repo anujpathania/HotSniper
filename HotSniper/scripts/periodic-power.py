@@ -40,6 +40,7 @@ class StatTrace:
       print 'Stat %s[*].%s not found' % (stat_component, stat_name)
       return
 
+    open(os.path.join(sim.config.output_dir, 'PeriodicPerformanceCounters.log'), 'w'); #Empties the previous data, if any.
     powerLogFileName = file(os.path.join(sim.config.output_dir, 'PeriodicPower.log'), 'w'); #Empties the previous data, if any.
     thermalLogFileName = file(os.path.join(sim.config.output_dir, 'PeriodicThermal.log'), 'w'); #Empties the previous data, if any.
 
