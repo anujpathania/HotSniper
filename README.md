@@ -18,6 +18,9 @@ List of our publications based on this tool -
 
 # Build Instructions (Tested on Ubuntu 16.04)
 
+If you experience any issues, chances are that you are not the first one.
+We collected some common issues and solutions at the bottom of this README.
+
 * Step 1: Go into the Sniper Code Directory
 
 $ cd HotSniper
@@ -167,3 +170,14 @@ $ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-
 * The power and thermal dump would be created in benchmarks folder in file with name - "PeriodicPower.log" and "PeriodicThermal.log"
 
 * The instantaneous- power and thermal value can also be read in the Sniper program code itself using "getPowerOfComponent" and "getTemperatureOfComponent" function in "scheduler_open.cc", respectively. This can be used to feedback power and thermal information to your scheduler for taking decisions.
+
+# Problems and solutions
+
+## The C++ ABI of your compiler does not match the ABI of the pin kit. This kit requires gcc 3.4 or later
+
+Seen with gcc/g++ 5. Use gcc 4.8 and g++ 4.8 instead.
+
+## Source/pin/injector_nonmac/auxvector.cpp: CopyAux: 291: unexpected AUX VEC type 26
+
+Seen with kernel versions > 4.9. Downgrade to kernel version 4.9.
+This seems to be a limitation of the Intel VTune library, which is used by PIN.
