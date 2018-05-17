@@ -10,10 +10,8 @@
 #include "core_manager.h"
 #include "performance_model.h"
 
+#include <iomanip>
 #include <vector>
-
-#include <iostream>
-#include <fstream>
 
 using namespace std;
 
@@ -21,7 +19,6 @@ long schedulingEpoch; //Stores the scheduling epoch defined by the user.
 
 String queuePolicy; //Stores Queuing Policy for Open System from base.cfg.
 String distribution; //Stores the arrival distribution of the open workload from base.cfg.
-String logic; //Store the scheduler algorithm to be used.
 
 int arrivalRate; //Stores the arrival rate of the workload from base.cfg.
 int arrivalInterval; //Stores the arrival interval of the workload from base.cfg.
@@ -74,21 +71,30 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
    , m_next_core(0) {
 
 	m_core_mask.resize(Sim()->getConfig()->getApplicationCores());
-
 	for (core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); core_id++) {
-	       m_core_mask[core_id] = Sim()->getCfg()->getBoolArray("scheduler/pinned/core_mask", core_id);
+	       m_core_mask[core_id] = Sim()->getCfg()->getBoolArray("scheduler/open/core_mask", core_id);
   	}
 
 
 	schedulingEpoch = atol (Sim()->getCfg()->getString("scheduler/open/epoch").c_str());
 	queuePolicy = Sim()->getCfg()->getString("scheduler/open/queuePolicy").c_str();
 	distribution = Sim()->getCfg()->getString("scheduler/open/distribution").c_str();
-	logic = Sim()->getCfg()->getString("scheduler/open/logic").c_str();
+	schedulingLogic = Sim()->getCfg()->getString("scheduler/open/logic").c_str();
 	arrivalRate = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalRate").c_str());
 	arrivalInterval = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalInterval").c_str());
 	numberOfTasks = Sim()->getCfg()->getInt("traceinput/num_apps");
 	numberOfCores = Sim()->getConfig()->getApplicationCores();
-	
+
+	coreRows = 1;
+	while (coreRows * coreRows < numberOfCores) {
+		// assume rectangular layout
+		coreRows += 1;
+	}
+	coreColumns = numberOfCores / coreRows;
+	if (coreRows * coreColumns != numberOfCores) {
+		cout<<"\n[Scheduler] [Error]: Invalid system size: " << numberOfCores << ", expected square-shaped system." << endl;
+		exit (1);
+	}
 
 	//Initialize the cores in the system.
 	for (int coreIterator=0; coreIterator < numberOfCores; coreIterator++) {
@@ -101,38 +107,28 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
 		openTasks.push_back (openTask (taskIterator,benchmarks.substr(0, benchmarks.find(benchmarksDelimiter))));
 		benchmarks.erase(0, benchmarks.find(benchmarksDelimiter) + benchmarksDelimiter.length());		
-	
 	}
-
-	
 
 	//Initialize the task arrival time based on queuing policy.
 	if (distribution == "uniform") {
-
 		UInt64 time = 0;
 		for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
 			if (taskIterator % arrivalRate == 0 && taskIterator != 0) time += arrivalInterval;  
 			cout << "\n[Scheduler]: Setting Arrival Time  for Task " << taskIterator << " (" + openTasks[taskIterator].taskName + ")" << " to " << time << +" ns" << endl;
 			openTasks[taskIterator].taskArrivalTime = time;
 		}
-
-		
 	}
 	else {
-	
-		cout<<"\n[Scheduler] [Error]: Unknown Workload Arrival Distribution"<< endl;
+		cout << "\n[Scheduler] [Error]: Unknown Workload Arrival Distribution" << endl;
  		exit (1);
 	}
-
-	
-
 }
 
 
 /** getPowerOfComponent
     Returns the latest power consumption of a component being tracked using base.cfg. Return -1 if power value not found.
 */
-double getPowerOfComponent (string component) {
+double SchedulerOpen::getPowerOfComponent (string component) {
 
 	ifstream powerLogFile("InstantaneousPower.log");
 
@@ -169,16 +165,21 @@ double getPowerOfComponent (string component) {
 
 }
 
-/** getPowerOfComponent
+/** getPowerOfCore
+ * Return the latest total power consumption of the given core. Requires "tp" (total power) to be tracked in base.cfg. Return -1 if power is not tracked.
+ */
+double SchedulerOpen::getPowerOfCore(int coreId) {
+	string component = "Core" + std::to_string(coreId) + "-TP";
+	return getPowerOfComponent(component);
+}
+
+
+/** getTemperatureOfComponent
     Returns the latest temperature of a component being tracked using base.cfg. Return -1 if power value not found.
 */
-double getTemperatureOfComponent (string component) {
-
+double SchedulerOpen::getTemperatureOfComponent (string component) {
 	ifstream powerLogFile("InstantaneousTemperature.log");
-
-
-	
-    	string header;
+	string header;
 	string footer;
 
   	if (powerLogFile.good()) {
@@ -192,21 +193,15 @@ double getTemperatureOfComponent (string component) {
 	std::string token;
 
 	while(getline(issHeader, token, '\t')) {
-
 		std::string value;
 		getline(issFooter, value, '\t');
 
 		if (token == component) {
-		
 			return stod (value);
-
 		}
-
 	}
 
-
 	return -1;
-
 }
 
 
@@ -426,20 +421,51 @@ int SchedulerOpen::setAffinity (thread_id_t thread_id) {
 	}
 
 	return coreFound;
+}
 
+/** getCoreNb
+ * Return the number of the core at the given coordinates.
+ */
+int SchedulerOpen::getCoreNb(int y, int x) {
+	if ((y < 0) || (y >= coreRows) || (x < 0) || (x >= coreColumns)) {
+		cout << "[Scheduler][getCoreNb][Error]: Invalid core coordinates: " << y << ", " << x << endl;
+		exit (1);
+	}
+	return y * coreColumns + x;
+}
+int SchedulerOpen::getCoreNb(pair<int,int> core) {
+	return getCoreNb(core.first, core.second);
+}
+
+/** isAssignedToTask
+ * Return whether the given core is assigned to a task.
+ */
+bool SchedulerOpen::isAssignedToTask(int coreId) {
+	return systemCores[coreId].assignedTaskID != -1;
+}
+
+/** isAssignedToThread
+ * Return whether the given core is assigned to a thread.
+ */
+bool SchedulerOpen::isAssignedToThread(int coreId) {
+	return systemCores[coreId].assignedThreadID != -1;
 }
 
 /** defaultLogic
     This function goes through all free cores assign the first free ones found to the task.
 */
-bool defaultLogic (int taskID, SubsecondTime time) {
-
+bool SchedulerOpen::defaultLogic (int taskID, SubsecondTime time) {
 	int coresAssigned = 0;
 	vector <int> freeCoresIndices;
 
-	for (int i = 0; i <numberOfCores; i++) 
-		if (systemCores[i].assignedTaskID == -1) 
-			freeCoresIndices.push_back (i);
+	for (int i = 0; i <numberOfCores; i++) {
+		bool available = m_core_mask[i];
+		if (available) {
+			if (!isAssignedToTask(i)) {
+				freeCoresIndices.push_back (i);
+			}
+		}
+	}
 
 	int freeCoreCounter = 0;
 	while (coresAssigned != openTasks[taskID].taskCoreRequirement) {
@@ -456,8 +482,6 @@ bool defaultLogic (int taskID, SubsecondTime time) {
 	}
 
 	return true;
-
-
 }
 
 
@@ -493,14 +517,11 @@ bool SchedulerOpen::schedule (int taskID, bool isInitialCall, SubsecondTime time
 
 	}
 
-
-	if (logic == "default") {
+	if (schedulingLogic == "default") {
 		mappingSuccesfull = defaultLogic (taskID, time);
-
-	} //else if (logic ="XYZ") {... } //Place to implement a new scheduling logic. 
+	} //else if (schedulingLogic ="XYZ") {... } //Place to implement a new scheduling logic. 
 	else {
-	
-		cout<<"\n[Scheduler] [Error]: Unknown Scheduling Algorithm"<< endl;
+		cout << "\n[Scheduler] [Error]: Unknown Scheduling Algorithm"<< endl;
  		exit (1);
 	}
 
@@ -529,9 +550,9 @@ core_id_t SchedulerOpen::threadCreate(thread_id_t thread_id) {
 
 	app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
 
-	cout << "\n[Scheduler]: Trying to map Thread  " << thread_id << " from Task " << app_id << "\n " << endl;
+	SubsecondTime time = Sim()->getClockSkewMinimizationServer()->getGlobalTime();
 
-	SubsecondTime time = SubsecondTime ();
+	cout << "\n[Scheduler]: Trying to map Thread  " << thread_id << " from Task " << app_id << " at Time " << time.getNS() << " ns" << endl;
 
 	//thead_id 0 to numberOfTasks are first threads of tasks, which are all created together when the system starts.
 	if (thread_id == 0) 
@@ -586,18 +607,14 @@ core_id_t SchedulerOpen::threadCreate(thread_id_t thread_id) {
 /** fetchTasksIntoQueue
     This function pulls tasks into the openSystem Queue.
 */
-
 void fetchTasksIntoQueue (SubsecondTime time) {
-
-	for (int taskCounter = 0; taskCounter <numberOfTasks; taskCounter++) {
-			if (openTasks [taskCounter].waitingToSchedule && openTasks [taskCounter].taskArrivalTime <= time.getNS ()) {
-				cout <<"\n[Scheduler]: Task " << taskCounter << " put into execution queue. \n";
-				openTasks [taskCounter].waitingInQueue = true;
-				openTasks [taskCounter].waitingToSchedule = false;
-			}
-		} 
-
-
+	for (int taskCounter = 0; taskCounter < numberOfTasks; taskCounter++) {
+		if (openTasks [taskCounter].waitingToSchedule && openTasks [taskCounter].taskArrivalTime <= time.getNS ()) {
+			cout <<"\n[Scheduler]: Task " << taskCounter << " put into execution queue. \n";
+			openTasks [taskCounter].waitingInQueue = true;
+			openTasks [taskCounter].waitingToSchedule = false;
+		}
+	}
 }
 
 
@@ -605,14 +622,12 @@ void fetchTasksIntoQueue (SubsecondTime time) {
     This original Sniper function is called when a thread with "thread_id" exits.
 */
 void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
-	
-	
 	// If the running thread becomes unrunnable, schedule someone else
 	if (m_thread_info[thread_id].isRunning())
 		reschedule(time, m_thread_info[thread_id].getCoreRunning(), false);
 
 	app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
-	cout << "\n[Scheduler]: Thread " << thread_id << " from Task "  << app_id << " Exiting." <<"\n";
+	cout << "\n[Scheduler]: Thread " << thread_id << " from Task "  << app_id << " Exiting at Time " << time.getNS() << " ns" << endl;
 
 	for (int i = 0; i < numberOfCores; i++) {
 		if (systemCores[i].assignedThreadID == thread_id) {
@@ -627,36 +642,26 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 		
 	}
 
-
 	if (thread_id < numberOfTasks) {
 		cout << "\n[Scheduler]: Task " << app_id << " Finished." << "\n";
 
 		for (int i = 0; i < numberOfCores; i++) {
-
 			if (systemCores[i].assignedTaskID == app_id) {
 				systemCores[i].assignedTaskID = -1;
 				cout << "\n[Scheduler]: Releasing Core " << i << " from Task " << app_id << "\n";
 			}
-
 		}
 
 		openTasks[app_id].taskDepartureTime = time.getNS();
 		openTasks[app_id].completed = true;
 		openTasks[app_id].active = false;
 
-		
 		cout << "\n[Scheduler][Result]: Task " << app_id << " (Response/Service/Wait) Time (ns) "  << " :\t" <<  time.getNS() - openTasks[app_id].taskArrivalTime << "\t" <<  time.getNS() - openTasks[app_id].taskStartTime << "\t" << openTasks[app_id].taskStartTime - openTasks[app_id].taskArrivalTime << "\n";
 	}
 
-
-	
-	
-
-
 	if (numberOfFreeCores () == numberOfCores && numberOfTasksWaitingToSchedule () != 0) {
-
 		cout << "\n[Scheduler]: System Going Empty ... Prefetching Tasks\n"; //Without Prefectching Sniper will Deadlock or End Prematurely.
-		
+
 		if (numberOfTasksInQueue () != 0) {
 			cout << "\n[Scheduler]: Prefetching Task from Queue\n";
 			schedule (taskFrontOfQueue (), false, time);
@@ -771,11 +776,11 @@ int coreRequirementTranslation (String compositionString) {
 	
 	
 
-	if (compositionString == "parsec-blackscholes-simsmall-1" || compositionString == "parsec-blackscholes-test-1")
+	if ((compositionString == "parsec-blackscholes-simsmall-1") || (compositionString == "parsec-blackscholes-simmedium-1") || (compositionString == "parsec-blackscholes-test-1"))
 		requirement = 2;
-	else if (compositionString == "parsec-blackscholes-simsmall-2")
+	else if ((compositionString == "parsec-blackscholes-simsmall-2") || (compositionString == "parsec-blackscholes-simmedium-2"))
 		requirement = 3;
-	else if (compositionString == "parsec-blackscholes-simsmall-3")
+	else if ((compositionString == "parsec-blackscholes-simsmall-3") || (compositionString == "parsec-blackscholes-simmedium-3"))
 		requirement = 4;
 	else if (compositionString == "parsec-blackscholes-simsmall-4")
 		requirement = 5;
@@ -992,11 +997,8 @@ int coreRequirementTranslation (String compositionString) {
 /** periodic
     This function is called periodically by Sniper at Interval of 100ns.
 */
-
 void SchedulerOpen::periodic(SubsecondTime time) {
-
 	if (time.getNS () % 1000000 == 0) { //Error Checking at every 1ms. Can be faster but will have overhead in simulation time.
-
 		cout << "\n[Scheduler]: Time " << time.getNS () << " ns" << " [Active Tasks =  " << numberOfActiveTasks () << " | Completed Tasks = " <<  numberOfTasksCompleted () << " | Queued Tasks = "  << numberOfTasksInQueue () << " | Non-Queued Tasks  = " <<  numberOfTasksWaitingToSchedule () <<  " | Free Cores = " << numberOfFreeCores () << " | Active Tasks Requirements = " << totalCoreRequirementsOfActiveTasks () << " ] \n"<<endl;
 
 		//Following error checking code make sure that system state is not mixed up.
@@ -1011,8 +1013,6 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 			cout <<"\n[Scheduler] [Error]: Task State Does Not Match.\n";		
 			exit (1);
 		}
-
-
 	}
 
 	if (time.getNS () % schedulingEpoch == 0) {
@@ -1027,6 +1027,22 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 			if (!schedule (taskFrontOfQueue (), false,time)) break; //Scheduler can't map the task in front of queue.
 		}
 
+		cout << "[Scheduler]: Current mapping:" << endl;
+
+		for (int y = 0; y < coreColumns; y++) {
+			for (int x = 0; x < coreRows; x++) {
+				if (x > 0) {
+					cout << " ";
+				}
+				int coreId = getCoreNb(y, x);
+				if (!isAssignedToTask(coreId)) {
+					cout << " .";
+				} else {
+					cout << setw(2) << systemCores[coreId].assignedTaskID;
+				}
+			}
+			cout << endl;
+		}
 	}
 
 
