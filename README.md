@@ -79,10 +79,9 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 * Set the distribution of workload arrival -
 
 	[scheduler/open]
-	queue = uniform
+	queue = poisson
 
-
-   Supported value: "uniform" (uniform distribution). Expect out of the box support for Poisson distribution in future.
+   Supported value: "uniform" (uniform distribution) and "poisson" (Poisson distribution).
 
 * Note that Open Scheduler will only work with multi-program mode i.e. with option --benchmarks
 

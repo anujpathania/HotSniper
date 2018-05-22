@@ -11,6 +11,7 @@
 #include "performance_model.h"
 
 #include <iomanip>
+#include <random>
 #include <vector>
 
 using namespace std;
@@ -114,12 +115,34 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 		UInt64 time = 0;
 		for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
 			if (taskIterator % arrivalRate == 0 && taskIterator != 0) time += arrivalInterval;  
-			cout << "\n[Scheduler]: Setting Arrival Time  for Task " << taskIterator << " (" + openTasks[taskIterator].taskName + ")" << " to " << time << +" ns" << endl;
+			cout << "[Scheduler]: Setting Arrival Time for Task " << taskIterator << " (" + openTasks[taskIterator].taskName + ")" << " to " << time << +" ns" << endl;
 			openTasks[taskIterator].taskArrivalTime = time;
 		}
-	}
-	else {
-		cout << "\n[Scheduler] [Error]: Unknown Workload Arrival Distribution" << endl;
+	} else if (distribution == "poisson") {
+		// calculate Poisson-distributed arrival rates for the task.
+		// The expected time between arrivales is the configured value "arrivalInterval".
+		// The generation can either use a user-defined seed or generate a new seed for every execution.
+		int seed = Sim()->getCfg()->getInt("scheduler/open/distributionSeed");
+		if (seed == 0) {
+			// Set a "truely random" seed
+			std::random_device rd;
+			seed = rd();
+		}
+		std::mt19937 generator(seed);
+		generator(); // read one dummy value (first value was very like the seed: small seed -> small first arrival time, big seed -> big first arrival time. We do not want to have this.)
+		double lambda = 1.0 / arrivalInterval;
+		std::exponential_distribution<float> expdistribution(lambda);
+
+		UInt64 time = 0;
+		for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
+			if (taskIterator % arrivalRate == 0 && taskIterator != 0) {
+				time += (UInt64)expdistribution(generator);
+			}
+			cout << "[Scheduler]: Setting Arrival Time for Task " << taskIterator << " (" + openTasks[taskIterator].taskName + ")" << " to " << time << +" ns" << endl;
+			openTasks[taskIterator].taskArrivalTime = time;
+		}
+	} else {
+		cout << "\n[Scheduler] [Error]: Unknown Workload Arrival Distribution: '" << distribution << "'" << endl;
  		exit (1);
 	}
 }
