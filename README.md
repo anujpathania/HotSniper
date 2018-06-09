@@ -3,17 +3,13 @@ An enchanced multi/many-core simulator derived from Sniper MultiCore Simulator (
 
 Sniper Version used as base - Sniper 6.1
 
-Creator: Anuj Pathania
+Creators: Martin Rapp, Anuj Pathania
 
 License: MIT
 
-For Queries: anuj.pathania@kit.edu
+For Queries: martin.rapp@kit.edu, pathania@comp.nus.edu.sg
 
-List of our publications based on this tool -
-
-1. [TACO' 17] Defragmentation of Tasks in Many-Core Architecture.
-2. [DATE' 18] Task Scheduling for Many-Cores with S-NUCA Caches.
-
+Details of HotSniper design can be found in appendix of thesis "Scalable Task Schedulers for Many-Core Architectures". Dedicated publication for HotSniper is under review. In the meantime, please cite this thesis in your work if you use this tool.
 
 
 # Build Instructions (Tested on Ubuntu 16.04)
