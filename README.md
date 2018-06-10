@@ -41,8 +41,6 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 
 
 
-
-
 # Feature 1: Open Scheduler 
 
 * Major Files of Interest "scheduler_open.cc", "scheduler_open.h", "base.cfg"
@@ -165,6 +163,16 @@ $ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-
 * The power and thermal dump would be created in benchmarks folder in file with name - "PeriodicPower.log" and "PeriodicThermal.log"
 
 * The instantaneous- power and thermal value can also be read in the Sniper program code itself using "getPowerOfComponent" and "getTemperatureOfComponent" function in "scheduler_open.cc", respectively. This can be used to feedback power and thermal information to your scheduler for taking decisions.
+
+
+# Future/Ongoing Feature Integrations
+
+* Integration of HeartBeat API from MIT; refer "Application Heartbeats for Software Performance and Health".
+
+* Integration of Thermal Safe Power (TSP); refer "TSP: Thermal Safe Power - Efficient Power Budgeting for Many-Core Systems in Dark Silicon".
+
+* Integration of Reliability Models.
+
 
 # Problems and solutions
 
