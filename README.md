@@ -12,7 +12,7 @@ For Queries: martin.rapp@kit.edu, pathania@comp.nus.edu.sg
 Details of HotSniper design can be found in appendix of thesis "Scalable Task Schedulers for Many-Core Architectures". Dedicated publication for HotSniper is under review. In the meantime, please cite this thesis in your work if you use this tool.
 
 
-# Build Instructions (Tested on Ubuntu 16.04)
+# Build Instructions (Tested on Ubuntu 16.04 with Kernel 4.4.0-127-generic)
 
 If you experience any issues, chances are that you are not the first one.
 We collected some common issues and solutions at the bottom of this README.
@@ -21,11 +21,11 @@ We collected some common issues and solutions at the bottom of this README.
 
 $ cd HotSniper
 
-* Step 2: Sucessfully Compile Sniper. You will have to install PIN and several other repositories to make this work. If you face a problem, email me only if it the problem present in the HotSniper and not in original Sniper 6.1. Works best with pin-2.14-71313, gcc-4.8 and g++-4.8.
+* Step 2: Sucessfully Compile Sniper. Please refer original Sniper "How To" PDF. You will have to install PIN and several other repositories to make this work. If you face a problem, email us only if it the problem present in the HotSniper and not in original Sniper 6.1. Works best with pin-2.14-71313, gcc-4.8 and g++-4.8.
 
 $ make
 
-* Step 3: Compile Benchmarks (Downgrading Perl removes PARSEC compilations error - https://groups.google.com/forum/#!msg/snipersim/LF_VfebuLSI/AVdiq4y0hk8J). Working benchmarks with sim-small input option: blackscholes, bodytrack, canneal, dedup, facesim, ferret, fluidanimate, raytrace, streamcluster,swaptions, x264. Use the version given with HotSniper not original Sniper.
+* Step 3: Compile Benchmarks (Downgrading Perl removes PARSEC compilations error - https://groups.google.com/forum/#!msg/snipersim/LF_VfebuLSI/AVdiq4y0hk8J). It is recommended by us that use "perlbrew", instead of manual downgrading. Working benchmarks with sim-small input option: blackscholes, bodytrack, canneal, dedup, facesim, ferret, fluidanimate, raytrace, streamcluster,swaptions, x264. Use the version given with HotSniper not original Sniper.
 
 $ tar -xvzf benchmarks.tar.gz
 
@@ -158,7 +158,7 @@ $ cd ../benchmarks
 
 * Example to run Perioidic Power Tracing at 10000 ns intervals -
 
-$ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats -speriodic-power:10000
+$ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats:10000 -speriodic-power
 
 * The power and thermal dump would be created in benchmarks folder in file with name - "PeriodicPower.log" and "PeriodicThermal.log"
 

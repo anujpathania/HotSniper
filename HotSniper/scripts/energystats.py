@@ -36,11 +36,12 @@ class EnergyStats:
   def setup(self, args):
     args = dict(enumerate((args or '').split(':')))
 
-    #interval_ns = long(args.get(0, None) or 1000000) # Default power update every 1 ms
+    interval_ns = long(args.get(0, 10000))
 
-    intervalFileName = file("Interval.dat", 'r')
-    interval_ns = float(intervalFileName.read())
+    intervalFileName = file("Interval.dat", 'w')
+    intervalFileName.write (args.get(0, "10000"))
     intervalFileName.close ()
+
     
     sim.util.Every(interval_ns * sim.util.Time.NS, self.periodic, roi_only = True)
     self.dvfs_table = build_dvfs_table(int(sim.config.get('power/technology_node')))

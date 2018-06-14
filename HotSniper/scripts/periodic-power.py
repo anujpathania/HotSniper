@@ -14,10 +14,10 @@ class StatTrace:
     args = dict(enumerate((args or '').split(':')))
     stat = 'core.energy-dynamic'
     filename = 'Temp'
-    interval_ns = long(args.get(0, 10000))
+    
 
-    intervalFileName = file("Interval.dat", 'w')
-    intervalFileName.write (args.get(0, "10000"))
+    intervalFileName = file("Interval.dat", 'r')
+    interval_ns = float(intervalFileName.read())
     intervalFileName.close ()
     
 
