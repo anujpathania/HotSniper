@@ -167,7 +167,7 @@ $ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-
 * If thermal values are not required then processing overhead due to HotSpot execution can be removed with the setting below attribute to false in "base.cfg".
 
 	[periodic_thermal]
-	floorplan = true
+	enabled = true
 
 
 # Future/Ongoing Feature Integrations
