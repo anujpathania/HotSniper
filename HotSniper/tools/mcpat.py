@@ -389,7 +389,8 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   
   powerLogFileName = file("PeriodicPower.log", 'a');
   powerInstantaneousFileName = file("InstantaneousPower.log", 'w');
-  thermalLogFileName = file("PeriodicThermal.log", 'a');
+  if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
+   thermalLogFileName = file("PeriodicThermal.log", 'a');
 
   
   id = 0
@@ -468,7 +469,8 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   needInitializing = os.stat("PeriodicPower.log").st_size == 0
   if needInitializing:
     powerLogFileName.write (Headings+"\n")
-    thermalLogFileName.write (Headings+"\n")
+    if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
+     thermalLogFileName.write (Headings+"\n")
 
   powerInstantaneousFileName.write (Headings+"\n")
    
@@ -536,31 +538,33 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   powerLogFileName.close()
 
 
-  #HotSpot Integration Code
-  floorplan = os.path.abspath(os.path.join('../hotspot', sniper_config.get_config(cfg, "periodic_thermal/floorplan")))
+  if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
 
-  with open("Interval.dat", 'r') as f:
-    interval_ns = float(f.read())
-  interval_s = interval_ns * 1e-9
+   #HotSpot Integration Code
+   floorplan = os.path.abspath(os.path.join('../hotspot', sniper_config.get_config(cfg, "periodic_thermal/floorplan")))
 
-  hotspot_binary = '../hotspot/hotspot'
-  hotspot_args = ['-c', '../hotspot/hotspot.config',
+   with open("Interval.dat", 'r') as f:
+     interval_ns = float(f.read())
+   interval_s = interval_ns * 1e-9
+
+   hotspot_binary = '../hotspot/hotspot'
+   hotspot_args = ['-c', '../hotspot/hotspot.config',
                   '-f', floorplan,
                   '-sampling_intvl', str(interval_s),
                   '-p', 'InstantaneousPower.log',
                   '-o', 'InstantaneousTemperature.log']
-  if not needInitializing:
-    hotspot_args += ['-init_file', 'Temperature.init']
+   if not needInitializing:
+     hotspot_args += ['-init_file', 'Temperature.init']
 
-  temperatures = subprocess.check_output([hotspot_binary] + hotspot_args)
-  with open('Temperature.init', 'w') as f:
-    f.write(temperatures)
+   temperatures = subprocess.check_output([hotspot_binary] + hotspot_args)
+   with open('Temperature.init', 'w') as f:
+     f.write(temperatures)
 
-  with open('InstantaneousTemperature.log', 'r') as instTemperatureFile:
-    instTemperatureFile.readline()  # ignore first line that contains the header
-    thermalLogFileName.write(instTemperatureFile.readline())
+   with open('InstantaneousTemperature.log', 'r') as instTemperatureFile:
+     instTemperatureFile.readline()  # ignore first line that contains the header
+     thermalLogFileName.write(instTemperatureFile.readline())
 
-  thermalLogFileName.close()
+   thermalLogFileName.close()
 
   return buildstack.merge_items({ 0: data }, all_items, nocollapse = nocollapse)
 

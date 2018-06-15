@@ -164,6 +164,11 @@ $ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-
 
 * The instantaneous- power and thermal value can also be read in the Sniper program code itself using "getPowerOfComponent" and "getTemperatureOfComponent" function in "scheduler_open.cc", respectively. This can be used to feedback power and thermal information to your scheduler for taking decisions.
 
+* If thermal values are not required then processing overhead due to HotSpot execution can be removed with the setting below attribute to false in "base.cfg".
+
+	[periodic_thermal]
+	floorplan = true
+
 
 # Future/Ongoing Feature Integrations
 
@@ -174,7 +179,7 @@ $ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-
 * Integration of Reliability Models.
 
 
-# Problems and solutions
+# Problems and Solutions
 
 ## The C++ ABI of your compiler does not match the ABI of the pin kit. This kit requires gcc 3.4 or later
 
