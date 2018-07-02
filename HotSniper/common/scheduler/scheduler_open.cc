@@ -86,16 +86,11 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	numberOfTasks = Sim()->getCfg()->getInt("traceinput/num_apps");
 	numberOfCores = Sim()->getConfig()->getApplicationCores();
 
-	coreRows = 1;
-	while (coreRows * coreRows < numberOfCores) {
-		// assume rectangular layout
-		coreRows += 1;
+	coreRows = (int)sqrt(numberOfCores);
+	while ((numberOfCores % coreRows) != 0) {
+		coreRows -= 1;
 	}
 	coreColumns = numberOfCores / coreRows;
-	if (coreRows * coreColumns != numberOfCores) {
-		cout<<"\n[Scheduler] [Error]: Invalid system size: " << numberOfCores << ", expected square-shaped system." << endl;
-		exit (1);
-	}
 
 	//Initialize the cores in the system.
 	for (int coreIterator=0; coreIterator < numberOfCores; coreIterator++) {
@@ -1081,8 +1076,8 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 
 		cout << "[Scheduler]: Current mapping:" << endl;
 
-		for (int y = 0; y < coreColumns; y++) {
-			for (int x = 0; x < coreRows; x++) {
+		for (int y = 0; y < coreRows; y++) {
+			for (int x = 0; x < coreColumns; x++) {
 				if (x > 0) {
 					cout << " ";
 				}
