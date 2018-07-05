@@ -9,36 +9,77 @@ License: MIT
 
 For Queries: martin.rapp@kit.edu, pathania@comp.nus.edu.sg
 
-Details of HotSniper design can be found in appendix of thesis "Scalable Task Schedulers for Many-Core Architectures". Dedicated publication for HotSniper is under review. In the meantime, please cite this thesis in your work if you use this tool.
+Details of HotSniper design can be found in appendix of Ph.D. thesis "Scalable Task Schedulers for Many-Core Architectures". Dedicated publication for HotSniper is under review. In the meantime, please consider citing this thesis in your work if you find this tool useful in your research.
 
 
-# Build Instructions (Tested on Ubuntu 16.04 with Kernel 4.4.0-127-generic)
+# Build Instructions (Tested on Ubuntu 16.04.4)
 
-If you experience any issues, chances are that you are not the first one.
-We collected some common issues and solutions at the bottom of this README.
+If you experience any issues, chances are that you are not the first one. We collected some common issues and solutions at the bottom of this README.
 
-* Step 1: Go into the Sniper Code Directory
+* Install a Supported Kernel Version
 
-$ cd HotSniper
+$ sudo apt-get install 4.4.0-127-generic
 
-* Step 2: Sucessfully Compile Sniper. Please refer original Sniper "How To" PDF. You will have to install PIN and several other repositories to make this work. If you face a problem, email us only if it the problem present in the HotSniper and not in original Sniper 6.1. Works best with pin-2.14-71313, gcc-4.8 and g++-4.8.
+Reboot and Select in Grub Bootloader "Advanced options for Ubuntu" >> "Ubuntu, with Linux 4.4.0-127-generic"
+
+* Install Supported gcc, g++ and perl Versions
+
+$ sudo apt-get install gcc-4.8 g++-4.8 perlbrew
+
+$ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100
+
+$ sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 100
+
+$ perlbrew init
+
+$ perlbrew install 5.14.2
+
+$ perlbrew use 5.14.2
+
+* Install Sniper
+
+$ sudo apt-get install zlib1g-dev libbz2-dev libboost-dev libsqlite3-dev
+
+$ cd HotSniper/HotSniper
+
+$ wget https://software.intel.com/sites/landingpage/pintool/downloads/pin-2.14-71313-gcc.4.4.7-linux.tar.gz
+
+$ tar -xvzf pin-2.14-71313-gcc.4.4.7-linux.tar.gz
+
+$ mv pin-2.14-71313-gcc.4.4.7-linux pin_kit
 
 $ make
 
-* Step 3: Compile Benchmarks (Downgrading Perl removes PARSEC compilations error - https://groups.google.com/forum/#!msg/snipersim/LF_VfebuLSI/AVdiq4y0hk8J). It is recommended by us that use "perlbrew", instead of manual downgrading. Working benchmarks with sim-small input option: blackscholes, bodytrack, canneal, dedup, facesim, ferret, fluidanimate, raytrace, streamcluster,swaptions, x264. Use the version given with HotSniper not original Sniper.
+* Install PARSEC (and Other) Benchmark
 
 $ tar -xvzf benchmarks.tar.gz
 
 $ cd benchmarks
 
-$ export SNIPER_ROOT=/path/to/sniper
+$ sudo apt-get install gfortran m4 xsltproc libx11-dev libxext-dev libxt-dev libxmu-dev libxi-dev
 
 $ make - j 4
 
-* Step 4: Test PARSEC benchmarks in multi-program mode.
+
+* Install Hotspot
+
+$ cd ..
+
+$ tar -xvzf hotspot.tar.gz
+
+$ cd hotspot
+
+$ make
+
+* Test PARSEC Multi-Program Execution Simulation
+
+$ cd ../benchmarks
 
 $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parsec-bodytrack-test-1 --no-roi --sim-end=last
 
+* Test Thermal Simulation
+
+$ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats:10000 -speriodic-power
 
 
 # Feature 1: Open Scheduler 
@@ -88,18 +129,6 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 * Major Files of Interest "tools/mcpat.py", "scripts/periodic-power.py"
 
 * This allows for you to obtain a power and thermal trace giving power of different components at a customizable intervals. You can add or remove elements in power trace by modifying "tools/mcpat.py".
-
-* Compile HotSpot (Use the one shipped with HotSniper not the original).
-
-$ cd HotSniper
-
-$ tar -xvzf hotspot.tar.gz
-
-$ cd hotspot
-
-$ make
-
-$ cd ../benchmarks
 
 * Currently following elements are tracked for each core. You can toggle  tracking of any of the above indiviusual elements by modifying in "[periodic_power]" property "base.cfg". By default all elements tracking is set to true.
 
@@ -156,9 +185,7 @@ $ cd ../benchmarks
 	[periodic_thermal]
 	floorplan = gainestown_2.flp
 
-* Example to run Perioidic Power Tracing at 10000 ns intervals -
-
-$ ./run-sniper -n 2 -c gainestown  --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats:10000 -speriodic-power
+* You need to provide the granularity to run Perioidic Power Tracing in nano seconds as parameter to "-senergystats" at command line.er
 
 * The power and thermal dump would be created in benchmarks folder in file with name - "PeriodicPower.log" and "PeriodicThermal.log"
 
