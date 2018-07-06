@@ -30,12 +30,6 @@ $ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100
 
 $ sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 100
 
-$ perlbrew init
-
-$ perlbrew install 5.14.2
-
-$ perlbrew use 5.14.2
-
 * Install Sniper
 
 $ sudo apt-get install zlib1g-dev libbz2-dev libboost-dev libsqlite3-dev
@@ -47,6 +41,8 @@ $ wget https://software.intel.com/sites/landingpage/pintool/downloads/pin-2.14-7
 $ tar -xvzf pin-2.14-71313-gcc.4.4.7-linux.tar.gz
 
 $ mv pin-2.14-71313-gcc.4.4.7-linux pin_kit
+
+$ rm pin-2.14-71313-gcc.4.4.7-linux.tar.gz
 
 $ make
 
