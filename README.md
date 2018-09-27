@@ -9,7 +9,7 @@ License: MIT
 
 For Queries: martin.rapp@kit.edu, pathania@comp.nus.edu.sg
 
-Details of HotSniper design can be found in appendix of Ph.D. thesis "Scalable Task Schedulers for Many-Core Architectures". Dedicated publication for HotSniper is under review. In the meantime, please consider citing this thesis in your work if you find this tool useful in your research.
+Details of HotSniper can be found in paper "HotSniper: Sniper-Based Toolchain for Many-Core Thermal Simulations in Open Systems" published in Embedded Systems Letter (ESL), and please consider citing this paper in your work if you find this tool useful in your research.
 
 
 # Build Instructions (Tested on Ubuntu 16.04.4)
