@@ -80,7 +80,7 @@ $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-r
 
 # Feature 1: Open Scheduler 
 
-* Major Files of Interest "scheduler_open.cc", "scheduler_open.h", "base.cfg"
+* Major Files of Interest "scheduler_open.cc", "scheduler_open.h", "base.cfg", "policies/*"
 
 * This scheduler allows support for open system workloads. Scheduler can be set in "base.cfg" along with configuration parameters. 
 
@@ -89,11 +89,11 @@ $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-r
 	[scheduler]
 	type = open
 
-* Set the scheduling algorithm to be used -
+* Set the mapping algorithm to be used -
 	[scheduler/open]
-	logic = default
+	logic = first_unused
 
-  Supported value: "default" (maps the threads to first free cores available searched linearly).
+  Supported value: "first_unused" (maps the threads to first free cores available searched linearly).
 
 * Set the granularity at which the open system workload queue is checked -
 
@@ -117,6 +117,26 @@ $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-r
 * Note that Open Scheduler will only work with multi-program mode i.e. with option --benchmarks
 
 * Note for Open Scheduler to work it requires to know beforehand, in worst case, how many threads the benchmark would produce as it only supports one thread per core execution model. This needs to be profiled (use static scheduler). For many benchmark+input this is done in function "coreRequirementTranslation" in file "scheduler_open.cc". Add more enteries if you want to support them.
+
+* Set the DVFS algorithm to be used -
+	[scheduler/open/dvfs]
+	logic = off
+
+* Set min and max DVFS frequencies, as well as DVFS step size
+	[scheduler/open/dvfs]
+	min_frequency = 1.0
+	max_frequency = 2.4
+	frequency_step_size = 0.1
+
+* Note: this frequency range should match with the many-cores base frequency set in 
+	[perf_model/core]
+	frequency = 2.4
+
+* Set DVFS epoch
+	[scheduler/open/dvfs]
+	dvfs_epoch = 1000000
+
+* Note: If DVFS is used, this value should be a multiple (or the same as) the period used for periodic power tracing (see Feature #2).
 
 
 
@@ -187,7 +207,7 @@ $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-r
 
 * PeriodicFrequency and CPI stack traces are generated i nthe files "PeriodicFrequency.log" and "PeriodicCPIStack.log".
 
-* The instantaneous- power and thermal value can also be read in the Sniper program code itself using "getPowerOfComponent" and "getTemperatureOfComponent" function in "scheduler_open.cc", respectively. This can be used to feedback power and thermal information to your scheduler for taking decisions.
+* The instantaneous- power and thermal value can also be read in the Sniper program code itself using "getPowerOfComponent" and "getTemperatureOfComponent" function in "performance_counters.cc", respectively. This can be used to feedback power and thermal information to your scheduler for taking decisions.
 
 * If thermal values are not required then processing overhead due to HotSpot execution can be removed with the setting below attribute to false in "base.cfg".
 
@@ -202,6 +222,8 @@ $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-r
 * Integration of Thermal Safe Power (TSP); refer "TSP: Thermal Safe Power - Efficient Power Budgeting for Many-Core Systems in Dark Silicon".
 
 * Integration of Reliability Models.
+
+* Merge with Sniper 8
 
 
 # Problems and Solutions

@@ -9,14 +9,16 @@
 #include "thread.h"
 #include "core_manager.h"
 #include "performance_model.h"
+#include "magic_server.h"
+
+#include "policies/dvfsMaxFreq.h"
+#include "policies/mapFirstUnused.h"
 
 #include <iomanip>
 #include <random>
 #include <vector>
 
 using namespace std;
-
-long schedulingEpoch; //Stores the scheduling epoch defined by the user.
 
 String queuePolicy; //Stores Queuing Policy for Open System from base.cfg.
 String distribution; //Stores the arrival distribution of the open workload from base.cfg.
@@ -71,16 +73,28 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
    , m_interleaving(Sim()->getCfg()->getInt("scheduler/pinned/interleaving"))
    , m_next_core(0) {
 
+	// Initialize config constants
+	minFrequency = (int)(1000 * Sim()->getCfg()->getFloat("scheduler/open/dvfs/min_frequency") + 0.5);
+	maxFrequency = (int)(1000 * Sim()->getCfg()->getFloat("scheduler/open/dvfs/max_frequency") + 0.5);
+	frequencyStepSize = (int)(1000 * Sim()->getCfg()->getFloat("scheduler/open/dvfs/frequency_step_size") + 0.5);
+	dvfsEpoch = atol(Sim()->getCfg()->getString("scheduler/open/dvfs/dvfs_epoch").c_str());
+
 	m_core_mask.resize(Sim()->getConfig()->getApplicationCores());
 	for (core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); core_id++) {
 	       m_core_mask[core_id] = Sim()->getCfg()->getBoolArray("scheduler/open/core_mask", core_id);
   	}
 
+	for (core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); core_id++) {
+		downscalingPatience.push_back(maxDVFSPatience);
+		upscalingPatience.push_back(maxDVFSPatience);
+	}
 
-	schedulingEpoch = atol (Sim()->getCfg()->getString("scheduler/open/epoch").c_str());
+
+	performanceCounters = new PerformanceCounters("InstantaneousPower.log", "InstantaneousTemperature.log", "InstantaneousCPIStack.log");
+
+	mappingEpoch = atol (Sim()->getCfg()->getString("scheduler/open/epoch").c_str());
 	queuePolicy = Sim()->getCfg()->getString("scheduler/open/queuePolicy").c_str();
 	distribution = Sim()->getCfg()->getString("scheduler/open/distribution").c_str();
-	schedulingLogic = Sim()->getCfg()->getString("scheduler/open/logic").c_str();
 	arrivalRate = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalRate").c_str());
 	arrivalInterval = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalInterval").c_str());
 	numberOfTasks = Sim()->getCfg()->getInt("traceinput/num_apps");
@@ -91,6 +105,10 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 		coreRows -= 1;
 	}
 	coreColumns = numberOfCores / coreRows;
+	if (coreRows * coreColumns != numberOfCores) {
+		cout<<"\n[Scheduler] [Error]: Invalid system size: " << numberOfCores << ", expected rectangular-shaped system." << endl;
+		exit (1);
+	}
 
 	//Initialize the cores in the system.
 	for (int coreIterator=0; coreIterator < numberOfCores; coreIterator++) {
@@ -140,124 +158,52 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 		cout << "\n[Scheduler] [Error]: Unknown Workload Arrival Distribution: '" << distribution << "'" << endl;
  		exit (1);
 	}
+
+	initMappingPolicy(Sim()->getCfg()->getString("scheduler/open/logic").c_str());
+	initDVFSPolicy(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str());
 }
 
-
-/** getPowerOfComponent
-    Returns the latest power consumption of a component being tracked using base.cfg. Return -1 if power value not found.
-*/
-double SchedulerOpen::getPowerOfComponent (string component) {
-
-	ifstream powerLogFile("InstantaneousPower.log");
-
-
-	
-    	string header;
-	string footer;
-
-  	if (powerLogFile.good()) {
-    		getline(powerLogFile, header);
-    		getline(powerLogFile, footer);
-  	}
-
-	
-	std::istringstream issHeader(header);
-	std::istringstream issFooter(footer);
-	std::string token;
-
-	while(getline(issHeader, token, '\t')) {
-
-		std::string value;
-		getline(issFooter, value, '\t');
-
-		if (token == component) {
-		
-			return stod (value);
-
-		}
-
-	}
-
-
-	return -1;
-
-}
-
-/** getPowerOfCore
- * Return the latest total power consumption of the given core. Requires "tp" (total power) to be tracked in base.cfg. Return -1 if power is not tracked.
+/** initMappingPolicy
+ * Initialize the mapping policy to the policy with the given name
  */
-double SchedulerOpen::getPowerOfCore(int coreId) {
-	string component = "Core" + std::to_string(coreId) + "-TP";
-	return getPowerOfComponent(component);
-}
-
-
-/** getTemperatureOfComponent
-    Returns the latest temperature of a component being tracked using base.cfg. Return -1 if power value not found.
-*/
-double SchedulerOpen::getTemperatureOfComponent (string component) {
-	ifstream powerLogFile("InstantaneousTemperature.log");
-	string header;
-	string footer;
-
-  	if (powerLogFile.good()) {
-    		getline(powerLogFile, header);
-    		getline(powerLogFile, footer);
-  	}
-
-	
-	std::istringstream issHeader(header);
-	std::istringstream issFooter(footer);
-	std::string token;
-
-	while(getline(issHeader, token, '\t')) {
-		std::string value;
-		getline(issFooter, value, '\t');
-
-		if (token == component) {
-			return stod (value);
+void SchedulerOpen::initMappingPolicy(String policyName) {
+	cout << "[Scheduler] [Info]: Initializing mapping policy" << endl;
+	if (policyName == "first_unused") {
+		vector<int> preferredCoresOrder;
+		for (core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); core_id++) {
+			int p = Sim()->getCfg()->getIntArray("scheduler/open/preferred_core", core_id);
+			if (p != -1) {
+				preferredCoresOrder.push_back(p);
+			}
 		}
+		mappingPolicy = new MapFirstUnused(coreRows, coreColumns, preferredCoresOrder);
+	} //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+	else {
+		cout << "\n[Scheduler] [Error]: Unknown Mapping Algorithm" << endl;
+ 		exit (1);
 	}
-
-	return -1;
 }
 
-/**
- * Get a performance metric for the given core.
- * Available performance metrics can be checked in InstantaneousPerformanceCounters.log
+/** initDVFSPolicy
+ * Initialize the DVFS policy to the policy with the given name
  */
-double SchedulerOpen::getPerformanceCounterOfCore(int coreId, std::string metric) {
-	ifstream performanceCounterLogFile("InstantaneousPerformanceCounters.log");
-    string line;
-
-	// first find the line in the logfile that contains the desired metric
-	bool metricFound = false;
-	while (!metricFound) {
-  		if (performanceCounterLogFile.good()) {
-			getline(performanceCounterLogFile, line);
-			metricFound = (line.substr(0, metric.size()) == metric);
-		} else {
-			return -1;
-		}
+void SchedulerOpen::initDVFSPolicy(String policyName) {
+	cout << "[Scheduler] [Info]: Initializing DVFS policy" << endl;
+	if (policyName == "off") {
+		dvfsPolicy = NULL;
+	} else if (policyName == "maxFreq") {
+		dvfsPolicy = new DVFSMaxFreq(performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency);
+	} //else if (policyName ="XYZ") {... } //Place to instantiate a new DVFS logic. Implementation is put in "policies" package.
+	else {
+		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
+ 		exit (1);
 	}
-	
-	// then split the (coreId + 1)-th value from this line (first value is metric name)
- 	std::istringstream issLine(line);
-
-	std::string value;
-	for (int i = 0; i < coreId + 2; i++) {
-		getline(issLine, value, '\t');
-	}
-
-	return stod(value);
 }
-
 
 /** taskFrontOfQueue
     Returns the ID of the task in front of queue. Place to implement a new queuing policy.
 */
 int taskFrontOfQueue () {
-
 	int IDofTaskInFrontOfQueue = -1;
 
 	if (queuePolicy == "FIFO") {
@@ -275,7 +221,6 @@ int taskFrontOfQueue () {
  		exit (1);
 	}
 
-
 	return IDofTaskInFrontOfQueue;
 }
 
@@ -285,8 +230,6 @@ int taskFrontOfQueue () {
     Returns number of free cores in the system.
 */
 int numberOfFreeCores () {
-
-
 	int freeCoresCounter = 0;
 	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
 		if (systemCores[coreCounter].assignedTaskID == -1) {
@@ -300,7 +243,6 @@ int numberOfFreeCores () {
     Returns the number of tasks in the queue.
 */
 int numberOfTasksInQueue () {
-
 	int tasksInQueue = 0;
 	
 	for (int taskCounter = 0; taskCounter < numberOfTasks; taskCounter++) 
@@ -314,7 +256,6 @@ int numberOfTasksInQueue () {
     Returns the number of tasks not yet entered into the queue.
 */
 int numberOfTasksWaitingToSchedule () {
-
 	int tasksWaitingToSchedule = 0;
 	
 	for (int taskCounter = 0; taskCounter < numberOfTasks; taskCounter++) 
@@ -329,7 +270,6 @@ int numberOfTasksWaitingToSchedule () {
     Returns the number of tasks completed.
 */
 int numberOfTasksCompleted () {
-
 	int tasksCompleted = 0;
 	
 	for (int taskCounter = 0; taskCounter < numberOfTasks; taskCounter++) 
@@ -344,7 +284,6 @@ int numberOfTasksCompleted () {
     Returns the number of active tasks.
 */
 int numberOfActiveTasks () {
-
 	int activeTasks = 0;
 	
 	for (int taskCounter = 0; taskCounter < numberOfTasks; taskCounter++) 
@@ -359,7 +298,6 @@ int numberOfActiveTasks () {
     Returns the number of core required by all active tasks.
 */
 int totalCoreRequirementsOfActiveTasks () {
-
 	int coreRequirement = 0;
 	
 	for (int taskCounter = 0; taskCounter < numberOfTasks; taskCounter++) 
@@ -367,7 +305,6 @@ int totalCoreRequirementsOfActiveTasks () {
 			coreRequirement += openTasks[taskCounter].taskCoreRequirement;
 
 	return coreRequirement;
-
 }
 
 /** threadSetAffinity
@@ -375,7 +312,6 @@ int totalCoreRequirementsOfActiveTasks () {
 */
 bool SchedulerOpen::threadSetAffinity(thread_id_t calling_thread_id, thread_id_t thread_id, size_t cpusetsize, const cpu_set_t *mask)
 {
-
    if (m_thread_info.size() <= (size_t)thread_id)
       m_thread_info.resize(thread_id + 16);
 
@@ -438,10 +374,7 @@ bool SchedulerOpen::threadSetAffinity(thread_id_t calling_thread_id, thread_id_t
     This function finds free core for a thread with id "thread_id" and set its affinity to that core.
 
 */
-
 int SchedulerOpen::setAffinity (thread_id_t thread_id) {
-
-
 	int coreFound = -1;
 	app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
 
@@ -470,6 +403,46 @@ int SchedulerOpen::setAffinity (thread_id_t thread_id) {
 	return coreFound;
 }
 
+
+/** migrateThread
+ * Move the given thread to the given core.
+ */
+void SchedulerOpen::migrateThread(thread_id_t thread_id, core_id_t core_id)
+{
+	int from_core_id = -1;
+	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
+		if (systemCores[coreCounter].assignedThreadID == thread_id) {
+			from_core_id = coreCounter;
+			break;
+		}
+	}
+	if (from_core_id == -1) {
+		cout << "[Scheduler] [Error] could not find core of thread " << thread_id << endl;
+		exit(1);
+	}
+	if (from_core_id == core_id) {
+		cout << "[Scheduler] skipped moving thread " << thread_id << " to core " << core_id << " (already there)" << endl;
+	} else {
+		cout << "[Scheduler] moving thread " << thread_id << " from core " << from_core_id << " to core " << core_id << endl;
+		if (isAssignedToTask(core_id)) {
+			cout << "[Scheduler] [Error] core is already in use" << endl;
+			exit(1);
+		}
+		
+		cpu_set_t my_set; 
+		CPU_ZERO(&my_set); 
+		CPU_SET(core_id, &my_set);
+		threadSetAffinity(INVALID_THREAD_ID, thread_id, sizeof(cpu_set_t), &my_set); 
+
+		systemCores[core_id].assignedTaskID = systemCores[from_core_id].assignedTaskID;
+		systemCores[core_id].assignedThreadID = thread_id;
+
+		systemCores[from_core_id].assignedTaskID = -1;
+		systemCores[from_core_id].assignedThreadID = -1;
+	}
+}
+
+
 /** getCoreNb
  * Return the number of the core at the given coordinates.
  */
@@ -479,9 +452,6 @@ int SchedulerOpen::getCoreNb(int y, int x) {
 		exit (1);
 	}
 	return y * coreColumns + x;
-}
-int SchedulerOpen::getCoreNb(pair<int,int> core) {
-	return getCoreNb(core.first, core.second);
 }
 
 /** isAssignedToTask
@@ -498,47 +468,34 @@ bool SchedulerOpen::isAssignedToThread(int coreId) {
 	return systemCores[coreId].assignedThreadID != -1;
 }
 
-/** defaultLogic
-    This function goes through all free cores assign the first free ones found to the task.
-*/
-bool SchedulerOpen::defaultLogic (int taskID, SubsecondTime time) {
-	int coresAssigned = 0;
-	vector <int> freeCoresIndices;
-
-	for (int i = 0; i <numberOfCores; i++) {
-		bool available = m_core_mask[i];
-		if (available) {
-			if (!isAssignedToTask(i)) {
-				freeCoresIndices.push_back (i);
-			}
-		}
+bool SchedulerOpen::executeMappingPolicy(int taskID, SubsecondTime time) {
+	vector<bool> availableCores(numberOfCores);
+	vector<bool> activeCores(numberOfCores);
+	for (int i = 0; i < numberOfCores; i++) {
+		availableCores.at(i) = m_core_mask[i] && !isAssignedToTask(i);
+		activeCores.at(i) = isAssignedToTask(i);
+	}
+	// get the cores
+	vector<int> bestCores = mappingPolicy->map(openTasks[taskID].taskName, openTasks[taskID].taskCoreRequirement, availableCores, activeCores);
+	if ((int)bestCores.size() < openTasks[taskID].taskCoreRequirement) {
+		cout << "[Scheduler]: Policy returned too few cores, mapping failed." << endl;
+		return false;
 	}
 
-	int freeCoreCounter = 0;
-	while (coresAssigned != openTasks[taskID].taskCoreRequirement) {
-		cout <<"\n[Scheduler][Default]: Assigning Core " << freeCoresIndices[freeCoreCounter] << " to Task " << taskID << "\n"<<endl;
-		systemCores [freeCoresIndices[freeCoreCounter]].assignedTaskID = taskID;
-		freeCoreCounter++;
-		coresAssigned++;
-	}
-
-	if (coresAssigned != openTasks[taskID].taskCoreRequirement) {
-		
-		cout <<"\n[Scheduler][Non-Contig][Error]: Default Mapping should have been sucessfull.\n";		
-		exit (1);
+	// assign the cores
+	for (unsigned int i = 0; i < bestCores.size(); i++) {
+		cout << "[Scheduler]: Assigning Core " << bestCores.at(i) << " to Task " << taskID << endl;
+		systemCores[bestCores.at(i)].assignedTaskID = taskID;
 	}
 
 	return true;
 }
 
-
 /** schedule
     This function attempt to schedule a task with logic defined in base.cfg.
 */
 bool SchedulerOpen::schedule (int taskID, bool isInitialCall, SubsecondTime time) {
-
-
-	cout <<"\n[Scheduler]: Trying to schedule Task " << taskID << " at Time " << time.getNS() << " ns" << endl;
+	cout <<"\n[Scheduler]: Trying to schedule Task " << taskID << " at Time " << formatTime(time) << endl;
 
 	bool mappingSuccesfull = false;
 
@@ -564,13 +521,7 @@ bool SchedulerOpen::schedule (int taskID, bool isInitialCall, SubsecondTime time
 
 	}
 
-	if (schedulingLogic == "default") {
-		mappingSuccesfull = defaultLogic (taskID, time);
-	} //else if (schedulingLogic ="XYZ") {... } //Place to implement a new scheduling logic. 
-	else {
-		cout << "\n[Scheduler] [Error]: Unknown Scheduling Algorithm"<< endl;
- 		exit (1);
-	}
+	mappingSuccesfull = executeMappingPolicy(taskID, time);
 
 	if (mappingSuccesfull) {
 		if (!isInitialCall) 
@@ -579,27 +530,21 @@ bool SchedulerOpen::schedule (int taskID, bool isInitialCall, SubsecondTime time
 		openTasks [taskID].active = true;
 		openTasks [taskID].waitingInQueue = false;
 		openTasks [taskID].waitingToSchedule = false;
-		
-		
 	} 
 
 	return mappingSuccesfull;
 }
 
 
-
 /** threadCreate
     This original Sniper function is called when a thread is created.
 */
-
 core_id_t SchedulerOpen::threadCreate(thread_id_t thread_id) {
-
-
 	app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
 
 	SubsecondTime time = Sim()->getClockSkewMinimizationServer()->getGlobalTime();
 
-	cout << "\n[Scheduler]: Trying to map Thread  " << thread_id << " from Task " << app_id << " at Time " << time.getNS() << " ns" << endl;
+	cout << "\n[Scheduler]: Trying to map Thread  " << thread_id << " from Task " << app_id << " at Time " << formatTime(time) << endl;
 
 	//thead_id 0 to numberOfTasks are first threads of tasks, which are all created together when the system starts.
 	if (thread_id == 0) 
@@ -674,7 +619,7 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 		reschedule(time, m_thread_info[thread_id].getCoreRunning(), false);
 
 	app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
-	cout << "\n[Scheduler]: Thread " << thread_id << " from Task "  << app_id << " Exiting at Time " << time.getNS() << " ns" << endl;
+	cout << "\n[Scheduler]: Thread " << thread_id << " from Task "  << app_id << " Exiting at Time " << formatTime(time) << endl;
 
 	for (int i = 0; i < numberOfCores; i++) {
 		if (systemCores[i].assignedThreadID == thread_id) {
@@ -816,229 +761,135 @@ void SchedulerOpen::threadSetInitialAffinity(thread_id_t thread_id)
     This function gets the worst-case core requirement of a task.
 */
 int coreRequirementTranslation (String compositionString) {
+	int del1 = compositionString.find('-');
+	int del2 = compositionString.find('-', del1 + 1);
+	int del3 = compositionString.find('-', del2 + 1);
 
+	String parsec = compositionString.substr(0, del1);
+	String benchmark = compositionString.substr(del1 + 1, del2 - del1 - 1);
+	String input = compositionString.substr(del2 + 1, del3 - del2 - 1);
+	int parallelism = atoi(compositionString.substr(del3 + 1, compositionString.length() - del3 - 1).c_str());
 
-	int requirement = 0;
-	
-	
-	
-
-	if ((compositionString == "parsec-blackscholes-simsmall-1") || (compositionString == "parsec-blackscholes-simmedium-1") || (compositionString == "parsec-blackscholes-test-1"))
-		requirement = 2;
-	else if ((compositionString == "parsec-blackscholes-simsmall-2") || (compositionString == "parsec-blackscholes-simmedium-2"))
-		requirement = 3;
-	else if ((compositionString == "parsec-blackscholes-simsmall-3") || (compositionString == "parsec-blackscholes-simmedium-3"))
-		requirement = 4;
-	else if (compositionString == "parsec-blackscholes-simsmall-4")
-		requirement = 5;
-	else if (compositionString == "parsec-blackscholes-simsmall-5")
-		requirement = 6;
-	else if (compositionString == "parsec-blackscholes-simsmall-6")
-		requirement = 7;
-	else if (compositionString == "parsec-blackscholes-simsmall-7")
-		requirement = 8;
-	else if (compositionString == "parsec-blackscholes-simsmall-8")
-		requirement = 9;
-	else if (compositionString == "parsec-blackscholes-simsmall-9")
-		requirement = 10;
-	else if (compositionString == "parsec-blackscholes-simsmall-10")
-		requirement = 11;
-	else if (compositionString == "parsec-blackscholes-simsmall-11")
-		requirement = 12;
-	else if (compositionString == "parsec-blackscholes-simsmall-12")
-		requirement = 13;
-	else if (compositionString == "parsec-blackscholes-simsmall-13")
-		requirement = 14;
-	else if (compositionString == "parsec-blackscholes-simsmall-14")
-		requirement = 15;
-	else if (compositionString == "parsec-blackscholes-simsmall-15")
-		requirement = 16;
-
-	else if (compositionString == "parsec-bodytrack-simsmall-1" || compositionString == "parsec-bodytrack-test-1")
-		requirement = 3;
-	else if (compositionString == "parsec-bodytrack-simsmall-2")
-		requirement = 4;
-	else if (compositionString == "parsec-bodytrack-simsmall-3")
-		requirement = 5;
-	else if (compositionString == "parsec-bodytrack-simsmall-4")
-		requirement = 6;
-	else if (compositionString == "parsec-bodytrack-simsmall-5")
-		requirement = 7;
-	else if (compositionString == "parsec-bodytrack-simsmall-6")
-		requirement = 8;
-	else if (compositionString == "parsec-bodytrack-simsmall-7")
-		requirement = 9;
-	else if (compositionString == "parsec-bodytrack-simsmall-8")
-		requirement = 10;
-	else if (compositionString == "parsec-bodytrack-simsmall-9")
-		requirement = 11;
-	else if (compositionString == "parsec-bodytrack-simsmall-10")
-		requirement = 12;
-	else if (compositionString == "parsec-bodytrack-simsmall-11")
-		requirement = 13;
-	else if (compositionString == "parsec-bodytrack-simsmall-12")
-		requirement = 14;
-	else if (compositionString == "parsec-bodytrack-simsmall-13")
-		requirement = 15;
-	else if (compositionString == "parsec-bodytrack-simsmall-14")
-		requirement = 16;
-
-
-
-
-
-	else if (compositionString == "parsec-canneal-simsmall-1")
-		requirement = 2;
-	else if (compositionString == "parsec-canneal-simsmall-2")
-		requirement = 3;
-	else if (compositionString == "parsec-canneal-simsmall-3")
-		requirement = 4;
-	else if (compositionString == "parsec-canneal-simsmall-4")
-		requirement = 5;
-	else if (compositionString == "parsec-canneal-simsmall-5")
-		requirement = 6;
-	else if (compositionString == "parsec-canneal-simsmall-6")
-		requirement = 7;
-	else if (compositionString == "parsec-canneal-simsmall-7")
-		requirement = 8;
-	else if (compositionString == "parsec-canneal-simsmall-8")
-		requirement = 9;
-	else if (compositionString == "parsec-canneal-simsmall-9")
-		requirement = 10;
-	else if (compositionString == "parsec-canneal-simsmall-10")
-		requirement = 11;
-	else if (compositionString == "parsec-canneal-simsmall-11")
-		requirement = 12;
-	else if (compositionString == "parsec-canneal-simsmall-12")
-		requirement = 13;
-	else if (compositionString == "parsec-canneal-simsmall-13")
-		requirement = 14;
-	else if (compositionString == "parsec-canneal-simsmall-14")
-		requirement = 15;
-	else if (compositionString == "parsec-canneal-simsmall-15")
-		requirement = 16;
-
-	else if (compositionString == "parsec-ferret-simsmall-1")
-		requirement = 7;
-	else if (compositionString == "parsec-ferret-simsmall-2")
-		requirement = 11;
-	else if (compositionString == "parsec-ferret-simsmall-3")
-		requirement = 15;
-
-	else if (compositionString == "parsec-fluidanimate-simsmall-1")
-		requirement = 2;
-	else if (compositionString == "parsec-fluidanimate-simsmall-2")
-		requirement = 3;
-	else if (compositionString == "parsec-fluidanimate-simsmall-4")
-		requirement = 5;
-	else if (compositionString == "parsec-fluidanimate-simsmall-8")
-		requirement = 9;
-
-
-	else if (compositionString == "parsec-streamcluster-simsmall-1")
-		requirement = 2;
-	else if (compositionString == "parsec-streamcluster-simsmall-2")
-		requirement = 3;
-	else if (compositionString == "parsec-streamcluster-simsmall-3")
-		requirement = 4;
-	else if (compositionString == "parsec-streamcluster-simsmall-4")
-		requirement = 5;
-	else if (compositionString == "parsec-streamcluster-simsmall-5")
-		requirement = 6;
-	else if (compositionString == "parsec-streamcluster-simsmall-6")
-		requirement = 7;
-	else if (compositionString == "parsec-streamcluster-simsmall-7")
-		requirement = 8;
-	else if (compositionString == "parsec-streamcluster-simsmall-8")
-		requirement = 9;
-	else if (compositionString == "parsec-streamcluster-simsmall-9")
-		requirement = 10;
-	else if (compositionString == "parsec-streamcluster-simsmall-10")
-		requirement = 11;
-	else if (compositionString == "parsec-streamcluster-simsmall-11")
-		requirement = 12;
-	else if (compositionString == "parsec-streamcluster-simsmall-12")
-		requirement = 13;
-	else if (compositionString == "parsec-streamcluster-simsmall-13")
-		requirement = 14;
-	else if (compositionString == "parsec-streamcluster-simsmall-14")
-		requirement = 15;
-	else if (compositionString == "parsec-streamcluster-simsmall-15")
-		requirement = 16;
-
-
-
-
-	else if (compositionString == "parsec-swaptions-simsmall-1")
-		requirement = 2;
-	else if (compositionString == "parsec-swaptions-simsmall-2")
-		requirement = 3;
-	else if (compositionString == "parsec-swaptions-simsmall-3")
-		requirement = 4;
-	else if (compositionString == "parsec-swaptions-simsmall-4")
-		requirement = 5;
-	else if (compositionString == "parsec-swaptions-simsmall-5")
-		requirement = 6;
-	else if (compositionString == "parsec-swaptions-simsmall-6")
-		requirement = 7;
-	else if (compositionString == "parsec-swaptions-simsmall-7")
-		requirement = 8;
-	else if (compositionString == "parsec-swaptions-simsmall-8")
-		requirement = 9;
-	else if (compositionString == "parsec-swaptions-simsmall-9")
-		requirement = 10;
-	else if (compositionString == "parsec-swaptions-simsmall-10")
-		requirement = 11;	
-	else if (compositionString == "parsec-swaptions-simsmall-11")
-		requirement = 12;
-	else if (compositionString == "parsec-swaptions-simsmall-12")
-		requirement = 13;
-	else if (compositionString == "parsec-swaptions-simsmall-13")
-		requirement = 14;			
-	else if (compositionString == "parsec-swaptions-simsmall-14")
-		requirement = 15;
-	else if (compositionString == "parsec-swaptions-simsmall-15")
-		requirement = 16;
-
-
-	else if (compositionString == "parsec-x264-simsmall-1" || compositionString == "parsec-x264-test-1")
-		requirement = 1;
-	else if (compositionString == "parsec-x264-simsmall-2")
-		requirement = 3;
-	else if (compositionString == "parsec-x264-simsmall-3")
-		requirement = 4;
-
-	else if (compositionString == "parsec-dedup-simsmall-1")
-		requirement = 4;
-	else if (compositionString == "parsec-dedup-simsmall-2")
-		requirement = 7;
-	else if (compositionString == "parsec-dedup-simsmall-3")
-		requirement = 10;
-	else if (compositionString == "parsec-dedup-simsmall-4")
-		requirement = 13;
-	else if (compositionString == "parsec-dedup-simsmall-5")
-		requirement = 16;
-
-
-
-	
-	else {
-		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString <<". Please add the profile." << endl;		
+	if (parsec != "parsec") {
+		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString << "(only PARSEC is implemented). Please add the profile." << endl;		
 		exit (1);
 	}
 
-	if (requirement > numberOfCores) {
-	
-		cout <<"\n[Scheduler] [Error]: Task "  << compositionString << " Core Requirement " << requirement << " is greater than number of cores " << numberOfCores << endl;		
+	if (parallelism < 1) {
+		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString << "(parallelism < 1). Please add the profile." << endl;		
 		exit (1);
-
 	}
 
-	return requirement;
-	
+	vector<int> requirements;
+	if (benchmark == "blackscholes") {
+		int t[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
+	} else if (benchmark == "bodytrack") {
+		int t[] = {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
+	} else if (benchmark == "canneal") {
+		int t[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
+	} else if (benchmark == "ferret") {
+		int t[] = {7, 11, 15};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
+	} else if (benchmark == "fluidanimate") {
+		int t[] = {2, 3, 0, 5, 0, 0, 0, 9};  // zeros are just placeholders
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
+	} else if (benchmark == "streamcluster") {
+		int t[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
+	} else if (benchmark == "swaptions") {
+		int t[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
+	} else if (benchmark == "x264") {
+		int t[] = {1, 3, 4};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
+	} else if (benchmark == "dedup") {
+		int t[] = {4, 7, 10, 13, 16};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
+	}
+
+	if (parallelism - 1 < (int)requirements.size()) {
+		return requirements.at(parallelism - 1);
+	} else {
+		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString << ". Please add the profile." << endl;		
+		exit (1);
+	}
 }
 
 
+/**
+ * Return whether the DVFS control loop should be patient and delay the DVFS scaling.
+ */
+bool SchedulerOpen::delayDVFSTransition(int coreCounter, int oldFrequency, int newFrequency) {
+	return ((newFrequency == oldFrequency - frequencyStepSize) && (downscalingPatience.at(coreCounter) > 0))
+		 || ((newFrequency == oldFrequency + frequencyStepSize) && (upscalingPatience.at(coreCounter) > 0));
+}
+
+/**
+ * Notify that a DVFS transition was delayed
+ */
+void SchedulerOpen::DVFSTransitionDelayed(int coreCounter, int oldFrequency, int newFrequency) {
+	if (newFrequency == oldFrequency - frequencyStepSize) {
+		cout << "DVFS transition delayed (current patience: " << downscalingPatience.at(coreCounter) << ")" << endl;
+		downscalingPatience.at(coreCounter) -= 1;
+	} else if (newFrequency == oldFrequency + frequencyStepSize) {
+		cout << "DVFS transition delayed (current patience: " << upscalingPatience.at(coreCounter) << ")" << endl;
+		upscalingPatience.at(coreCounter) -= 1;
+	}
+}
+
+/**
+ * Notify that a DVFS transition was not delayed
+ */
+void SchedulerOpen::DVFSTransitionNotDelayed(int coreCounter) {
+	downscalingPatience.at(coreCounter) = maxDVFSPatience;
+	upscalingPatience.at(coreCounter) = maxDVFSPatience;
+}
+
+/**
+ * Set the frequency for a core.
+ */
+void SchedulerOpen::setFrequency(int coreCounter, int frequency) {
+	int oldFrequency = Sim()->getMagicServer()->getFrequency(coreCounter);
+
+	if (frequency > oldFrequency + 1000) {
+		frequency = oldFrequency + 1000;
+	}
+	if (frequency < minFrequency) {
+		frequency = minFrequency;
+	}
+	if (frequency > maxFrequency) {
+		frequency = maxFrequency;
+	}
+
+	if (delayDVFSTransition(coreCounter, oldFrequency, frequency)) {
+		DVFSTransitionDelayed(coreCounter, oldFrequency, frequency);
+	} else {
+		DVFSTransitionNotDelayed(coreCounter);
+		if (frequency != oldFrequency) {
+			Sim()->getMagicServer()->setFrequency(coreCounter, frequency);
+		}
+	}
+}
+
+
+/** executeDVFSPolicy
+ * Set DVFS levels according to the used policy.
+ */
+void SchedulerOpen::executeDVFSPolicy() {
+	std::vector<int> oldFrequencies;
+	std::vector<bool> activeCores;
+	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
+		oldFrequencies.push_back(Sim()->getMagicServer()->getFrequency(coreCounter));
+		activeCores.push_back(isAssignedToTask(coreCounter));
+	}
+	vector<int> frequencies = dvfsPolicy->getFrequencies(oldFrequencies, activeCores);
+	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
+		setFrequency(coreCounter, frequencies.at(coreCounter));
+	}
+}
 
 
 /** periodic
@@ -1046,9 +897,9 @@ int coreRequirementTranslation (String compositionString) {
 */
 void SchedulerOpen::periodic(SubsecondTime time) {
 	if (time.getNS () % 1000000 == 0) { //Error Checking at every 1ms. Can be faster but will have overhead in simulation time.
-		cout << "\n[Scheduler]: Time " << time.getNS () << " ns" << " [Active Tasks =  " << numberOfActiveTasks () << " | Completed Tasks = " <<  numberOfTasksCompleted () << " | Queued Tasks = "  << numberOfTasksInQueue () << " | Non-Queued Tasks  = " <<  numberOfTasksWaitingToSchedule () <<  " | Free Cores = " << numberOfFreeCores () << " | Active Tasks Requirements = " << totalCoreRequirementsOfActiveTasks () << " ] \n"<<endl;
+		cout << "\n[Scheduler]: Time " << formatTime(time) << " [Active Tasks =  " << numberOfActiveTasks () << " | Completed Tasks = " <<  numberOfTasksCompleted () << " | Queued Tasks = "  << numberOfTasksInQueue () << " | Non-Queued Tasks  = " <<  numberOfTasksWaitingToSchedule () <<  " | Free Cores = " << numberOfFreeCores () << " | Active Tasks Requirements = " << totalCoreRequirementsOfActiveTasks () << " ] \n"<<endl;
 
-		//Following error checking code make sure that system state is not mixed up.
+		//Following error checking code makes sure that the system state is not messed up.
 
 		if (numberOfCores - totalCoreRequirementsOfActiveTasks () != numberOfFreeCores ()) {
 			cout <<"\n[Scheduler] [Error]: Number of Free Cores + Number of Active Tasks Requirements != Number Of Cores.\n";		
@@ -1056,15 +907,25 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		}
 
 		if (numberOfActiveTasks () + numberOfTasksCompleted () + numberOfTasksInQueue () + numberOfTasksWaitingToSchedule () != numberOfTasks) {
-
 			cout <<"\n[Scheduler] [Error]: Task State Does Not Match.\n";		
 			exit (1);
 		}
 	}
 
-	if (time.getNS () % schedulingEpoch == 0) {
+	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
+		cout << "\n[Scheduler]: DVFS Control Loop invoked at " << formatTime(time) << endl;
+
+		executeDVFSPolicy();
+
+		std::vector<int> frequencies;
+		for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
+			frequencies.push_back(Sim()->getMagicServer()->getFrequency(coreCounter));
+		}
+	}
+
+	if (time.getNS () % mappingEpoch == 0) {
 		
-		cout << "\n[Scheduler]: Scheduler Invoked at " << time.getNS () << " ns"<<"\n"<<endl;
+		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time)<<"\n"<<endl;
 
 		fetchTasksIntoQueue (time);
 				
@@ -1083,9 +944,29 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 				}
 				int coreId = getCoreNb(y, x);
 				if (!isAssignedToTask(coreId)) {
-					cout << " .";
+					cout << "  . ";
 				} else {
-					cout << setw(2) << systemCores[coreId].assignedTaskID;
+					if (systemCores[coreId].assignedTaskID < 10) {
+						cout << " ";
+					}
+
+					char marker1 = '?';
+					char marker2 = '?';
+					if (isAssignedToThread(coreId)) {
+						Core::State state = m_thread_manager->getThreadState(systemCores[coreId].assignedThreadID);
+						if (state == Core::State::RUNNING) {
+							marker1 = '*';
+							marker2 = '*';
+						} else {
+							marker1 = '-';
+							marker2 = '-';
+						}
+					} else {
+						marker1 = '(';
+						marker2 = ')';
+					}
+
+					cout << marker1 << systemCores[coreId].assignedTaskID << marker2;
 				}
 			}
 			cout << endl;
@@ -1107,4 +988,19 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 	m_last_periodic = time;
 }
 
+std::string formatLong(long l) {
+	std::stringstream ss;
+	if (l < 1000) {
+		ss << l;
+	} else {
+		long curr = l % 1000;
+		ss << formatLong(l / 1000) << '.' << std::setfill('0') << std::setw(3) << curr;
+	}
+	return ss.str();
+}
 
+std::string SchedulerOpen::formatTime(SubsecondTime time) {
+	std::stringstream ss;
+	ss << formatLong(time.getNS()) << " ns";
+	return ss.str();
+}
