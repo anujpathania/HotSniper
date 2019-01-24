@@ -54,7 +54,7 @@ $ cd benchmarks
 
 $ sudo apt-get install gfortran m4 xsltproc libx11-dev libxext-dev libxt-dev libxmu-dev libxi-dev
 
-$ make - j 4
+$ make -j 4
 
 
 * Install Hotspot
@@ -75,7 +75,7 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 
 * Test Thermal Simulation
 
-$ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats:10000 -speriodic-power
+$ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats:100000 -speriodic-power:100000
 
 
 # Feature 1: Open Scheduler 
@@ -181,9 +181,11 @@ $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-r
 	[periodic_thermal]
 	floorplan = gainestown_2.flp
 
-* You need to provide the granularity to run Perioidic Power Tracing in nano seconds as parameter to "-senergystats" at command line.er
+* You need to provide the granularity to run Perioidic Power Tracing in nano seconds as parameter to "-senergystats" and "-spreiodicpower" at command line.
 
-* The power and thermal dump would be created in benchmarks folder in file with name - "PeriodicPower.log" and "PeriodicThermal.log"
+* The power and thermal dump would be created in benchmarks folder in file with name - "PeriodicPower.log" and "PeriodicThermal.log".
+
+* PeriodicFrequency and CPI stack traces are generated i nthe files "PeriodicFrequency.log" and "PeriodicCPIStack.log".
 
 * The instantaneous- power and thermal value can also be read in the Sniper program code itself using "getPowerOfComponent" and "getTemperatureOfComponent" function in "scheduler_open.cc", respectively. This can be used to feedback power and thermal information to your scheduler for taking decisions.
 

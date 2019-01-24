@@ -127,12 +127,76 @@ all_names = buildstack.get_names(all_items)
 def get_all_names():
   return all_names
 
+def log_frequencies(results):
+  ncores = int(results['config']['general/total_cores'])
+  frequencies = [float(results['config']['perf_model/core/frequency'].get(i)) for i in range(ncores)]
+
+  filename = 'PeriodicFrequency.log'
+  write_header = os.stat(filename).st_size == 0
+  with open(filename, 'a') as f:
+    if write_header:
+      f.write('\t'.join('Core{}'.format(i) for i in range(ncores)))
+      f.write('\n')
+
+    f.write('\t'.join('{:.3f}'.format(f) for f in frequencies))
+    f.write('\n')
+
+def log_cpi_stack(results):
+  cpiStack = cpistack_compute(data=results)
+  cpiStackData = cpiStack.get_data('cpi')
+
+  ncores = int(results['config']['general/total_cores'])
+  cpi_stack_file = 'InstantaneousCPIStack.log'
+  cpi_stack_periodic_file = 'PeriodicCPIStack.log'
+
+  labels = cpiStack.cpiitems.names
+  compactify = ('issue', 'sync', 'imbalance')
+
+  for filename, write_header, mode in ((cpi_stack_file, True, 'w'),
+                                       (cpi_stack_periodic_file, os.stat(cpi_stack_periodic_file).st_size == 0, 'a')):
+    with open(filename, mode) as f:
+      if write_header:
+        f.write('Metric\t')
+        f.write('\t'.join('Core{}'.format(i) for i in range(ncores)))
+        f.write('\n')
+
+      f.write('total\t')
+      f.write('\t'.join('{:.3f}'.format(sum(cpiStackData[i].values())) for i in range(ncores)))
+      f.write('\n')
+
+      for label in labels:
+        if any(label.startswith(c) for c in compactify):
+          if label not in compactify:
+            continue
+          values = []
+          for i in range(ncores):
+            h = 0
+            coreStack = cpiStackData[i]
+            for key, value in coreStack.items():
+              if key.startswith(label):
+                h += value
+            values.append(h)
+        else:
+          values = [cpiStackData[i].get(label, 0) for i in range(ncores)]
+        f.write('{}\t'.format(label))
+        if any(v > 0.001 for v in values):
+          f.write('\t'.join('{:.3f}'.format(v) for v in values))
+        else:
+          f.write('-')
+        f.write('\n')
+
 def main(jobid, resultsdir, outputfile, powertype = 'dynamic', config = None, no_graph = False, partial = None, print_stack = True, return_data = False):
   tempfile = outputfile + '.xml'
 
   results = sniper_lib.get_results(jobid, resultsdir, partial = partial)
   if config:
+    # update using energystats-temp.cfg
     results['config'] = sniper_config.parse_config(file(config).read(), results['config'])
+
+    # recompute cycle counts with updated frequencies
+    _results = sniper_lib.parse_results_from_dir(resultsdir, partial=partial, metrics=None)
+    results['results'] = sniper_lib.stats_process(results['config'], _results)
+
   stats = sniper_stats.SniperStats(resultsdir = resultsdir, jobid = jobid)
 
   power, nuca_at_level = edit_XML(stats, results['results'], results['config'])
@@ -140,39 +204,8 @@ def main(jobid, resultsdir, outputfile, powertype = 'dynamic', config = None, no
   file(tempfile, "w").write('\n'.join(power))
 
   # Log Performance Counters
-  cpiStack = cpistack_compute(data=results)
-
-  ncores = int(results['config']['general/total_cores'])
-  performance_counters_file = 'InstantaneousPerformanceCounters.log'
-  performance_counters_periodic_file = 'PeriodicPerformanceCounters.log'
-  cpi = [sum(cpiStack.get_data('cpi')[i].values()) for i in range(ncores)]
-  base_utilization = [cpiStack.get_data('cpi')[i]['base'] / c for i, c in enumerate(cpi)]
-  extended_utilization = [sum(cpiStack.get_data('cpi')[i].get(key, 0) for key in ('base', 'dispatch_width', 'depend-int', 'depend-fp', 'branch')) / c for i, c in enumerate(cpi)]
-  cpi_ifetch = [cpiStack.get_data('cpi')[i].get('ifetch', 0) for i in range(ncores)]
-  cpi_mem_nuca = [cpiStack.get_data('cpi')[i].get('mem-nuca', 0) for i in range(ncores)]
-
-  for filename, write_header, mode in ((performance_counters_file, True, 'w'),
-                                       (performance_counters_periodic_file, os.stat(performance_counters_periodic_file).st_size == 0, 'a')):
-    with open(filename, mode) as f:
-      if write_header:
-        f.write('Metric\t')
-        f.write('\t'.join('Core{}'.format(i) for i in range(ncores)))
-        f.write('\n')
-      f.write('Utilization\t')
-      f.write('\t'.join('{:.6f}'.format(u) for u in base_utilization))
-      f.write('\n')
-      f.write('ExtendedUtilization\t')
-      f.write('\t'.join('{:.6f}'.format(u) for u in extended_utilization))
-      f.write('\n')
-      f.write('CPImemnuca\t')
-      f.write('\t'.join('{:.6f}'.format(v) for v in cpi_mem_nuca))
-      f.write('\n')
-      f.write('CPIifetch\t')
-      f.write('\t'.join('{:.6f}'.format(v) for v in cpi_ifetch))
-      f.write('\n')
-      f.write('CPI\t')
-      f.write('\t'.join('{:.6f}'.format(c) for c in cpi))
-      f.write('\n')
+  log_frequencies(results)
+  log_cpi_stack(results)
 
   # Run McPAT
   mcpat_run(tempfile, outputfile + '.txt')
@@ -1026,6 +1059,7 @@ def edit_XML(statsobj, stats, cfg):
   return template, nuca_at_level
 #----------
 def readTemplate(ncores, num_l2s, private_l2s, num_l3s, technology_node):
+  device_type = 0  # 0: HP, 1: LSTP, 2: LOP
   Count = 0
   template=[]
   template.append(["<?xml version=\"1.0\" ?>",""])
@@ -1052,7 +1086,7 @@ def readTemplate(ncores, num_l2s, private_l2s, num_l3s, technology_node):
   template.append(["\t\t<param name=\"temperature\" value=\"330\"/> <!-- Kelvin -->",""])
   template.append(["\t\t<param name=\"number_cache_levels\" value=\"3\"/>",""])
   template.append(["\t\t<param name=\"interconnect_projection_type\" value=\"0\"/><!--0: agressive wire technology; 1: conservative wire technology -->",""])
-  template.append(["\t\t<param name=\"device_type\" value=\"0\"/><!--0: HP(High Performance Type); 1: LSTP(Low standby power) 2: LOP (Low Operating Power)  -->",""])
+  template.append(["\t\t<param name=\"device_type\" value=\"{:d}\"/><!--0: HP(High Performance Type); 1: LSTP(Low standby power) 2: LOP (Low Operating Power)  -->".format(device_type),""])
   template.append(["\t\t<param name=\"longer_channel_device\" value=\"1\"/><!-- 0 no use; 1 use when approperiate -->",""])
   template.append(["\t\t<param name=\"power_gating\" value=\"1\"/><!-- 0 not enabled; 1 enabled -->",""])
   template.append(["\t\t<param name=\"machine_bits\" value=\"64\"/>",""])
@@ -1312,7 +1346,7 @@ def readTemplate(ncores, num_l2s, private_l2s, num_l3s, technology_node):
     template.append(["\t\t\t\t<param name=\"buffer_sizes\" value=\"8, 8, 8, 8\"/>",""])
     template.append(["\t\t\t\t<param name=\"clockrate\" value=\"%i\"/>",["core_clock","cfg",iCount]])
     template.append(["\t\t\t\t<param name=\"ports\" value=\"1,1,1\"/>",""])
-    template.append(["\t\t\t\t<param name=\"device_type\" value=\"0\"/>",""])
+    template.append(["\t\t\t\t<param name=\"device_type\" value=\"{:d}\"/>".format(device_type),""])
     template.append(["\t\t\t\t<!-- altough there are multiple access types, Performance simulator needs to cast them into reads or writes         e.g. the invalidates can be considered as writes -->",""])
     template.append(["\t\t\t\t<stat name=\"read_accesses\" value=\"%i\"/>",["L1_directory.read_accesses","stat",iCount]])
     template.append(["\t\t\t\t<stat name=\"write_accesses\" value=\"%i\"/>",["L1_directory.write_accesses","stat",iCount]])
@@ -1328,7 +1362,7 @@ def readTemplate(ncores, num_l2s, private_l2s, num_l3s, technology_node):
     template.append(["\t\t\t\t<param name=\"buffer_sizes\" value=\"8, 8, 8, 8\"/>",""])
     template.append(["\t\t\t\t<param name=\"clockrate\" value=\"%i\"/>",["core_clock","cfg",iCount]])
     template.append(["\t\t\t\t<param name=\"ports\" value=\"1,1,1\"/>",""])
-    template.append(["\t\t\t\t<param name=\"device_type\" value=\"0\"/>",""])
+    template.append(["\t\t\t\t<param name=\"device_type\" value=\"{:d}\"/>".format(device_type),""])
     template.append(["\t\t\t\t<!-- altough there are multiple access types, Performance simulator needs to cast them into reads or writes         e.g. the invalidates can be considered as writes -->",""])
     template.append(["\t\t\t\t<stat name=\"read_accesses\" value=\"%i\"/>",["L2_directory.read_accesses","stat",iCount]])
     template.append(["\t\t\t\t<stat name=\"write_accesses\" value=\"%i\"/>",["L2_directory.write_accesses","stat",iCount]])
@@ -1345,7 +1379,7 @@ def readTemplate(ncores, num_l2s, private_l2s, num_l3s, technology_node):
     template.append(["\t\t\t\t<param name=\"clockrate\" value=\"%i\"/>",["L2_clock","cfg",iCount]])
     template.append(["\t\t\t\t<param name=\"vdd\" value=\"%f\"/><!-- 0 means using ITRS default vdd -->",["L2_vdd","cfg",iCount]])
     template.append(["\t\t\t\t<param name=\"ports\" value=\"1,1,1\"/>",""])
-    template.append(["\t\t\t\t<param name=\"device_type\" value=\"0\"/>",""])
+    template.append(["\t\t\t\t<param name=\"device_type\" value=\"{:d}\"/>".format(device_type),""])
     template.append(["\t\t\t\t<stat name=\"read_accesses\" value=\"%i\"/>",["L2.read_accesses","stat",iCount]])
     template.append(["\t\t\t\t<stat name=\"write_accesses\" value=\"%i\"/>",["L2.write_accesses","stat",iCount]])
     template.append(["\t\t\t\t<stat name=\"read_misses\" value=\"%i\"/>",["L2.read_misses","stat",iCount]])
@@ -1362,7 +1396,7 @@ def readTemplate(ncores, num_l2s, private_l2s, num_l3s, technology_node):
     template.append(["\t\t\t\t<param name=\"clockrate\" value=\"%i\"/>",["L3_clock","cfg",iCount]])
     template.append(["\t\t\t\t<param name=\"vdd\" value=\"%f\"/><!-- 0 means using ITRS default vdd -->",["L3_vdd","cfg",iCount]])
     template.append(["\t\t\t\t<param name=\"ports\" value=\"1,1,1\"/>",""])
-    template.append(["\t\t\t\t<param name=\"device_type\" value=\"0\"/>",""])
+    template.append(["\t\t\t\t<param name=\"device_type\" value=\"{:d}\"/>".format(device_type),""])
     template.append(["\t\t\t\t<param name=\"buffer_sizes\" value=\"16, 16, 16, 16\"/>",""])
     template.append(["\t\t\t\t<!-- cache controller buffer sizes: miss_buffer_size(MSHR),fill_buffer_size,prefetch_buffer_size,wb_buffer_size-->",""])
     template.append(["\t\t\t\t<stat name=\"read_accesses\" value=\"%i\"/>",["L3.read_accesses","stat",iCount]])                #populate with stats file

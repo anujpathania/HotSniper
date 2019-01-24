@@ -14,12 +14,12 @@ class StatTrace:
     args = dict(enumerate((args or '').split(':')))
     stat = 'core.energy-dynamic'
     filename = 'Temp'
-    
 
-    intervalFileName = file("Interval.dat", 'r')
-    interval_ns = float(intervalFileName.read())
-    intervalFileName.close ()
-    
+    interval_ns = long(args.get(0, 100000))
+    with open("Interval.dat", 'w') as f:
+      f.write(str(interval_ns))
+
+    self.clean_files()
 
     if '.' not in stat:
       print 'Stat name needs to be of the format <component>.<statname>, now %s' % stat
@@ -40,10 +40,6 @@ class StatTrace:
       print 'Stat %s[*].%s not found' % (stat_component, stat_name)
       return
 
-    open(os.path.join(sim.config.output_dir, 'PeriodicPerformanceCounters.log'), 'w'); #Empties the previous data, if any.
-    powerLogFileName = file(os.path.join(sim.config.output_dir, 'PeriodicPower.log'), 'w'); #Empties the previous data, if any.
-    thermalLogFileName = file(os.path.join(sim.config.output_dir, 'PeriodicThermal.log'), 'w'); #Empties the previous data, if any.
-
     if filename:
       self.fd = file(os.path.join(sim.config.output_dir, filename), 'w')
       self.isTerminal = False
@@ -60,6 +56,12 @@ class StatTrace:
 
     sim.util.Every(interval_ns * sim.util.Time.NS, self.periodic, statsdelta = self.sd, roi_only = True)
     
+  def clean_files(self):
+    for filename in ('PeriodicCPIStack.log',
+                     'PeriodicPower.log',
+                     'PeriodicThermal.log',
+                     'PeriodicFrequency.log',):
+      open(filename, 'w')  # empties the file
 
   def periodic(self, time, time_delta):
     if self.isTerminal:
