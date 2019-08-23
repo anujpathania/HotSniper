@@ -53,4 +53,9 @@ mcpat
 python_kit
 lib
 benchmarks
-hotspot
+
+# hotspot
+
+hotspot/hotfloorplan
+hotspot/hotspot
+hotspot/libhotspot.a

@@ -59,11 +59,7 @@ $ make -j 4
 
 * Install Hotspot
 
-$ cd ..
-
-$ tar -xvzf hotspot.tar.gz
-
-$ cd hotspot
+$ cd ../hotspot
 
 $ make
 
