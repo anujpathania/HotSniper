@@ -12,7 +12,7 @@ For Queries: martin.rapp@kit.edu, pathania@comp.nus.edu.sg
 Details of HotSniper can be found in paper "HotSniper: Sniper-Based Toolchain for Many-Core Thermal Simulations in Open Systems" published in Embedded Systems Letter (ESL), and please consider citing this paper in your work if you find this tool useful in your research.
 
 
-# Build Instructions (Tested on Ubuntu 16.04.4)
+# Build Instructions (Tested on Ubuntu 16.04.6)
 
 If you experience any issues, chances are that you are not the first one. We collected some common issues and solutions at the bottom of this README.
 
@@ -22,9 +22,9 @@ $ sudo apt-get install 4.4.0-127-generic
 
 Reboot and Select in Grub Bootloader "Advanced options for Ubuntu" >> "Ubuntu, with Linux 4.4.0-127-generic"
 
-* Install Supported gcc, g++ and perl Versions
+* Install Supported gcc and g++ Versions
 
-$ sudo apt-get install gcc-4.8 g++-4.8 perlbrew
+$ sudo apt-get install gcc-4.8 g++-4.8
 
 $ sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 100
 
@@ -44,7 +44,7 @@ $ mv pin-2.14-71313-gcc.4.4.7-linux pin_kit
 
 $ rm pin-2.14-71313-gcc.4.4.7-linux.tar.gz
 
-$ make
+$ make -j 4
 
 * Install PARSEC (and Other) Benchmark
 

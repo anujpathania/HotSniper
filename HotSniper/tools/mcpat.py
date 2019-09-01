@@ -420,10 +420,11 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   data['core-other'] = getpower(power_dat['Processor']) - (sum(data.values()) - data['dram'])
 
   
-  powerLogFileName = file("PeriodicPower.log", 'a');
-  powerInstantaneousFileName = file("InstantaneousPower.log", 'w');
+  powerLogFile = file("PeriodicPower.log", 'a');
+  powerInstantaneousFile = file("InstantaneousPower.log", 'w');
+  powerPackageInstantaneousFile = file("InstantaneousPowerPackage.log", 'w');
   if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
-   thermalLogFileName = file("PeriodicThermal.log", 'a');
+   thermalLogFile = file("PeriodicThermal.log", 'a');
 
   
   id = 0
@@ -501,11 +502,36 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
    
   needInitializing = os.stat("PeriodicPower.log").st_size == 0
   if needInitializing:
-    powerLogFileName.write (Headings+"\n")
+    powerLogFile.write (Headings+"\n")
     if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
-     thermalLogFileName.write (Headings+"\n")
+     thermalLogFile.write (Headings+"\n")
+     
+    #Automatic Pacakage Floorplan Generation Code for Hotspot
+    floorplan = os.path.abspath(os.path.join('../hotspot', sniper_config.get_config(cfg, "periodic_thermal/floorplan")))
+    floorplanFile = open(floorplan)
+    floorplanFileLine = floorplanFile.readline()
+    packageWidth = 0.0
+    packageHeight = 0.0
+    while floorplanFileLine:
+     floorplanFileLineData = floorplanFileLine.split ("\t")
+     width = float (floorplanFileLineData[1])+float(floorplanFileLineData[3])
+     height = float (floorplanFileLineData[2])+float(floorplanFileLineData[4])
+     if packageWidth<width:
+      packageWidth = width
+     if packageHeight<height:
+      packageHeight = height
+     floorplanFileLine = floorplanFile.readline()
+    floorplanFile.close()
+    floorplanPackageFile = open("Package.flp", "w")
+    floorplanPackageFileLine = "Package" + "\t" + format(packageWidth,'.11f') + "\t" + format(packageHeight,'.11f') + "\t" + "0.00000000000" + "\t" + "0.00000000000"+"\n"
+    floorplanPackageFile.write(floorplanPackageFileLine)
+    floorplanPackageFile.flush()
+    floorplanPackageFile.close()
 
-  powerInstantaneousFileName.write (Headings+"\n")
+    
+
+  powerInstantaneousFile.write (Headings+"\n")
+  powerPackageInstantaneousFile.write ("Package"+"\n")
    
   Readings = ""
 
@@ -564,17 +590,20 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
     if sniper_config.get_config_bool(cfg, "periodic_power/tp"):
       Readings += str(totalPower) +"\t" # Total Power
 
-  powerInstantaneousFileName.write (Readings+"\n")
-  powerInstantaneousFileName.close ()
+  powerInstantaneousFile.write (Readings+"\n")
+  powerPackageInstantaneousFile.write (str(getpower(power_dat['Processor'])) +"\n")
+  powerInstantaneousFile.close ()
+  powerPackageInstantaneousFile.close ()
 
-  powerLogFileName.write (Readings+"\n")
-  powerLogFileName.close()
+  powerLogFile.write (Readings+"\n")
+  powerLogFile.close()
 
 
   if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
 
    #HotSpot Integration Code
    floorplan = os.path.abspath(os.path.join('../hotspot', sniper_config.get_config(cfg, "periodic_thermal/floorplan")))
+   floorplanPackage = os.path.abspath("Package.flp")
 
    with open("Interval.dat", 'r') as f:
      interval_ns = float(f.read())
@@ -586,18 +615,28 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
                   '-sampling_intvl', str(interval_s),
                   '-p', 'InstantaneousPower.log',
                   '-o', 'InstantaneousTemperature.log']
+   hotspot_args_package = ['-c', '../hotspot/hotspot.config',
+                  '-f', floorplanPackage,
+                  '-sampling_intvl', str(interval_s),
+                  '-p', 'InstantaneousPowerPackage.log',
+                  '-o', 'InstantaneousPackageTemperature.log']
    if not needInitializing:
      hotspot_args += ['-init_file', 'Temperature.init']
+     hotspot_args_package += ['-init_file', 'PackageTemperature.init']
 
    temperatures = subprocess.check_output([hotspot_binary] + hotspot_args)
+   packageTemperatures = subprocess.check_output([hotspot_binary] + hotspot_args_package)
    with open('Temperature.init', 'w') as f:
      f.write(temperatures)
 
+   with open('PackageTemperature.init', 'w') as fPackage:
+     fPackage.write(packageTemperatures)
+
    with open('InstantaneousTemperature.log', 'r') as instTemperatureFile:
      instTemperatureFile.readline()  # ignore first line that contains the header
-     thermalLogFileName.write(instTemperatureFile.readline())
+     thermalLogFile.write(instTemperatureFile.readline())
 
-   thermalLogFileName.close()
+   thermalLogFile.close()
 
   return buildstack.merge_items({ 0: data }, all_items, nocollapse = nocollapse)
 
@@ -1083,7 +1122,33 @@ def readTemplate(ncores, num_l2s, private_l2s, num_l3s, technology_node):
   template.append(["\t\t<param name=\"homogeneous_NoCs\" value=\"1\"/>",""])
   template.append(["\t\t<param name=\"core_tech_node\" value=\"%u\"/><!-- nm -->"%technology_node,""])
   template.append(["\t\t<param name=\"target_core_clockrate\" value='%i'/><!--MHz -->",["core_clock","cfg",None]]) #CFG
-  template.append(["\t\t<param name=\"temperature\" value=\"330\"/> <!-- Kelvin -->",""])
+  
+  #Send package temperature obtained from HotSpot for better Power Modeling. 
+
+  needInitializing = os.stat("PeriodicPower.log").st_size == 0
+  if needInitializing:
+   #Extract Ambient Temperature from Hotspot.Config to Pass to McPat for the first run.
+   HotSpotConfigFile = open(os.path.abspath(os.path.join('../hotspot/hotspot.config')))
+   HotSpotConfigFileLine = HotSpotConfigFile.readline()
+   while HotSpotConfigFileLine:
+    HotSpotConfigFileLine = HotSpotConfigFile.readline()
+    HotSpotConfigFileLineData = HotSpotConfigFileLine.split ("\t")
+    if len(HotSpotConfigFileLineData) >= 3:
+     if HotSpotConfigFileLineData [2] == '-init_temp':
+      packageTemperatureInstantaneousFileName = file("InstantaneousPackageTemperature.log", 'w')
+      packageTemperatureInstantaneousFileName.write("Package"+"\n"+ str (float (HotSpotConfigFileLineData [5]) - 273.15) +"\n")
+      packageTemperatureInstantaneousFileName.close()
+   HotSpotConfigFile.close()  
+
+  packageTemperatureInstantaneousFile = file("InstantaneousPackageTemperature.log", 'r')
+  packageTemperatureInstantaneousFile.readline() #Ignore First HeaderLine
+  #McPat specification: "Temperature must be between 300 and 400 Kelvin and multiple of 10."
+  packageTemperatureInKelvinStr = packageTemperatureInstantaneousFile.readline()
+  packageTemperatureInKelvinRoundStr  = str(int(10 * round((float(packageTemperatureInKelvinStr)+273.15)/10)))
+  template.append(["\t\t<param name=\"temperature\" value=\""+packageTemperatureInKelvinRoundStr+"\"/> <!-- Kelvin -->",""])
+  packageTemperatureInstantaneousFile.close()
+  
+
   template.append(["\t\t<param name=\"number_cache_levels\" value=\"3\"/>",""])
   template.append(["\t\t<param name=\"interconnect_projection_type\" value=\"0\"/><!--0: agressive wire technology; 1: conservative wire technology -->",""])
   template.append(["\t\t<param name=\"device_type\" value=\"{:d}\"/><!--0: HP(High Performance Type); 1: LSTP(Low standby power) 2: LOP (Low Operating Power)  -->".format(device_type),""])
