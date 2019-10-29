@@ -1,18 +1,26 @@
 # HotSniper
-An enchanced multi/many-core simulator derived from Sniper MultiCore Simulator (http://snipersim.org).
+An enchanced multi-/many-core simulator derived from Sniper multi-core simulator (http://snipersim.org).
 
 Sniper Version used as base - Sniper 6.1
 
-Creators: Martin Rapp, Anuj Pathania
+Creators: Anuj Pathania, Martin Rapp, and Jörg Henkel
 
 License: MIT
 
-For Queries: martin.rapp@kit.edu, pathania@comp.nus.edu.sg
+For Queries: pathania@comp.nus.edu.sg, martin.rapp@kit.edu
 
-Details of HotSniper can be found in paper "HotSniper: Sniper-Based Toolchain for Many-Core Thermal Simulations in Open Systems" published in Embedded Systems Letter (ESL), and please consider citing this paper in your work if you find this tool useful in your research.
+## Publication
+
+### HotSniper: Sniper-Based Toolchain for Many-Core Thermal Simulations in Open Systems
+
+Details of HotSniper can be found in our ESL 2018 paper, and please consider citing this paper in your work if you find this tool useful in your research.
+
+> Pathania, Anuj, and Jörg Henkel. **"HotSniper: Sniper-Based Toolchain for Many-Core Thermal Simulations in Open Systems."** *IEEE Embedded Systems Letters* 11.2 (2018): 54-57.
+
+[IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/8444047) 
 
 
-# Build Instructions (Tested on Ubuntu 16.04.6)
+## Build Instructions (Tested on Ubuntu 16.04.6)
 
 If you experience any issues, chances are that you are not the first one. We collected some common issues and solutions at the bottom of this README.
 
@@ -74,7 +82,7 @@ $ ./run-sniper -n 64 -c gainestown --benchmarks=parsec-blackscholes-test-1,parse
 $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-roi --sim-end=last -senergystats:100000 -speriodic-power:100000
 
 
-# Feature 1: Open Scheduler 
+## Feature 1: Open Scheduler 
 
 * Major Files of Interest "scheduler_open.cc", "scheduler_open.h", "base.cfg", "policies/*"
 
@@ -136,7 +144,7 @@ $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-r
 
 
 
-# Feature 2: Periodic Power (using McPAT) & Temperature Tracing (using HotSpot)
+## Feature 2: Periodic Power (using McPAT) & Temperature Tracing (using HotSpot)
 
 * Major Files of Interest "tools/mcpat.py", "scripts/periodic-power.py"
 
@@ -211,7 +219,7 @@ $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-r
 	enabled = true
 
 
-# Future/Ongoing Feature Integrations
+## Future/Ongoing Feature Integrations
 
 * Integration of HeartBeat API from MIT; refer "Application Heartbeats for Software Performance and Health".
 
@@ -222,13 +230,13 @@ $ ./run-sniper -n 2 -c gainestown --benchmarks=parsec-blackscholes-test-1 --no-r
 * Merge with Sniper 8
 
 
-# Problems and Solutions
+## Problems and Solutions
 
-## The C++ ABI of your compiler does not match the ABI of the pin kit. This kit requires gcc 3.4 or later
+### The C++ ABI of your compiler does not match the ABI of the pin kit. This kit requires gcc 3.4 or later
 
 Seen with gcc/g++ 5. Use gcc 4.8 and g++ 4.8 instead.
 
-## Source/pin/injector_nonmac/auxvector.cpp: CopyAux: 291: unexpected AUX VEC type 26
+### Source/pin/injector_nonmac/auxvector.cpp: CopyAux: 291: unexpected AUX VEC type 26
 
 Seen with kernel versions > 4.9. Downgrade to kernel version 4.9.
 This seems to be a limitation of the Intel VTune library, which is used by PIN.
