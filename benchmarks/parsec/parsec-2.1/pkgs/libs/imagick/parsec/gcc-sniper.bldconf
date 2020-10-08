@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# gcc-sniper.bldconf - configuration file for PARSEC
+
+source ${PARSECDIR}/pkgs/libs/imagick/parsec/gcc-hooks.bldconf
+
+# GCC 4.4.6 (RedHat/CentOS 6) hangs when compiling magick/decorate.c with -O3, let's make it a bit easier
+build_env="CFLAGS=\"${CFLAGS} -O2\""

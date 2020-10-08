@@ -14,8 +14,14 @@ import sys, os, sim
 def build_dvfs_table(tech):
   # Build a table of (frequency, voltage) pairs.
   # Frequencies should be from high to low, and end with zero (or the lowest possible frequency)
-  if tech == 22:
-    return [ (2000, 1.0), (1800, 0.9), (1500, 0.8), (1000, 0.7), (0, 0.6) ]
+  if tech <= 22:
+    # Even technology nodes smaller than 22nm should use the DVFS levels of 22nm.
+    # This is the voltage reported to McPAT.
+    # McPAT does not support technology nodes smaller than 22nm and is operated at 22nm.
+    # The scaling is then done in tools/mcpat.py.
+    def v(f):
+      return 0.6 + f / 4000.0 * 0.8
+    return [ (f, v(f))  for f in reversed(range(0, 4000+1, 100))]
   elif tech == 45:
     return [ (2000, 1.2), (1800, 1.1), (1500, 1.0), (1000, 0.9), (0, 0.8) ]
   else:
@@ -35,7 +41,9 @@ class Power:
 class EnergyStats:
   def setup(self, args):
     args = dict(enumerate((args or '').split(':')))
-    interval_ns = long(args.get(0, None) or 1000000) # Default power update every 1 ms
+
+    interval_ns = long(args.get(0, 100000))
+
     sim.util.Every(interval_ns * sim.util.Time.NS, self.periodic, roi_only = True)
     self.dvfs_table = build_dvfs_table(int(sim.config.get('power/technology_node')))
     #
@@ -73,23 +81,20 @@ class EnergyStats:
     if sim.stats.time() == self.time_last_power:
       # Time did not advance: don't recompute
       return
-    if not self.power or (sim.stats.time() - self.time_last_power >= 10 * sim.util.Time.US):
-      # Time advanced significantly, or no power result yet: compute power
-      #   Save snapshot
-      current = 'energystats-temp%s' % ('B' if self.name_last and self.name_last[-1] == 'A' else 'A')
-      self.in_stats_write = True
-      sim.stats.write(current)
-      self.in_stats_write = False
-      #   If we also have a previous snapshot: update power
-      if self.name_last:
-        power = self.run_power(self.name_last, current)
-        self.update_power(power)
-      #   Clean up previous last
-      if self.name_last:
-        sim.util.db_delete(self.name_last)
-      #   Update new last
-      self.name_last = current
-      self.time_last_power = sim.stats.time()
+    current = 'energystats-temp%s' % ('B' if self.name_last and self.name_last[-1] == 'A' else 'A')
+    self.in_stats_write = True
+    sim.stats.write(current)
+    self.in_stats_write = False
+    #   If we also have a previous snapshot: update power
+    if self.name_last:
+      power = self.run_power(self.name_last, current)
+      self.update_power(power)
+    #   Clean up previous last
+    if self.name_last:
+      sim.util.db_delete(self.name_last)
+    #   Update new last
+    self.name_last = current
+    self.time_last_power = sim.stats.time()
     # Increment energy
     self.update_energy()
 

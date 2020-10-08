@@ -1,0 +1,257 @@
+diff --git a/MMTk/ext/vm/harness/org/mmtk/harness/vm/Memory.java b/MMTk/ext/vm/harness/org/mmtk/harness/vm/Memory.java
+index 422909b..f325c7b 100644
+--- a/MMTk/ext/vm/harness/org/mmtk/harness/vm/Memory.java
++++ b/MMTk/ext/vm/harness/org/mmtk/harness/vm/Memory.java
+@@ -121,6 +121,12 @@ public class Memory extends org.mmtk.vm.Memory {
+     SimulatedMemory.dumpMemory(start, beforeBytes, afterBytes);
+   }
+ 
++  // Sniper
++  public final void startingHarness() { }
++  public final void endingHarness() { }
++  public final void sniperMarker(int a, int b) { }
++  public final void sniperMagic(int a, int b, int c) { }
++
+   @Override
+   @Inline
+   public void sync() {
+diff --git a/MMTk/ext/vm/jikesrvm/org/jikesrvm/mm/mmtk/Memory.java b/MMTk/ext/vm/jikesrvm/org/jikesrvm/mm/mmtk/Memory.java
+index 09d1a6b..5727613 100644
+--- a/MMTk/ext/vm/jikesrvm/org/jikesrvm/mm/mmtk/Memory.java
++++ b/MMTk/ext/vm/jikesrvm/org/jikesrvm/mm/mmtk/Memory.java
+@@ -139,6 +139,20 @@ import org.vmmagic.pragma.*;
+     org.jikesrvm.runtime.Memory.dumpMemory(start,beforeBytes,afterBytes);
+   }
+ 
++  // Sniper
++  public final void startingHarness() {
++    org.jikesrvm.runtime.Memory.startingHarness();
++  }
++  public final void endingHarness() {
++    org.jikesrvm.runtime.Memory.endingHarness();
++  }
++  public final void sniperMarker(int a, int b) {
++    org.jikesrvm.runtime.Memory.sniperMarker(a, b);
++  }
++  public final void sniperMagic(int a, int b, int c) {
++    org.jikesrvm.runtime.Memory.sniperMagic(a, b, c);
++  }
++
+   /*
+    * Utilities from the VM class
+    */
+diff --git a/MMTk/src/org/mmtk/plan/Plan.java b/MMTk/src/org/mmtk/plan/Plan.java
+index 015439b..fead3a6 100644
+--- a/MMTk/src/org/mmtk/plan/Plan.java
++++ b/MMTk/src/org/mmtk/plan/Plan.java
+@@ -674,6 +674,9 @@ public abstract class Plan implements Constants {
+     Options.ignoreSystemGC.setValue(oldIgnore);
+     Options.fullHeapSystemGC.setValue(oldFullHeap);
+ 
++    // Sniper
++    VM.memory.startingHarness();
++
+     // Start statistics
+     insideHarness = true;
+     Stats.startAll();
+@@ -690,6 +693,9 @@ public abstract class Plan implements Constants {
+   public static void harnessEnd()  {
+     Stats.stopAll();
+     insideHarness = false;
++
++    // Sniper
++    VM.memory.endingHarness();
+   }
+ 
+   /****************************************************************************
+diff --git a/MMTk/src/org/mmtk/vm/Memory.java b/MMTk/src/org/mmtk/vm/Memory.java
+index f0aabba..ef0f653 100644
+--- a/MMTk/src/org/mmtk/vm/Memory.java
++++ b/MMTk/src/org/mmtk/vm/Memory.java
+@@ -120,6 +120,12 @@ import org.vmmagic.pragma.*;
+   public abstract void dumpMemory(Address start, int beforeBytes,
+       int afterBytes);
+ 
++  // Sniper
++  public abstract void startingHarness();
++  public abstract void endingHarness();
++  public abstract void sniperMarker(int a, int b);
++  public abstract void sniperMagic(int a, int b, int c);
++
+   /**
+    * Wait for preceeding cache flush/invalidate instructions to complete
+    * on all processors.  Ensures that all memory writes before this
+diff --git a/build.xml b/build.xml
+index 838e9dc..8cef0c8 100644
+--- a/build.xml
++++ b/build.xml
+@@ -12,6 +12,8 @@
+  -->
+ <project name="JikesRVM" default="main" basedir=".">
+ 
++  <property environment="env"/>
++
+   <property name="rvm.version" value="3.1.3"/>
+   <property name="hg.revision" value="10592:4cb2f9536054"/> 
+ 
+@@ -1825,7 +1827,7 @@ Check to make sure all required properties are specified. This includes properti
+       </conditions>
+       <sequential>
+         <exec executable="${c++.exe}" failonerror="true">
+-          <arg line="${c++.args} ${rvm.common.args} ${gcspy.lib.dir} ${perfevent.lib} ${rvm.src} ${c++.librt} -lpthread ${c++.rdynamic} -g"/>
++          <arg line="${c++.args} ${rvm.common.args} ${gcspy.lib.dir} ${perfevent.lib} ${rvm.src} ${c++.librt} -lpthread ${c++.rdynamic} -g -I${env.SNIPER_ROOT}/include"/>
+           <arg value="-o"/>
+           <arg value="${build.base}/JikesRVM"/>
+           <arg value="-L${build.base}"/>
+@@ -1840,7 +1842,7 @@ Check to make sure all required properties are specified. This includes properti
+       </conditions>
+       <sequential>
+         <exec executable="${c++.exe}" failonerror="true">
+-          <arg line="${c++.args} ${rvm.common.args} ${gcspy.lib.dir} ${perfevent.lib} ${rvm.src} ${c++.librt} -lpthread ${c++.rdynamic} -g"/>
++          <arg line="${c++.args} ${rvm.common.args} ${gcspy.lib.dir} ${perfevent.lib} ${rvm.src} ${c++.librt} -lpthread ${c++.rdynamic} -g -I${env.SNIPER_ROOT}/include"/>
+           <arg value="-o"/>
+           <arg value="${build.base}/JikesRVM"/>
+           <arg value="-L${build.base}"/>
+diff --git a/rvm/src/org/jikesrvm/runtime/BootRecord.java b/rvm/src/org/jikesrvm/runtime/BootRecord.java
+index 8ea6eae..c7fe007 100644
+--- a/rvm/src/org/jikesrvm/runtime/BootRecord.java
++++ b/rvm/src/org/jikesrvm/runtime/BootRecord.java
+@@ -263,6 +263,13 @@ public class BootRecord {
+   public Address sysStashVMThreadIP;
+   public Address sysThreadTerminateIP;
+ 
++  // Sniper
++  public Address sysStartingHarnessIP;
++  public Address sysEndingHarnessIP;
++  public Address sysSniperMarkerIP;
++  public Address sysSniperMagicIP;
++  public Address sysSniperThreadNameIP;
++
+   // monitors
+   public Address sysMonitorCreateIP;
+   public Address sysMonitorDestroyIP;
+diff --git a/rvm/src/org/jikesrvm/runtime/Memory.java b/rvm/src/org/jikesrvm/runtime/Memory.java
+index 056bde8..20f1033 100644
+--- a/rvm/src/org/jikesrvm/runtime/Memory.java
++++ b/rvm/src/org/jikesrvm/runtime/Memory.java
+@@ -585,6 +585,20 @@ public class Memory {
+     }
+   }
+ 
++  // Sniper
++  public static void startingHarness() {
++    SysCall.sysCall.sysStartingHarness();
++  }
++  public static void endingHarness() {
++    SysCall.sysCall.sysEndingHarness();
++  }
++  public static void sniperMarker(int a, int b) {
++    SysCall.sysCall.sysSniperMarker(a, b);
++  }
++  public static void sniperMagic(int a, int b, int c) {
++    SysCall.sysCall.sysSniperMagic(a, b, c);
++  }
++
+   @Inline
+   public static Address alignUp(Address address, int alignment) {
+     return address.plus(alignment - 1).toWord().and(Word.fromIntSignExtend(~(alignment - 1))).toAddress();
+diff --git a/rvm/src/org/jikesrvm/runtime/SysCall.java b/rvm/src/org/jikesrvm/runtime/SysCall.java
+index f02e229..47656be 100644
+--- a/rvm/src/org/jikesrvm/runtime/SysCall.java
++++ b/rvm/src/org/jikesrvm/runtime/SysCall.java
+@@ -163,6 +163,22 @@ public abstract class SysCall {
+   @SysCallTemplate
+   public abstract int sysNumProcessors();
+ 
++  // Sniper
++  @SysCallTemplate
++  public abstract int sysStartingHarness();
++
++  @SysCallTemplate
++  public abstract int sysEndingHarness();
++
++  @SysCallTemplate
++  public abstract int sysSniperMarker(int a, int b);
++
++  @SysCallTemplate
++  public abstract int sysSniperMagic(int a, int b, int c);
++
++  @SysCallTemplate
++  public abstract void sysSniperThreadName(byte[] name);
++
+   /**
+    * Create a native thread (aka "unix kernel thread", "pthread").
+    * @param tr
+diff --git a/rvm/src/org/jikesrvm/scheduler/RVMThread.java b/rvm/src/org/jikesrvm/scheduler/RVMThread.java
+index 4d71eab..e8f2382 100644
+--- a/rvm/src/org/jikesrvm/scheduler/RVMThread.java
++++ b/rvm/src/org/jikesrvm/scheduler/RVMThread.java
+@@ -2601,6 +2601,17 @@ public final class RVMThread extends ThreadContext implements Constants {
+       VM.sysWriteln("Thread.startoff(): about to call ", currentThread.toString(), ".run()");
+     }
+ 
++    /*
++     * pass thread name down to Sniper as a byte[]
++     */
++    int len = currentThread.name.length();
++    byte[] b = new byte[len + 1];
++    for (int i = 0; i < len; i++) {
++      char c = currentThread.name.charAt(i);
++      b[i] = (byte) c;
++    }
++    sysCall.sysSniperThreadName(b);
++
+     try {
+       if (currentThread.systemThread != null) {
+         currentThread.systemThread.run();
+diff --git a/tools/bootImageRunner/sys.C b/tools/bootImageRunner/sys.C
+index 7c7a4e2..511d81e 100644
+--- a/tools/bootImageRunner/sys.C
++++ b/tools/bootImageRunner/sys.C
+@@ -47,6 +47,9 @@ extern "C" int sched_yield(void);
+ #include <utime.h>
+ #include <setjmp.h>
+ 
++// Sniper
++#include <sim_api.h>
++
+ #ifdef RVM_WITH_PERFEVENT
+ #include <perfmon/pfmlib_perf_event.h>
+ #include <err.h>
+@@ -1013,6 +1016,36 @@ sysThreadCreate(Address tr, Address ip, Address fp)
+     return (Word)sysThreadHandle;
+ }
+ 
++// Sniper
++extern "C" void
++sysStartingHarness() {
++  printf("[HOOKS] Entering ROI\n");
++  fflush(NULL);
++  SimRoiStart();
++}
++
++extern "C" void
++sysEndingHarness() {
++  SimRoiEnd();
++  printf("[HOOKS] Leaving ROI\n");
++  fflush(NULL);
++}
++
++extern "C" void
++sysSniperMarker(int a, int b) {
++  SimMarker(a, b);
++}
++
++extern "C" void
++sysSniperMagic(int a, int b, int c) {
++  SimMagic2(a, b, c);
++}
++
++extern "C" void
++sysSniperThreadName(const char * buf) {
++  SimSetThreadName(buf);
++}
++
+ extern "C" int
+ sysThreadBindSupported()
+ {

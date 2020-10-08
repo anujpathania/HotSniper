@@ -1,0 +1,77 @@
+image: gitlab/dind
+
+stages:
+  - prepare
+  - build
+  - run
+  - test
+
+build_image:
+  only: ['master']
+  stage: prepare
+  script:
+    - docker build -f docker/Dockerfile-ubuntu-16.04 -t ubuntu:16.04-sniper .
+    - mkdir image
+    - docker save ubuntu:16.04-sniper > image/sniper.tar
+  artifacts:
+    paths:
+      - image
+    expire_in: 6 hours
+
+build_sniper:
+  only: ['master']
+  stage: build
+  script:
+    - docker load -i image/sniper.tar
+    - docker run --rm -v "${PWD}:${PWD}" -w "${PWD}" ubuntu:16.04-sniper bash ci/build_sniper.sh
+  artifacts:
+    paths:
+      - config/sniper.py
+      - lib
+      - mcpat
+      - pin_kit
+      - python_kit
+      - sift
+      - xed
+      - xed_kit
+    expire_in: 6 hours
+
+build_hotspot:
+  only: ['master']
+  stage: build
+  script:
+    - docker load -i image/sniper.tar
+    - docker run --rm -v "${PWD}:${PWD}" -w "${PWD}" ubuntu:16.04-sniper bash ci/build_hotspot.sh
+  artifacts:
+    paths:
+      - hotspot/hotspot
+    expire_in: 6 hours
+
+build_benchmarks:
+  only: ['master']
+  stage: build
+  script:
+    - docker load -i image/sniper.tar
+    - docker run --rm -v "${PWD}:${PWD}" -w "${PWD}" ubuntu:16.04-sniper bash ci/build_benchmarks.sh
+  artifacts:
+    paths:
+      - benchmarks
+    expire_in: 6 hours
+
+run_simulation:
+  only: ['master']
+  stage: run
+  script:
+    - docker load -i image/sniper.tar
+    - docker run --rm -v "${PWD}:${PWD}" -w "${PWD}" ubuntu:16.04-sniper bash -c "PYTHONIOENCODING=UTF-8 python3 simulationcontrol/run.py"
+  artifacts:
+    paths:
+      - results
+    expire_in: 6 hours
+
+test_results:
+  only: ['master']
+  stage: test
+  script:
+    - docker load -i image/sniper.tar
+    - docker run --rm -v "${PWD}:${PWD}" -w "${PWD}" ubuntu:16.04-sniper bash -c "PYTHONIOENCODING=UTF-8 PYTHONPATH=`pwd` python3 ci/test_results.py"

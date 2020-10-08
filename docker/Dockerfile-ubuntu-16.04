@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 # For building RISC-V Tools
 RUN apt-get update && apt-get install -y \
+    nano \
     autoconf \
     automake \
     autotools-dev \
@@ -50,4 +51,26 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get update && apt-get install -y \
     gdb \
     git \
+ && rm -rf /var/lib/apt/lists/*
+# Benchmark utilities
+RUN apt-get update && apt-get install -y \
+    gettext \
+    gfortran \
+    m4 \
+    xsltproc \
+    libx11-dev \
+    libxext-dev \
+    libxt-dev \
+    libxmu-dev \
+    libxi-dev \
+    gnuplot \
+ && rm -rf /var/lib/apt/lists/*
+ # Python3,pip3 and modules for simulationcontrol
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-setuptools \
+ && rm -rf /var/lib/apt/lists/*
+ RUN easy_install3 pip \
+ && rm -rf /var/lib/apt/lists/*
+ RUN pip3 install matplotlib seaborn diskcache tabulate \
  && rm -rf /var/lib/apt/lists/*

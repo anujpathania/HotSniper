@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# gcc-sniper.bldconf - configuration file for PARSEC
+
+source ${PARSECDIR}/config/gcc-hooks.bldconf
+source ${PARSECDIR}/../../tools/hooks/buildconf.sh
+
+CC="${HOOKS_CC}"
+CXX="${HOOKS_CXX}"
+CFLAGS="${CFLAGS} ${HOOKS_CFLAGS} -DENABLE_PARMACS"
+CXXFLAGS="${CXXFLAGS} ${HOOKS_CXXFLAGS}"
+LDFLAGS="${LDFLAGS} ${HOOKS_LDFLAGS}"
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${HOOKS_LD_LIBRARY_PATH}"

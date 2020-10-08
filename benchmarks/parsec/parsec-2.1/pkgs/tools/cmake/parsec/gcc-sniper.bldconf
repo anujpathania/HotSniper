@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# gcc-sniper.bldconf - configuration file for PARSEC
+
+source ${PARSECDIR}/pkgs/tools/cmake/parsec/gcc-hooks.bldconf
+
+# We're not building this to run in Sniper, so normalize the build environment a bit
+build_env="CC=\"${CC}\" CXXFLAGS=\"${CXXFLAGS} -fexceptions\" LDFLAGS=\"-L${CC_HOME}/lib64 -L${CC_HOME}/lib -L${PARSECDIR}/pkgs/libs/hooks/inst/${PARSECPLAT}/lib\""

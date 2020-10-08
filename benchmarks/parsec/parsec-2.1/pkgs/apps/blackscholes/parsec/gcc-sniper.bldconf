@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# gcc-sniper.bldconf - configuration file for PARSEC
+
+source ${PARSECDIR}/pkgs/apps/blackscholes/parsec/gcc-hooks.bldconf

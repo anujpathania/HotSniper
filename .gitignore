@@ -61,3 +61,13 @@ mbuild
 # Pin3 output
 frontend/pin-frontend/obj-intel64
 sift/recorder/obj-intel64
+
+# VS CODE FILES
+.vscode
+.DS_Store
+
+# MISC
+frontend
+sift
+xed
+pin.tar.gz

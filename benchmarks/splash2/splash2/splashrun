@@ -1,0 +1,217 @@
+#!/usr/bin/env python
+# $Id: splashrun 6433 2010-05-11 14:06:29Z wheirman $
+
+import sys, os, time, getopt, tempfile
+
+HOME = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0])))
+
+
+class UnsupportedParameter(ValueError): pass
+
+
+def mkNewDir(dirname):
+  os.system('rm -rf ' + dirname)
+  os.makedirs(dirname)
+
+
+def run(cmd):
+  sys.stdout.flush()
+  sys.stderr.flush()
+  rc = os.system(cmd)
+  rc = rc >> 8
+  return rc
+
+
+class Benchmark:
+  def __init__(self, name, dir_, cmdname, size2args, max_threads = None, files = []):
+    self.name = name
+    self.dir_ = os.path.join(HOME, 'codes', dir_)
+    self.cmdname = cmdname
+    self.size2args = size2args
+    self.max_threads = max_threads
+    self.files = files
+  def validate(self, inputsize, nthreads):
+    if self.max_threads and nthreads > self.max_threads:
+      raise UnsupportedParameter("%s: maximum %u threads supported" % (self.name, self.max_threads))
+    if inputsize not in self.size2args:
+      raise UnsupportedParameter("%s: input size %s not supported" % (self.name, inputsize))
+  def prepare(self, inputsize, nthreads, rundir):
+    self.validate(inputsize, nthreads)
+    if self.files:
+      for f in self.files:
+        run('cp %s/%s %s' % (self.dir_, f, rundir))
+    inp = self.size2args[inputsize]
+    if callable(inp): inp = inp(nthreads)
+    return { 'input': inp, 'nthreads': nthreads }
+  def run(self, args):
+    return os.path.join(self.dir_, self.cmdname) + ' ' + self.cmdline(args)
+
+class BenchmarkPlain(Benchmark):
+  def __init__(self, name, dir_, cmdname, size2args, cmdargs, **kwds):
+    Benchmark.__init__(self, name, dir_, cmdname, size2args, **kwds)
+    self.cmdargs = cmdargs
+  def cmdline(self, args):
+    return self.cmdargs % args
+
+
+class BenchmarkFile(BenchmarkPlain):
+  def __init__(self, name, dir_, cmdname, size2args, cmdargs, unzip, **kwds):
+    BenchmarkPlain.__init__(self, name, dir_, cmdname, size2args, cmdargs, **kwds)
+    self.unzip = unzip
+  def prepare(self, inputsize, nthreads, rundir):
+    args = Benchmark.prepare(self, inputsize, nthreads, rundir)
+    cmd = self.unzip % { 'dir_': self.dir_, 'rundir': rundir, 'file': type(args['input']) is tuple and args['input'][0] or args['input'] }
+    print '[SPLASH]', 'Extracting output:', cmd
+    run(cmd)
+    return args
+  def cmdline(self, args):
+    if type(args['input']) is tuple:
+      for i in range(len(args['input'])):
+        args['input[%u]' % i] = args['input'][i]
+    return self.cmdargs % args
+
+
+class BenchmarkStdin(Benchmark):
+  def __init__(self, name, dir_, cmdname, size2args, fileargs, **kwds):
+    Benchmark.__init__(self, name, dir_, cmdname, size2args, **kwds)
+    self.fileargs = fileargs
+  def prepare(self, inputsize, nthreads, rundir):
+    args = Benchmark.prepare(self, inputsize, nthreads, rundir)
+    file(os.path.join(rundir, 'input'), 'w').write(self.fileargs % args)
+  def cmdline(self, args):
+    return '< input'
+
+
+benchmarks = {
+  # apps
+  'barnes':     BenchmarkStdin('barnes', 'apps/barnes', 'BARNES', { 'test': 1024, 'small': 16384, 'large': 32*1024 }, '\n%(input)u\n123\n\n0.025\n0.05\n1.0\n2.0\n5.0\n0.075\n0.25\n%(nthreads)u\n'),
+  'fmm':        BenchmarkStdin('fmm', 'apps/fmm', 'FMM', { 'test': 512, 'tiny': 1024, 'small': 16384, 'large': 32*1024 }, 'two cluster\nplummer\n%(input)u\n1e-6\n%(nthreads)u\n5\n.025\n0.0\ncost zones\n', max_threads = 64),
+  'ocean.cont': BenchmarkPlain('ocean.cont', 'apps/ocean/contiguous_partitions', 'OCEAN', { 'test': 18, 'small': 258, 'large': 1026 }, '-n%(input)u -p%(nthreads)u'),
+  'ocean.ncont':BenchmarkPlain('ocean.ncont', 'apps/ocean/non_contiguous_partitions', 'OCEAN', { 'test': 18, 'small': 258, 'large': 1026 }, '-n%(input)u -p%(nthreads)u', max_threads = 64),
+  'radiosity':  BenchmarkPlain('radiosity', 'apps/radiosity', 'RADIOSITY', { 'test': '', 'small': '-room -ae 5000 -en 0.05 -bf 0.10', 'large': '-room' }, '-p %(nthreads)u %(input)s -batch'),
+  'raytrace':   BenchmarkFile('raytrace', 'apps/raytrace', 'RAYTRACE', { 'test': ('teapot', ''), 'small': ('car', '-m64'), 'large': ('car', '-m64 -a4') }, '-p%(nthreads)u %(input[1])s inputs/%(input[0])s.env',
+                              'mkdir %(rundir)s/inputs; gunzip < %(dir_)s/inputs/%(file)s.env.Z > %(rundir)s/inputs/%(file)s.env; gunzip < %(dir_)s/inputs/%(file)s.geo.Z > %(rundir)s/inputs/%(file)s.geo'),
+  'volrend':    BenchmarkFile('volrend', 'apps/volrend', 'VOLREND', { 'test': 'head-scaleddown4', 'small': 'head-scaleddown2', 'large': 'head' }, '%(nthreads)u %(input)s',
+                              'tar xzv -C %(rundir)s -f %(dir_)s/inputs/%(file)s.tgz'),
+  'water.nsq':  BenchmarkStdin('water.nsq', 'apps/water-nsquared', 'WATER-NSQUARED', { 'test': 27, 'small': 512, 'large': 2197 }, '  1.5e-16   %(input)u  3   6\n -1      3000     3  0\n%(nthreads)u 6.212752\n',
+                               files = [ 'random.in' ]),
+  'water.sp':   BenchmarkStdin('water.sp', 'apps/water-spatial', 'WATER-SPATIAL', { 'test': 27, 'small': 512, 'large': 2197 }, '  1.5e-16   %(input)u  3   6\n -1      3000     3  0\n%(nthreads)u 6.212752\n',
+                               files = [ '../water-nsquared/random.in' ]),
+
+  # kernels
+  'cholesky':   BenchmarkFile('cholesky', 'kernels/cholesky', 'CHOLESKY', { 'test': 'tk14.O', 'small': 'tk25.O', 'large': 'tk29.O' }, '-p%(nthreads)u %(input)s',
+                              'gunzip < %(dir_)s/inputs/%(file)s.Z > %(rundir)s/%(file)s'),
+  'fft':        BenchmarkPlain('fft', 'kernels/fft', 'FFT', { 'test': 10, 'tiny': 14, 'small': 18, 'large': 22 }, '-m%(input)u -p%(nthreads)u'),
+  'lu.cont':    BenchmarkPlain('lu.cont', 'kernels/lu/contiguous_blocks', 'LU', { 'test': 16, 'small': 512, 'large': 1024 }, '-n%(input)u -p%(nthreads)u'),
+  'lu.ncont':   BenchmarkPlain('lu.ncont', 'kernels/lu/non_contiguous_blocks', 'LU', { 'test': 16, 'small': 512, 'large': 1024 }, '-n%(input)u -p%(nthreads)u'),
+  'radix':      BenchmarkPlain('radix', 'kernels/radix', 'RADIX', { 'test': 16384, 'tiny': 65536, 'small': 262144, 'large': 1048576 }, '-n%(input)u -p%(nthreads)u'),
+
+  # scale versions
+  'barnes-scale':     BenchmarkStdin('barnes', 'apps/barnes', 'BARNES', { 'small': lambda p: 16384*p/16 }, '\n%(input)u\n123\n\n0.025\n0.05\n1.0\n2.0\n5.0\n0.075\n0.25\n%(nthreads)u\n'),
+  'fmm-scale':        BenchmarkStdin('fmm', 'apps/fmm', 'FMM', { 'small': lambda p: 16384*p/16 }, 'two cluster\nplummer\n%(input)u\n1e-6\n%(nthreads)u\n5\n.025\n0.0\ncost zones\n'),
+  'ocean.cont-scale': BenchmarkPlain('ocean.cont', 'apps/ocean/contiguous_partitions', 'OCEAN', { 'small': lambda p: 256*p/16+2 }, '-n%(input)u -p%(nthreads)u'),
+  'water.nsq-scale':  BenchmarkStdin('water.nsq', 'apps/water-nsquared', 'WATER-NSQUARED', { 'small': lambda p: {16:512,32:1331,64:2197}[p] }, '  1.5e-16   %(input)u  3   6\n -1      3000     3  0\n%(nthreads)u 6.212752\n',
+                               files = [ 'random.in' ]),
+  'fft-scale':        BenchmarkPlain('fft', 'kernels/fft', 'FFT', { 'small': lambda p: {16:18,32:20,64:22}[p] }, '-m%(input)u -p%(nthreads)u'),
+  'lu.cont-scale':    BenchmarkPlain('lu.cont', 'kernels/lu/contiguous_blocks', 'LU', { 'small': lambda p: 512*p/16 }, '-n%(input)u -p%(nthreads)u'),
+  'lu.ncont-scale':   BenchmarkPlain('lu.ncont', 'kernels/lu/non_contiguous_blocks', 'LU', { 'small': lambda p: 512*p/16 }, '-n%(input)u -p%(nthreads)u'),
+  'radix-scale':      BenchmarkPlain('radix', 'kernels/radix', 'RADIX', { 'small': lambda p: 262144*p/16 }, '-n%(input)u -p%(nthreads)u'),
+
+  'fft_O0':   	BenchmarkPlain('fft', 'kernels/fft', 'FFT-O0', { 'test': 10, 'tiny': 14, 'small': 18, 'large': 22 }, '-m%(input)u -p%(nthreads)u'),
+  'fft_O1':   	BenchmarkPlain('fft', 'kernels/fft', 'FFT-O1', { 'test': 10, 'tiny': 14, 'small': 18, 'large': 22 }, '-m%(input)u -p%(nthreads)u'),
+  'fft_O2':   	BenchmarkPlain('fft', 'kernels/fft', 'FFT-O2', { 'test': 10, 'tiny': 14, 'small': 18, 'large': 22 }, '-m%(input)u -p%(nthreads)u'),
+  'fft_O3':   	BenchmarkPlain('fft', 'kernels/fft', 'FFT-O3', { 'test': 10, 'tiny': 14, 'small': 18, 'large': 22 }, '-m%(input)u -p%(nthreads)u'),
+  'raytrace_opt': BenchmarkFile('raytrace', 'apps/raytrace', 'RAYTRACE.opt', { 'test': ('teapot', ''), 'small': ('car', '-m64'), 'large': ('car', '-m64 -a4') }, '-p%(nthreads)u %(input[1])s inputs/%(input[0])s.env',
+                                'mkdir %(rundir)s/inputs; gunzip < %(dir_)s/inputs/%(file)s.env.Z > %(rundir)s/inputs/%(file)s.env; gunzip < %(dir_)s/inputs/%(file)s.geo.Z > %(rundir)s/inputs/%(file)s.geo'),
+
+  'fft_rep2': BenchmarkPlain('fft', 'kernels/fft', 'FFT', { 'test': 10, 'tiny': 14, 'small': 18, 'large': 22 }, '-m%(input)u -p%(nthreads)u -r2'),
+  'fft_forever': BenchmarkPlain('fft', 'kernels/fft', 'FFT', { 'test': 10, 'tiny': 14, 'small': 18, 'large': 22 }, '-m%(input)u -p%(nthreads)u -r1000000'),
+}
+
+
+def allbenchmarks():
+  return sorted(filter(lambda x: not x.endswith('-scale'), benchmarks.keys())) \
+       + sorted(filter(lambda x:     x.endswith('-scale'), benchmarks.keys()))
+
+
+if __name__ == '__main__':
+  def usage():
+    print 'SPLASH-2 run program, similar to PARSEC `parsecmgmt -a run`'
+    print 'Usage:'
+    print '  %s  -p <program (all)>  -i <inputsize (test)>  -n <nthreads (1)>  -s <submit-program (time)>  -d <rundir (temp)>' % sys.argv[0]
+    print 'Benchmarks:'
+    print ' ', ' '.join(allbenchmarks())
+
+  program = 'all'; inputsize = 'test'; nthreads = 1; submit = 'time'; rundir = None
+
+  if not sys.argv[1:]:
+    usage()
+    sys.exit()
+
+  try:
+    opts, args = getopt.getopt(sys.argv[1:], "hlp:i:n:s:d:")
+  except getopt.GetoptError, e:
+    # print help information and exit:
+    print e
+    usage()
+    sys.exit(2)
+  for o, a in opts:
+    if o == '-h':
+      usage()
+      sys.exit()
+    if o == '-l':
+      print ' '.join(allbenchmarks())
+      sys.exit()
+    if o == '-p':
+      program = a
+    if o == '-i':
+      inputsize = a
+    if o == '-n':
+      nthreads = int(a)
+    if o == '-s':
+      submit = a
+    if o == '-d':
+      rundir = a
+
+  if program == 'all':
+    programs = benchmarks.keys()
+  else:
+    programs = program.split()
+
+
+  print '[SPLASH] Benchmarks to run:', ' '.join(programs)
+  print
+
+  ret_codes = []
+  failed_run = False
+  for bm in programs:
+    bm = benchmarks[bm]
+    print '[SPLASH]', '[========== Running benchmark', bm.name, '==========]'
+    if rundir:
+      rundir_ = rundir
+    else:
+      rundir_ = tempfile.mkdtemp()
+    print '[SPLASH] Setting up run directory:', rundir_
+    mkNewDir(rundir_)
+    os.chdir(rundir_)
+    try:
+      args = bm.prepare(inputsize, nthreads, rundir_)
+    except UnsupportedParameter, e:
+      if program == 'all':
+        print e
+        continue
+      else:
+        raise
+    cmd = submit + ' ' + bm.run(args)
+    print '[SPLASH]', 'Running \'' + cmd + '\':'
+    print '[SPLASH]', '[---------- Beginning of output ----------]'
+    retcode = run(cmd)
+    if retcode != 0:
+      ret_codes.append(retcode)
+      failed_run = True
+    print '[SPLASH]', '[----------    End of output    ----------]'
+    if not rundir:
+      os.system('rm -rf ' + rundir_)
+    print '[SPLASH]', 'Done.'
+    if failed_run:
+      sys.exit(ret_codes[0])

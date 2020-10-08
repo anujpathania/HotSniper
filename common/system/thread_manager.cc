@@ -65,16 +65,16 @@ Thread* ThreadManager::findThreadByTid(pid_t tid)
    return NULL;
 }
 
-Thread* ThreadManager::createThread(app_id_t app_id, thread_id_t creator_thread_id)
+Thread* ThreadManager::createThread(app_id_t app_id, thread_id_t creator_thread_id, String app_name)
 {
    ScopedLock sl(m_thread_lock);
-   return createThread_unlocked(app_id, creator_thread_id);
+   return createThread_unlocked(app_id, creator_thread_id, app_name);
 }
 
-Thread* ThreadManager::createThread_unlocked(app_id_t app_id, thread_id_t creator_thread_id)
+Thread* ThreadManager::createThread_unlocked(app_id_t app_id, thread_id_t creator_thread_id,String app_name)
 {
    thread_id_t thread_id = m_threads.size();
-   Thread *thread = new Thread(thread_id, app_id);
+   Thread *thread = new Thread(thread_id, app_id,app_name);
    m_threads.push_back(thread);
    m_thread_state.push_back(ThreadState());
    m_thread_state[thread->getId()].status = Core::INITIALIZING;

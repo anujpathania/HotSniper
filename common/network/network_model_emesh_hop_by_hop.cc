@@ -43,10 +43,20 @@ NetworkModelEMeshHopByHop::NetworkModelEMeshHopByHop(Network* net, EStaticNetwor
    // Get the Link Bandwidth, Hop Latency and if it has broadcast tree mechanism
    try
    {
+      // Get the DVFS domain from the config
+      String domain_name = Sim()->getCfg()->getString("network/emesh_hop_by_hop/dvfs_domain");
+      const ComponentPeriod *clock_domain = NULL;
+      if (domain_name == "core") {
+         clock_domain = Sim()->getDvfsManager()->getCoreDomain(m_core_id);
+      } else if (domain_name == "global") {
+         clock_domain = Sim()->getDvfsManager()->getGlobalDomain();
+      } else {
+         LOG_PRINT_ERROR("dvfs_domain %s is invalid", domain_name.c_str());
+      }
       // Link Bandwidth is specified in bits/clock_cycle
-      m_link_bandwidth = ComponentBandwidthPerCycle(Sim()->getDvfsManager()->getCoreDomain(m_core_id), Sim()->getCfg()->getInt("network/emesh_hop_by_hop/link_bandwidth"));
+      m_link_bandwidth = ComponentBandwidthPerCycle(clock_domain, Sim()->getCfg()->getInt("network/emesh_hop_by_hop/link_bandwidth"));
       // Hop Latency is specified in cycles
-      m_hop_latency = ComponentLatency(Sim()->getDvfsManager()->getCoreDomain(m_core_id), Sim()->getCfg()->getInt("network/emesh_hop_by_hop/hop_latency"));
+      m_hop_latency = ComponentLatency(clock_domain, Sim()->getCfg()->getInt("network/emesh_hop_by_hop/hop_latency"));
 
       UInt32 smt_cores = Sim()->getCfg()->getInt("perf_model/core/logical_cpus");
       m_concentration = Sim()->getCfg()->getInt("network/emesh_hop_by_hop/concentration") * smt_cores;

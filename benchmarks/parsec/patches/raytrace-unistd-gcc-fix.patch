@@ -1,0 +1,10 @@
+--- parsec-2.1-orig/pkgs/apps/raytrace/src/RTTL/common/MapOptions.hxx	2013-01-25 13:39:06.000000000 +0100
++++ parsec-2.1/pkgs/apps/raytrace/src/RTTL/common/MapOptions.hxx	2013-01-25 13:31:57.000000000 +0100
+@@ -24,6 +24,7 @@
+ #define ACCESS_FILE _access
+ #define COMPPARE_STRINGS_IGNORE_CASE stricmp
+ #else
++#include <unistd.h>
+ #define ACCESS_FILE access
+ #define COMPPARE_STRINGS_IGNORE_CASE strcasecmp
+ #endif

@@ -87,7 +87,7 @@ def output_cpistack_table(results, metric = 'cpi'):
   print
 
 
-def output_cpistack_gnuplot(results, metric = 'time', outputfile = 'cpi-stack', outputdir = '.', title = '', size = (640, 480), save_gnuplot_input = False):
+def output_cpistack_gnuplot(results, metric = 'time', outputfile = 'cpi-stack', outputdir = '.', title = '', size = (1280, 1024), save_gnuplot_input = False):
   # Use Gnuplot to make stacked bargraphs of these cpi-stacks
   plot_data = results.get_data(metric)
   colors = results.get_colors()

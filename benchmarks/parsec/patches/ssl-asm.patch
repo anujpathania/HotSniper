@@ -1,0 +1,56 @@
+--- parsec-2.1-orig/pkgs/libs/ssl/src/crypto/md5/asm/md5-x86_64.pl	2012-02-21 07:36:56.204515640 -0500
++++ parsec-2.1/pkgs/libs/ssl/src/crypto/md5/asm/md5-x86_64.pl	2012-02-21 07:37:47.284629276 -0500
+@@ -19,6 +19,7 @@
+ sub round1_step
+ {
+     my ($pos, $dst, $x, $y, $z, $k_next, $T_i, $s) = @_;
++    $T_i = unpack("l",pack("l", hex($T_i))); # convert to 32-bit signed decimal
+     $code .= " mov	0*4(%rsi),	%r10d		/* (NEXT STEP) X[0] */\n" if ($pos == -1);
+     $code .= " mov	%edx,		%r11d		/* (NEXT STEP) z' = %edx */\n" if ($pos == -1);
+     $code .= <<EOF;
+@@ -42,6 +43,7 @@
+ sub round2_step
+ {
+     my ($pos, $dst, $x, $y, $z, $k_next, $T_i, $s) = @_;
++    $T_i = unpack("l",pack("l", hex($T_i))); # convert to 32-bit signed decimal
+     $code .= " mov	1*4(%rsi),	%r10d		/* (NEXT STEP) X[1] */\n" if ($pos == -1);
+     $code .= " mov	%ecx,		%r11d		/* (NEXT STEP) y' = %ecx */\n" if ($pos == -1);
+     $code .= <<EOF;
+@@ -65,6 +67,7 @@
+ sub round3_step
+ {
+     my ($pos, $dst, $x, $y, $z, $k_next, $T_i, $s) = @_;
++    $T_i = unpack("l",pack("l", hex($T_i))); # convert to 32-bit signed decimal
+     $code .= " mov	5*4(%rsi),	%r10d		/* (NEXT STEP) X[5] */\n" if ($pos == -1);
+     $code .= " mov	%ecx,		%r11d		/* (NEXT STEP) y' = %ecx */\n" if ($pos == -1);
+     $code .= <<EOF;
+@@ -87,6 +90,7 @@
+ sub round4_step
+ {
+     my ($pos, $dst, $x, $y, $z, $k_next, $T_i, $s) = @_;
++    $T_i = unpack("l",pack("l", hex($T_i))); # convert to 32-bit signed decimal
+     $code .= " mov	0*4(%rsi),	%r10d		/* (NEXT STEP) X[0] */\n" if ($pos == -1);
+     $code .= " mov	\$0xffffffff,	%r11d\n" if ($pos == -1);
+     $code .= " xor	%edx,		%r11d		/* (NEXT STEP) not z' = not %edx*/\n"
+--- parsec-2.1-orig/pkgs/libs/ssl/src/crypto/sha/asm/sha1-x86_64.pl	2012-02-21 07:41:46.174559512 -0500
++++ parsec-2.1/pkgs/libs/ssl/src/crypto/sha/asm/sha1-x86_64.pl	2012-02-21 07:43:19.914549361 -0500
+@@ -144,6 +144,7 @@
+ my ($i,$a,$b,$c,$d,$e,$f)=@_;
+ my $j=$i+1;
+ my $K=($i<40)?0x6ed9eba1:0xca62c1d6;
++$K = unpack("l",pack("l", hex($K))); # convert to 32-bit signed decimal
+ $code.=<<___ if ($i<79);
+ 	lea	$K($xi,$e),$f
+ 	mov	`4*($j%16)`(%rsp),$xi
+@@ -179,8 +180,10 @@
+ sub BODY_40_59 {
+ my ($i,$a,$b,$c,$d,$e,$f)=@_;
+ my $j=$i+1;
++my $K=0x8f1bbcdc;
++$K = unpack("l",pack("l", hex($K))); # convert to 32-bit signed decimal
+ $code.=<<___;
+-	lea	0x8f1bbcdc($xi,$e),$f
++	lea	$K($xi,$e),$f
+ 	mov	`4*($j%16)`(%rsp),$xi
+ 	mov	$b,$t0
+ 	mov	$b,$t1

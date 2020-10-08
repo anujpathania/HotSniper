@@ -1,0 +1,32 @@
+#!/bin/bash
+
+SPEC_DVD=$1
+
+if [ -z ${SPEC_DVD} ]
+then
+	echo Usage: $0 PATH_TO_SPEC_DVD
+	exit 1
+fi
+
+if [ ! -e ${SPEC_DVD}/benchspec/CPU2006/999.specrand/src/specrand.c ]
+then
+	echo Cannot find SPEC sources at ${SPEC_DVD}
+	exit 1
+fi
+
+if [ ! -e cpu2006/CPU2006/400.perlbench/src/Makefile.spec ]
+then
+	echo Please run this script from the benchmarks/ directory
+	exit 1
+fi
+
+echo Installing SPEC CPU2006 sources...
+cp -r ${SPEC_DVD}/benchspec/CPU2006/* cpu2006/CPU2006/
+
+echo Installing SPEC CPU2006 binary utilities...
+mkdir -p cpu2006/bin
+cp -r ${SPEC_DVD}/bin/* cpu2006/bin/
+tar xjf ${SPEC_DVD}/tools/bin/linux-suse101-AMD64/cpu2006tools-linux-suse101-AMD64.tar.bz2 -C cpu2006
+
+# Fix permissions when sources are copied from a read-only DVD image
+find cpu2006/CPU2006 -type d -exec chmod +w {} \;

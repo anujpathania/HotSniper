@@ -1,0 +1,32 @@
+commit ee05088b70384527d929669a7a1e003da526c486
+Author: Wim Heirman <wim@heirman.net>
+Date:   Mon Jan 13 14:05:02 2014 +0100
+
+    [parsec] Fixes to compile under Ubuntu 13.10
+
+diff --git a/parsec/parsec-2.1/pkgs/apps/raytrace/src/CMakeLists.txt b/parsec/parsec-2.1/pkgs/apps/raytrace/src/CMakeLists.txt
+index a92bb28..386f020 100644
+--- a/parsec/parsec-2.1/pkgs/apps/raytrace/src/CMakeLists.txt
++++ b/parsec/parsec-2.1/pkgs/apps/raytrace/src/CMakeLists.txt
+@@ -151,7 +151,7 @@ SUBDIRS(
+ 	)
+ 
+ ADD_EXECUTABLE(test_glut Testing/testglut)
+-TARGET_LINK_LIBRARIES(test_glut ${GLUT_glut_LIBRARY} ${GL_LIBS} $ENV{LIBS})
++TARGET_LINK_LIBRARIES(test_glut ${GLUT_glut_LIBRARY} ${GL_LIBS} $ENV{LIBS} -lXext)
+ 
+ #ADD_EXECUTABLE(test_pbo Testing/testpbo)
+ #TARGET_LINK_LIBRARIES(test_pbo ${GLUT_glut_LIBRARY} ${GL_LIBS} $ENV{LIBS} stdc++)
+diff --git a/parsec/parsec-2.1/pkgs/apps/raytrace/src/LRT/CMakeLists.txt b/parsec/parsec-2.1/pkgs/apps/raytrace/src/LRT/CMakeLists.txt
+index 9f2930f..2f34b03 100644
+--- a/parsec/parsec-2.1/pkgs/apps/raytrace/src/LRT/CMakeLists.txt
++++ b/parsec/parsec-2.1/pkgs/apps/raytrace/src/LRT/CMakeLists.txt
+@@ -11,7 +11,7 @@ SET(LRT_SOURCES
+ 
+ 
+ ADD_LIBRARY(LRT STATIC ${LRT_SOURCES})
+-TARGET_LINK_LIBRARIES(LRT ${GL_LIBS} RTTL  ${GLUT_glut_LIBRARY} $ENV{LIBS})
++TARGET_LINK_LIBRARIES(LRT ${GL_LIBS} RTTL  ${GLUT_glut_LIBRARY} $ENV{LIBS} -lXext)
+ #OPENGL_LIBRARIES
+ INSTALL(TARGETS LRT LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+ 
