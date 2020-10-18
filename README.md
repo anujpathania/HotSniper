@@ -22,8 +22,9 @@ Details of HotSniper can be found in our ESL 2018 paper, and please consider cit
 HotSniper7 compiles and runs inside a Docker container. Therefore, you need to download & install Docker. 
 For more info: https://www.docker.com/
 ### PinPlay 
-Extract Pinplay 3.2 to the root HotSniper7 directory as ```pin_kit```
+Download and extract Pinplay 3.2 to the root HotSniper7 directory as ```pin_kit```
 ```sh
+wget https://software.intel.com/content/dam/develop/external/us/en/protected/pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux.tar.gz
 tar xf pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux.tar.gz
 mv pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux pin_kit
 ```
