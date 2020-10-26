@@ -19,7 +19,7 @@ std::vector<int> DVFSMaxFreq::getFrequencies(const std::vector<int> &oldFrequenc
 			int frequency = oldFrequencies.at(coreCounter);
 			float utilization = performanceCounters->getUtilizationOfCore(coreCounter);
 
-			cout << "[Scheduler][DVFSTSP]: Core " << setw(2) << coreCounter << ":";
+			cout << "[Scheduler][DVFS_MAX_FREQ]: Core " << setw(2) << coreCounter << ":";
 			cout << " P=" << fixed << setprecision(3) << power << " W";
 			cout << " f=" << frequency << " MHz";
 			cout << " T=" << fixed << setprecision(1) << temperature << " °C";

@@ -40,7 +40,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		long dvfsEpoch;
 		void initDVFSPolicy(String policyName);
 		void executeDVFSPolicy();
-		const int maxDVFSPatience = 1;
+		const int maxDVFSPatience = 0;
 		std::vector<int> downscalingPatience; // can be used by the DVFS control loop to delay DVFS downscaling for very little violations
 		std::vector<int> upscalingPatience; // can be used by the DVFS control loop to delay DVFS upscaling for very little violations
 		bool delayDVFSTransition(int coreCounter, int oldFrequency, int newFrequency);
