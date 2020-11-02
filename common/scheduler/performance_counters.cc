@@ -153,6 +153,13 @@ int PerformanceCounters::getFreqOfCore(int coreId) const {
 }
 
 /**
+ * Notify new frequencies
+ */
+void PerformanceCounters::notifyFreqsOfCores(std::vector<int> newFrequencies) {
+	frequencies = newFrequencies;
+}
+
+/**
  * Get the frequency of the given core.
  */
 double PerformanceCounters::getIPSOfCore(int coreId) const {

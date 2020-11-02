@@ -22,6 +22,8 @@ public:
     double getRelNUCACPIOfCore(int coreId) const;
     int getFreqOfCore(int coreId) const;
     double getIPSOfCore(int coreId) const;
+
+    void notifyFreqsOfCores(std::vector<int> frequencies);
 private:
     std::vector<int> frequencies;
 

@@ -953,6 +953,7 @@ void SchedulerOpen::executeDVFSPolicy() {
 	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
 		setFrequency(coreCounter, frequencies.at(coreCounter));
 	}
+	performanceCounters->notifyFreqsOfCores(frequencies);
 }
 
 
