@@ -65,6 +65,7 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
     for f in ('PeriodicPower.log',
               'PeriodicThermal.log',
               'PeriodicFrequency.log',
+              'PeriodicVdd.log',
               'PeriodicCPIStack.log',):
         with open(os.path.join(BENCHMARKS, f), 'rb') as f_in, gzip.open('{}.gz'.format(os.path.join(directory, f)), 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
@@ -238,9 +239,14 @@ def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 
+def test_pcmig():
+    run(['PCMig', 'fastDVFS'], get_instance('parsec-bodytrack', 14, input_set='simsmall')+','+get_instance('parsec-blackscholes', 15, input_set='simsmall')+','+get_instance('parsec-x264', 9, input_set='simsmall')+','+get_instance('parsec-streamcluster', 13, input_set='simsmall'))#+','+get_instance('parsec-canneal', 8, input_set='simsmall'))#+','+get_instance('parsec-streamcluster', 8, input_set='simsmall')+','+get_instance('parsec-x264', 8, input_set='simsmall'))
+
+
 def main():
-    example()
+    #example()
     #test_static_power()
+    test_pcmig()
 
 
 if __name__ == '__main__':
