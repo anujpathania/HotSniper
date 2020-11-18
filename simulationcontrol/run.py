@@ -236,17 +236,12 @@ def example():
 
 
 def test_static_power():
-    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
-
-
-def test_pcmig():
-    run(['PCMig', 'fastDVFS'], get_instance('parsec-bodytrack', 14, input_set='simsmall')+','+get_instance('parsec-blackscholes', 15, input_set='simsmall')+','+get_instance('parsec-x264', 9, input_set='simsmall')+','+get_instance('parsec-streamcluster', 13, input_set='simsmall'))#+','+get_instance('parsec-canneal', 8, input_set='simsmall'))#+','+get_instance('parsec-streamcluster', 8, input_set='simsmall')+','+get_instance('parsec-x264', 8, input_set='simsmall'))
+    run(['dvfsMaxSteadyState', 'fastDVFS'], get_instance('parsec-bodytrack', 15, input_set='simsmall'))
 
 
 def main():
     #example()
-    #test_static_power()
-    test_pcmig()
+    test_static_power()
 
 
 if __name__ == '__main__':
