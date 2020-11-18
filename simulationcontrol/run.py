@@ -236,12 +236,12 @@ def example():
 
 
 def test_static_power():
-    run(['dvfsMaxSteadyState', 'fastDVFS'], get_instance('parsec-bodytrack', 15, input_set='simsmall'))
+    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 
 def main():
-    #example()
-    test_static_power()
+    example()
+    #test_static_power()
 
 
 if __name__ == '__main__':
