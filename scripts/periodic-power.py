@@ -60,7 +60,8 @@ class StatTrace:
     for filename in ('PeriodicCPIStack.log',
                      'PeriodicPower.log',
                      'PeriodicThermal.log',
-                     'PeriodicFrequency.log',):
+                     'PeriodicFrequency.log',
+                     'PeriodicVdd.log',):
       open(filename, 'w')  # empties the file
 
   def periodic(self, time, time_delta):
