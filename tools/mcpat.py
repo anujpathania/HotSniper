@@ -141,6 +141,29 @@ def log_frequencies(results):
     f.write('\t'.join('{:.3f}'.format(f) for f in frequencies))
     f.write('\n')
 
+def log_vdd(results):
+  ncores = int(results['config']['general/total_cores'])
+  size_nm = int(results['config']['power/technology_node'])
+  if size_nm >= 22:
+      scale = 1.0
+  elif size_nm == 14:
+      scale = 0.89
+  elif size_nm == 10:
+      scale = 0.81
+  elif size_nm == 8:
+      scale =  0.74
+  else:
+      raise Exception('do not know how to scale vdd to {} nm'.format(size_nm))
+  vdd = [float(results['config']['power/vdd'].get(i))*scale for i in range(ncores)]
+  filename = 'PeriodicVdd.log'
+  write_header = os.stat(filename).st_size == 0
+  with open(filename, 'a') as f:
+    if write_header:
+      f.write('\t'.join('Core{}'.format(i) for i in range(ncores)))
+      f.write('\n')
+    f.write('\t'.join('{:.3f}'.format(f) for f in vdd))
+    f.write('\n')
+
 def log_cpi_stack(results):
   cpiStack = cpistack_compute(data=results)
   cpiStackData = cpiStack.get_data('cpi')
@@ -205,6 +228,7 @@ def main(jobid, resultsdir, outputfile, powertype = 'dynamic', config = None, no
 
   # Log Performance Counters
   log_frequencies(results)
+  log_vdd(results)
   log_cpi_stack(results)
 
   # Run McPAT
