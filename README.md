@@ -106,10 +106,13 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
 - [ ] configure static power consumption
   - `config/base.cfg`: `power/*`
   - `inactive_power` must be set to static power consumption at min V/f level
-- [ ] create floorplan and corresponding thermal model based on McPAT area estimations using `thermallib`
-  - core width is `sqrt(core area)`
-  - example: `python3 create_thermal_model.py --amb 45 --crit 80 --core_naming sniper --core_width [core width] model [cores]x[cores]`
-  - NOTE: McPAT area estimations are high, i.e., observed temperatures are too low. Therefore, using a smaller core size should be considered as an option.
+- [ ] create floorplan (`*.flp`) and corresponding thermal model (`*.bin`)
+  - Option 1: use your own floorplan
+    - use [MatEX] to create the thermal model (`-eigen_out`) from your floorplan
+  - Option 2: use [thermallib] to create a simple regular floorplan (only per-core temperature, no finer granularity) and the corresponding thermal model
+    - core width is `sqrt(core area)` from McPAT area estimations
+    - example: `python3 create_thermal_model.py --amb 45 --crit 80 --core_naming sniper --core_width [core width] model [cores]x[cores]`
+    - NOTE: McPAT area estimations are high, i.e., observed temperatures are too low. Therefore, using a smaller core size should be considered as an option.
 - [ ] specify floorplan, thermal model and other thermal settings in config
   - `config/base.cfg`: `periodic_thermal`
   - `tdp` is defined by the floorplan, temperature limits and cooling parameters
@@ -139,3 +142,5 @@ export PYTHONIOENCODING="UTF-8"
 
    [Sniper MultiCore Simulator]: <http://snipersim.org>
    [HotSpot]: <http://lava.cs.virginia.edu/HotSpot/>
+   [MatEx]: http://ces.itec.kit.edu/846.php
+   [thermallib]: https://github.com/ma-rapp/thermallib
