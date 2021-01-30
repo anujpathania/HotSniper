@@ -3,8 +3,8 @@
 -   Sniper Version used as base - Sniper 7.3
 -   Creators: Martin Rapp, Anuj Pathania, Mohammed Bakr Sikal, Jörg Henkel
 -   License: MIT
--   For Queries: martin.rapp@kit.edu, a.pathania@uva.nl
 
+Note: If you have a problem, please contact us by raising an issue on this Github repositories.
 
 ## Publication
 
