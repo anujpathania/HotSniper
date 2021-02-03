@@ -28,12 +28,6 @@ wget https://software.intel.com/content/dam/develop/external/us/en/protected/pin
 tar xf pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux.tar.gz
 mv pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux pin_kit
 ```
-### HotSpot
-The [HotSpot] simulator is shipped with HotSniper7. All you need to do is to compile it:  
-```sh
-cd hotspot
-make
-```
 
 ## 2- Compiling HotSniper7
 At this stage, the root HotSniper7 directory has a folder named ```pin_kit``` containing the PinPlay-3.2 library and a folder named ```hotspot```containing the *compiled* HotSpot simulator. Since you now have Docker installed, let's create a ```container``` using the shipped ```Dockerfile```.
@@ -42,11 +36,24 @@ cd docker
 make
 make run
 ```
-Now that we are inside our container, we can compile HotSniper7:
+Now that we are inside our container, we can build HotSniper 7 and its requirements:
 ```sh
 cd ..
+```
+
+### HotSpot
+The [HotSpot] simulator is shipped with HotSniper7. All you need to do is to compile it:
+```sh
+cd hotspot
+make
+cd ..
+```
+
+### HotSniper 7
+```sh
 make
 ```
+
 ## 3- Compiling the Benchmarks
 
 Run inside container:
