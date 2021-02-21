@@ -4,7 +4,7 @@
 -   Creators: Martin Rapp, Anuj Pathania, Mohammed Bakr Sikal, Jörg Henkel
 -   License: MIT
 
-Note: If you have a problem, please contact us by raising an issue on this Github repositories.
+Note: If you have a problem, please contact us by raising an issue here - https://github.com/anujpathania/HotSniper/issues. Also, please do not forget to close the issue once we have addressed your problem.
 
 ## Publication
 
