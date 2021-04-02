@@ -1,10 +1,10 @@
 # HotSniper 7
--   An enchanced multi/many-core simulator derived from [Sniper MultiCore Simulator]
--   Sniper Version used as base - Sniper 7.3
+
+An EDA toolchain for interval thermal simulations of 2D multi-/many-cores in an open system.
 -   Creators: Martin Rapp, Anuj Pathania, Mohammed Bakr Sikal, Jörg Henkel
 -   License: MIT
 
-Note: If you have a problem, please contact us by raising an issue here - https://github.com/anujpathania/HotSniper/issues. Also, please do not forget to close the issue once we have addressed your problem.
+Note: If you have a problem, please first browse the closed issues here - https://github.com/anujpathania/HotSniper/issues. If your problem continues to remain unresolved, please feel free to contact us by raising a new issue. Also, please do not forget to close the issue once we have addressed your problem. We prefer not to resolve issues over e-mail.
 
 ## Publication
 
@@ -145,9 +145,14 @@ After implementing your policy, instantiate it in `SchedulerOpen::initMappingPol
 export PYTHONIOENCODING="UTF-8"
 ```
 
+## Code Acknowledgements
 
-
-   [Sniper MultiCore Simulator]: <http://snipersim.org>
-   [HotSpot]: <http://lava.cs.virginia.edu/HotSpot/>
-   [MatEx]: http://ces.itec.kit.edu/846.php
-   [thermallib]: https://github.com/ma-rapp/thermallib
+  Sniper: <http://snipersim.org>
+  
+  McPat: https://www.hpl.hp.com/research/mcpat/
+  
+  HotSpot: <http://lava.cs.virginia.edu/HotSpot/>
+  
+  MatEx: http://ces.itec.kit.edu/846.php
+  
+  thermallib: https://github.com/ma-rapp/thermallib
