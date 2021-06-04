@@ -11,6 +11,7 @@
 #include "performance_model.h"
 #include "magic_server.h"
 
+
 #include "policies/dvfsMaxFreq.h"
 #include "policies/dvfsFixedPower.h"
 #include "policies/dvfsTSP.h"
@@ -20,6 +21,9 @@
 #include <iomanip>
 #include <random>
 #include <vector>
+#include <queue>
+#include <iostream>
+#include <bits/stdc++.h>
 
 using namespace std;
 
@@ -48,11 +52,29 @@ struct openTask {
 	int taskCoreRequirement = coreRequirementTranslation(taskName);
 	UInt64 taskArrivalTime;
 	UInt64 taskStartTime;
-	UInt64 taskDepartureTime; 	
+	UInt64 taskDepartureTime; 
+	int priority;	
 
 };
 
 vector <openTask> openTasks;
+
+
+
+struct ComparePriority {
+			bool operator()(openTask const& p1, openTask const& p2){
+			// return "true" if "p1" is ordered
+			// before "p2", for example:
+				return p1.priority < p2.priority;
+			}
+		};
+
+priority_queue<openTask, vector<openTask>, ComparePriority> Q;
+ 
+		// When we use priority_queue with  structure
+		// then we need this kind of syntax where
+		// ComparePriority is the functor or comparison function
+
 
 //This data structure maintains the state of the cores.
 struct systemCore {
@@ -102,6 +124,9 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	arrivalInterval = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalInterval").c_str());
 	numberOfTasks = Sim()->getCfg()->getInt("traceinput/num_apps");
 	numberOfCores = Sim()->getConfig()->getApplicationCores();
+	
+
+	
 
 	coreRows = (int)sqrt(numberOfCores);
 	while ((numberOfCores % coreRows) != 0) {
@@ -134,10 +159,17 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	//Initialize the task arrival time based on queuing policy.
 	if (distribution == "uniform") {
 		UInt64 time = 0;
+		int pri;
 		for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
 			if (taskIterator % arrivalRate == 0 && taskIterator != 0) time += arrivalInterval;  
 			cout << "[Scheduler]: Setting Arrival Time for Task " << taskIterator << " (" + openTasks[taskIterator].taskName + ")" << " to " << time << +" ns" << endl;
 			openTasks[taskIterator].taskArrivalTime = time;
+			
+				cout << "Please give priority for Task " << taskIterator << endl;
+				// fflush(stdout);
+				cin >> pri;
+				openTasks [taskIterator].priority = pri;
+				Q.push(openTasks [taskIterator]);
 		}
 	} else if (distribution == "explicit") {
 		for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
@@ -238,6 +270,15 @@ int taskFrontOfQueue () {
 		}
 	}
 	//else if (queuePolicy ="XYZ") {... } //Place to implement a new queuing policy.
+	 else if (queuePolicy == "priority"){
+		
+	 	openTask p = Q.top();
+		IDofTaskInFrontOfQueue = Q.top().taskID;
+	 	Q.pop();
+		
+	}
+		
+	
 	else {
 	
 		cout<<"\n[Scheduler] [Error]: Unknown Queuing Policy"<< endl;
@@ -628,10 +669,27 @@ void fetchTasksIntoQueue (SubsecondTime time) {
 			cout <<"\n[Scheduler]: Task " << taskCounter << " put into execution queue. \n";
 			openTasks [taskCounter].waitingInQueue = true;
 			openTasks [taskCounter].waitingToSchedule = false;
+			
+			// push tasks Q here
+			if(queuePolicy == "priority"){
+				Q.push(openTasks [taskCounter]);
+				openTask p = Q.top();
+				for(int taskIterator=0; taskIterator<numberOfTasks; taskIterator++){
+				
+				if(openTasks [taskIterator].active && openTasks [taskIterator].priority<p.priority){
+					openTasks [taskIterator].active=false;
+					openTasks [taskIterator].waitingInQueue=true;
+					Q.pop();
+					Q.push(openTasks [taskIterator]);
+				}
+				
+			
+			}
+			
 		}
 	}
 }
-
+}
 
 /** threadExit
     This original Sniper function is called when a thread with "thread_id" exits.
@@ -656,6 +714,7 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 		}
 		
 	}
+
 
 	if (thread_id < numberOfTasks) {
 		cout << "\n[Scheduler]: Task " << app_id << " Finished." << "\n";
@@ -710,12 +769,13 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 
 			fetchTasksIntoQueue (time);
 
-			schedule (taskFrontOfQueue (), false, time);
+			schedule(taskFrontOfQueue (), false, time);
 
 		}		
 		
 
 	}
+
 
 	if (numberOfTasksCompleted ()  == numberOfTasks) {
 		
@@ -1032,7 +1092,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 					}
 
 					cout << marker1 << systemCores[coreId].assignedTaskID << marker2;
-				}
+				
 			}
 			cout << endl;
 		}
@@ -1052,7 +1112,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 
 	m_last_periodic = time;
 }
-
+}
 std::string formatLong(long l) {
 	std::stringstream ss;
 	if (l < 1000) {
@@ -1068,4 +1128,6 @@ std::string SchedulerOpen::formatTime(SubsecondTime time) {
 	std::stringstream ss;
 	ss << formatLong(time.getNS()) << " ns";
 	return ss.str();
+
 }
+

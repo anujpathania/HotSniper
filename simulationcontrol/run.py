@@ -10,6 +10,7 @@ import subprocess
 import traceback
 import sys
 
+
 from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG
 from resultlib.plot import create_plots
 
@@ -204,6 +205,37 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 
 
 def example():
+    for benchmark in (
+                      'parsec-blackscholes',
+                      'parsec-bodytrack',
+                      #'parsec-canneal',
+                      #'parsec-dedup',
+                      #'parsec-fluidanimate',
+                      #'parsec-streamcluster',
+                      #'parsec-swaptions',
+                      #'parsec-x264',
+                      #'splash2-barnes',
+                      #'splash2-fmm',
+                      #'splash2-ocean.cont',
+                      #'splash2-ocean.ncont',
+                      #'splash2-radiosity',
+                      #'splash2-raytrace',
+                      #'splash2-water.nsq',
+                      #'splash2-water.sp',
+                      #'splash2-cholesky',
+                      #'splash2-fft',
+                      #'splash2-lu.cont',
+                      #'splash2-lu.ncont',
+                      #'splash2-radix'
+                      ):
+        min_parallelism = get_feasible_parallelisms(benchmark)[0]
+        max_parallelism = get_feasible_parallelisms(benchmark)[-1]
+        for freq in (1, 4):
+            for parallelism in (max_parallelism,):
+                # you can also use try_run instead
+                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
+
+def example1():
     for benchmark in (
                       'parsec-blackscholes',
                       #'parsec-bodytrack',

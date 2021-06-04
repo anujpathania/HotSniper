@@ -12,6 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 RESULT_DIRS = [RESULTS_FOLDER]
 NAME_REGEX = r'results_(\d+-\d+-\d+_\d+.\d+)_([a-zA-Z0-9_\.\+]+)_((splash2|parsec)-.*)'
 
+print(NAME_REGEX)
 
 cache = diskcache.Cache(directory=os.path.join(HERE, 'cache'))
 
@@ -47,7 +48,6 @@ def _open_file(run, filename):
 def get_date(run):
     m = re.search(NAME_REGEX, run)
     return m.group(1)
-
 
 def get_config(run):
     m = re.search(NAME_REGEX, run)
