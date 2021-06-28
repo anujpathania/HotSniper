@@ -160,6 +160,50 @@ def run(base_configuration, benchmark, ignore_error=False):
         raise Exception('return code != 0')
 
 
+def run2(base_configuration, benchmark, benchmark1, ignore_error=False):
+    print('running {} and {} with configuration {}'.format(benchmark, benchmark1,'+'.join(base_configuration)))
+    started = datetime.datetime.now()
+    change_base_configuration(base_configuration)
+
+    periodicPower = 1000000
+    if 'mediumDVFS' in base_configuration:
+        periodicPower = 250000
+    if 'fastDVFS' in base_configuration:
+        periodicPower = 100000
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark}, {benchmark1} benc --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}' \
+        .format(number_cores=NUMBER_CORES,
+                config=SNIPER_CONFIG,
+                benchmark=benchmark,
+                benchmark1=benchmark1,
+                periodic=periodicPower)
+    console_output = ''
+    print(args)
+    run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
+    p = subprocess.Popen([run_sniper] + args.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
+    with p.stdout:
+        for line in iter(p.stdout.readline, b''):
+            linestr = line.decode('utf-8')
+            console_output += linestr
+            print(linestr, end='')
+    p.wait()
+
+    try:
+        cpistack = subprocess.check_output(['python', os.path.join(SNIPER_BASE, 'tools/cpistack.py')], cwd=BENCHMARKS)
+    except:
+        if ignore_error:
+            cpistack = b''
+        else:
+            raise
+
+    ended = datetime.datetime.now()
+
+    save_output(base_configuration, benchmark, console_output, cpistack, started, ended)
+
+    if p.returncode != 0:
+        raise Exception('return code != 0')
+
+
+
 def try_run(base_configuration, benchmark, ignore_error=False):
     try:
         run(base_configuration, benchmark, ignore_error=ignore_error)
@@ -685,6 +729,65 @@ def example():
                 # you can also use try_run instead
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
+def example2():
+    for benchmark in (
+                      'parsec-blackscholes',
+                      #'parsec-bodytrack',
+                      #'parsec-canneal',
+                      #'parsec-dedup',
+                      #'parsec-fluidanimate',
+                      #'parsec-streamcluster',
+                      #'parsec-swaptions',
+                      #'parsec-x264',
+                      #'splash2-barnes',
+                      #'splash2-fmm',
+                      #'splash2-ocean.cont',
+                      #'splash2-ocean.ncont',
+                      #'splash2-radiosity',
+                      #'splash2-raytrace',
+                      #'splash2-water.nsq',
+                      #'splash2-water.sp',
+                      #'splash2-cholesky',
+                      #'splash2-fft',
+                      #'splash2-lu.cont',
+                      #'splash2-lu.ncont',
+                      #'splash2-radix'
+                      ):
+        min_parallelism = get_feasible_parallelisms(benchmark)[0]
+        max_parallelism = get_feasible_parallelisms(benchmark)[-1]
+        
+    for benchmark1 in (
+                      #'parsec-blackscholes',
+                      'parsec-bodytrack',
+                      #'parsec-canneal',
+                      #'parsec-dedup',
+                      #'parsec-fluidanimate',
+                      #'parsec-streamcluster',
+                      #'parsec-swaptions',
+                      #'parsec-x264',
+                      #'splash2-barnes',
+                      #'splash2-fmm',
+                      #'splash2-ocean.cont',
+                      #'splash2-ocean.ncont',
+                      #'splash2-radiosity',
+                      #'splash2-raytrace',
+                      #'splash2-water.nsq',
+                      #'splash2-water.sp',
+                      #'splash2-cholesky',
+                      #'splash2-fft',
+                      #'splash2-lu.cont',
+                      #'splash2-lu.ncont',
+                      #'splash2-radix'
+                      ):
+        min_parallelism = get_feasible_parallelisms(benchmark1)[0]
+        max_parallelism = get_feasible_parallelisms(benchmark1)[-1]
+                
+        for freq in (1, 4):
+            for parallelism in (max_parallelism,):
+                # you can also use try_run instead
+                run2(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'), get_instance(benchmark1, parallelism, input_set='simsmall'))
+
+
 def example1():
     for benchmark in (
                       'parsec-blackscholes', 
@@ -828,6 +931,7 @@ def test_static_power():
 def main():
     #example()
     example1()
+    #example2()
     #test_static_power()
 
 

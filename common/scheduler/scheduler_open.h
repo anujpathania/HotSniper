@@ -23,6 +23,9 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		virtual bool threadSetAffinity(thread_id_t calling_thread_id, thread_id_t thread_id, size_t cpusetsize, const cpu_set_t *mask);
 		virtual core_id_t threadCreate(thread_id_t thread_id);
 		virtual void threadExit(thread_id_t thread_id, SubsecondTime time);
+
+		
+
 	private:
 		int coreRows;
 		int coreColumns;
@@ -65,6 +68,10 @@ class SchedulerOpen : public SchedulerPinnedBase {
 
 		int setAffinity (thread_id_t thread_id);
 		bool schedule (int taskID, bool isInitialCall, SubsecondTime time);
+		
+		
+		int resetAffinity(thread_id_t thread_id); //testing
+		
 };
 
 #endif // __SCHEDULER_OPEN_H
