@@ -72,7 +72,7 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
     create_plots(run)
 
 
-def run(base_configuration, benchmark, ignore_error=False):
+def run(base_configuration, benchmark, ignore_error=False, save=True):
     print('running {} with configuration {}'.format(benchmark, '+'.join(base_configuration)))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
@@ -97,26 +97,26 @@ def run(base_configuration, benchmark, ignore_error=False):
             console_output += linestr
             print(linestr, end='')
     p.wait()
+    if (save == True):
+        try:
+            cpistack = subprocess.check_output(['python', os.path.join(SNIPER_BASE, 'tools/cpistack.py')], cwd=BENCHMARKS)
+        except:
+            if ignore_error:
+                cpistack = b''
+            else:
+                raise
 
-    try:
-        cpistack = subprocess.check_output(['python', os.path.join(SNIPER_BASE, 'tools/cpistack.py')], cwd=BENCHMARKS)
-    except:
-        if ignore_error:
-            cpistack = b''
-        else:
-            raise
+        ended = datetime.datetime.now()
 
-    ended = datetime.datetime.now()
-
-    save_output(base_configuration, benchmark, console_output, cpistack, started, ended)
+        save_output(base_configuration, benchmark, console_output, cpistack, started, ended)
 
     if p.returncode != 0:
         raise Exception('return code != 0')
 
 
-def try_run(base_configuration, benchmark, ignore_error=False):
+def try_run(base_configuration, benchmark, ignore_error=False, save=True):
     try:
-        run(base_configuration, benchmark, ignore_error=ignore_error)
+        run(base_configuration, benchmark, ignore_error=ignore_error, save=save)
     except KeyboardInterrupt:
         raise
     except Exception as e:
@@ -238,11 +238,13 @@ def example():
 def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
+def test_custom_app(appname = 'myapps-my_pi'):# note: the app name should in the format myapps-appname
+    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], '{}-{}-{}'.format(appname, 10000, 1), save=False)
 
 def main():
     example()
     #test_static_power()
-
-
+    #test_custom_app('myapps-my_pi')
+  
 if __name__ == '__main__':
     main()

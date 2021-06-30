@@ -13,12 +13,14 @@ all: dependencies
 	make -C splash2
 	make -C parsec
 	make -C local
+	make -C myapps
 
 clean:
 	make -C tools/hooks clean
 	make -C splash2 clean
 	make -C parsec clean
 	make -C local clean
+	make -C myapps clean
 
 dependencies:
 	$(BENCHMARKS_ROOT)/tools/scripts/checkdependencies.py
