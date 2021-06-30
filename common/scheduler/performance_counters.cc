@@ -47,6 +47,34 @@ double PerformanceCounters::getPowerOfCore(int coreId) const {
 }
 
 
+/** getPeakTemperature
+    Returns the latest peak temperature of any component
+*/
+double PerformanceCounters::getPeakTemperature () const {
+	ifstream temperatureLogFile(instTemperatureFileName);
+	string header;
+	string footer;
+
+	if (temperatureLogFile.good()) {
+		getline(temperatureLogFile, header);
+		getline(temperatureLogFile, footer);
+	}
+
+	std::istringstream issFooter(footer);
+
+	double maxTemp = -1;
+	std::string value;
+	while(getline(issFooter, value, '\t')) {
+		double t = stod (value);
+		if (t > maxTemp) {
+			maxTemp = t;
+		}
+	}
+
+	return maxTemp;
+}
+
+
 /** getTemperatureOfComponent
     Returns the latest temperature of a component being tracked using base.cfg. Return -1 if power value not found.
 */
