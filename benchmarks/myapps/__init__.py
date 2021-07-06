@@ -12,14 +12,15 @@ HOME = abspath(os.path.dirname(__file__))
 class Program:
   def __init__(self, program, nthreads, inputsize, benchmark_options=[]):
     self.program = program
-    #self.args = ' ' + nthreads + ' '
-
+    self.nthreads =  nthreads 
+    self.inputsize = inputsize
 
   def run(self, graphitecmd, postcmd = ''):
     if postcmd != '':
       sys.stderr.write('Error: postcmd not supported\n')
       return 1
-    apppath = (graphitecmd.split() + [('{}/' + self.program + '/' + self.program ).format(HOME)])
+    os.putenv('OMP_NUM_THREADS', str(self.nthreads))
+    apppath = (graphitecmd.split() + [('{}/' + self.program + '/' + self.program + ' ' + self.inputsize).format(HOME)])
     proc = subprocess.Popen(apppath)
     #subprocess.Popen(graphitecmd.split() + [('{}/' + self.program + '/' + self.program).format(HOME)])
     proc.communicate()

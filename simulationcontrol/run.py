@@ -239,12 +239,16 @@ def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 def test_custom_app(appname = 'myapps-my_pi'):# note: the app name should in the format myapps-appname
-    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], '{}-{}-{}'.format(appname, 10000, 1), save=False)
+    run(['4.0GHz', 'fastDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 250000, 1), save=False)
+    #                                                    APP, num_steps, threads
+    #run(['4.0GHz', 'fastDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 15000, 2) +',splash2-lu.ncont-large-4', save=False)
+
+def my_parallel_execution():
+    run(['4.0GHz', 'fastDVFS', 'maxFreq'], 'splash2-lu.ncont-large-4,parsec-canneal-simmedium-3,splash2-fmm-large-4')
 
 def main():
-    example()
-    #test_static_power()
-    #test_custom_app('myapps-my_pi')
-  
+    test_custom_app('myapps-my_pi')
+    #my_parallel_execution()
+
 if __name__ == '__main__':
     main()
