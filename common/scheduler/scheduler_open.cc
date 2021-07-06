@@ -9,6 +9,10 @@
 #include "core_manager.h"
 #include "performance_model.h"
 #include "magic_server.h"
+#include "scheduler_pinned.h"
+#include "thread_manager.h"
+// #include "scheduler_pinned_base.h"
+// #include "syscall_server.h"
 
 
 #include "policies/dvfsMaxFreq.h"
@@ -64,39 +68,48 @@ vector <openTask> openTasks;
 
 
 
-// struct ComparePriority {
-// 			bool operator()(openTask const& p1, openTask const& p2){
-// 			// return "true" if "p1" is ordered
-// 			// before "p2", for example:
-// 				return p1.priority < p2.priority;
-// 			}
-// 		};
+struct ComparePriority {
+			bool operator()(openTask p1, openTask p2){
+			// return "true" if "p1" is ordered
+			// before "p2", for example:
+				return p1.priority < p2.priority;
+			}
+		};
+
+struct ComparePriorityAQ {
+			bool operator()(openTask p1, openTask p2){
+			// return "true" if "p1" is ordered
+			// before "p2", for example:
+				return p1.priority > p2.priority;
+			}
+		};
 
 
 	
 
-// void showpq(priority_queue<openTask, vector<openTask>, ComparePriority> gq)
-// {
-//     priority_queue<openTask, vector<openTask>, ComparePriority> g = gq;
-//     while (!g.empty()) {
-//         cout << g.top().taskID;
-//         g.pop();
-//     }
-//     cout << '\n';
-// }
-
-struct ComparePriority {
-    bool operator()(int p1, int p2)
-    {
-        // return "true" if "p1" is ordered
-        // before "p2", for example:
-        return p1 < p2;
+void showAQ(priority_queue<openTask, vector<openTask>, ComparePriorityAQ> gq)
+{
+    priority_queue<openTask, vector<openTask>, ComparePriorityAQ> g = gq;
+    while (!g.empty()) {
+        cout << g.top().taskID;
+        g.pop();
     }
-};
+    cout << '\n';
+}
+
+void showtaskID(priority_queue<openTask, vector<openTask>, ComparePriority> gq)
+{
+    priority_queue<openTask, vector<openTask>, ComparePriority> g = gq;
+    while (!g.empty()) {
+        cout << g.top().taskID;
+        g.pop();
+    }
+    cout << '\n';
+}
 
 
-priority_queue<int, vector<int>, ComparePriority> TaskIDQ;			//This priority queue holds the tasks in waiting queue in order of priority
-priority_queue<int> ActiveTaskID;		//This priority queue holds the tasks that are active in order of priority
+priority_queue<openTask, vector<openTask>, ComparePriority> TaskIDQ;			//This priority queue holds the tasks in waiting queue in order of priority
+priority_queue<openTask, vector<openTask>, ComparePriorityAQ> ActiveTaskID;		//This priority queue holds the tasks that are active in order of priority
 
 		
 //This data structure maintains the state of the cores.
@@ -193,7 +206,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 				// fflush(stdout);
 				cin >> pri;
 				openTasks [taskIterator].priority = pri;
-				//Q.push(openTasks [taskIterator]);
+				//TaskIDQ.push(openTasks[taskIterator]);
 			}
 				
 		}
@@ -202,6 +215,15 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 			UInt64 time = Sim()->getCfg()->getIntArray("scheduler/open/explicitArrivalTimes", taskIterator);
 			cout << "[Scheduler]: Setting Arrival Time for Task " << taskIterator << " (" + openTasks[taskIterator].taskName + ")" << " to " << time << +" ns" << endl;
 			openTasks[taskIterator].taskArrivalTime = time;
+			if(queuePolicy == "priority"){
+				int pri;
+				cout << "Please give priority for Task " << taskIterator << endl;
+				fflush(stdout);
+				cin >> pri;
+				openTasks [taskIterator].priority = pri;
+				TaskIDQ.push(openTasks[taskIterator]);
+				//Q.push(openTasks [taskIterator]);
+			}
 		}
 	} else if (distribution == "poisson") {
 		// calculate Poisson-distributed arrival rates for the task.
@@ -298,19 +320,19 @@ int taskFrontOfQueue () {
 	//else if (queuePolicy ="XYZ") {... } //Place to implement a new queuing policy.
 	else if (queuePolicy == "priority"){ 
 
-		if (openTasks [TaskIDQ.top()].waitingInQueue){
+		if (openTasks [TaskIDQ.top().taskID].waitingInQueue){
 
-			IDofTaskInFrontOfQueue = TaskIDQ.top();
+			IDofTaskInFrontOfQueue = TaskIDQ.top().taskID;
 
 		}
 
 		else {
-			while (!openTasks [TaskIDQ.top()].waitingInQueue){
+			while (!openTasks [TaskIDQ.top().taskID].waitingInQueue){
 
 				TaskIDQ.pop();
 
 			}
-			IDofTaskInFrontOfQueue = TaskIDQ.top();
+			IDofTaskInFrontOfQueue = TaskIDQ.top().taskID;
 		}
 		
 	}
@@ -602,7 +624,28 @@ bool SchedulerOpen::schedule (int taskID, bool isInitialCall, SubsecondTime time
 		cout <<"\n[Scheduler]: Task " << taskID << " put into execution queue. \n";
 		openTasks [taskID].waitingInQueue = true;
 		openTasks [taskID].waitingToSchedule = false;
-		TaskIDQ.push(taskID);
+		//int temp = taskID;
+		//if(TaskIDQ.top().taskID != temp){
+			cout << "TaskIDQ is called" << endl;
+			if(TaskIDQ.top().taskID != taskID ){
+				TaskIDQ.push(openTasks [taskID]);
+			}
+			// if((TaskIDQ.top().taskID == ActiveTaskID.top().taskID) && (TaskIDQ.size()>1)){
+			// TaskIDQ.pop();
+			// }
+			if(TaskIDQ.size()>1){
+				openTask tempo = TaskIDQ.top();
+				cout << "We've reached here" << endl;
+				TaskIDQ.pop();
+				if(tempo.taskID != TaskIDQ.top().taskID){
+					cout << "We've reached here" << endl;
+					TaskIDQ.push(tempo);
+				}
+				else{
+					TaskIDQ.pop();
+					TaskIDQ.push(openTasks[tempo.taskID]);
+				}
+			}
 	}
 
 	if (taskFrontOfQueue () != taskID) {
@@ -612,48 +655,92 @@ bool SchedulerOpen::schedule (int taskID, bool isInitialCall, SubsecondTime time
 	}
 
 	if (numberOfFreeCores () < openTasks[taskID].taskCoreRequirement) {
+ 	cout << "We've reached here" << endl;
+		if((queuePolicy == "priority") && (openTasks [ActiveTaskID.top().taskID].priority < openTasks[taskID].priority)){
+		   	 while((numberOfFreeCores () < openTasks[taskID].taskCoreRequirement) && (openTasks[ActiveTaskID.top().taskID].priority < openTasks[taskID].priority) ){
+				for(UInt64 t=0; t < Sim()->getThreadManager()->getNumThreads() ; t++ ){
+					app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(t)->getAppId();
+					if(ActiveTaskID.top().taskID == app_id ){
+						 SubsecondTime time = Sim()->getClockSkewMinimizationServer()->getGlobalTime();
+						
+						cout << "\n[Vidhi]: Thread " << t << " from Task "  << app_id << " Leaving at Time " << formatTime(time) << endl;
+						for (int i = 0; i < numberOfCores; i++) {
+							if (systemCores[i].assignedThreadID == t){
+								systemCores[i].assignedThreadID = -1;
+								cout << "\n[Scheduler]: Releasing Core " << i << " from Thread " << t << "\n";
+								
+								cpu_set_t my_set; 
+								CPU_ZERO(&my_set); 
+								CPU_SET(INVALID_CORE_ID, &my_set);
+								Sim()->getThreadManager()->getLock();
+								// Sim()->getThreadManager()->stallThread(t, ThreadManager::STALL_SLEEP, time);
+								threadSetAffinity(INVALID_THREAD_ID, t, sizeof(cpu_set_t), &my_set);
+								m_thread_info[t].clearAffinity();	
+							}
 
-		if((queuePolicy == "priority") && !(openTasks [ActiveTaskID.top()].priority >= openTasks [taskID].priority)){
-		  	int taskNumber = 0;
-		  	while((numberOfFreeCores () < openTasks[taskID].taskCoreRequirement) && !(openTasks [ActiveTaskID.top()].priority >= openTasks [taskID].priority) ){
-		  		
-				if((openTasks [taskNumber].active == true) && !(ActiveTaskID.top() == openTasks [taskNumber].taskID)){
+						}
+					
+						if (t < numberOfTasks) {									
+							cout << "\n[Vidhi]: Task " << app_id << " Pushed Back." << "\n";
 
-					threadExit(ActiveTaskID.top(), Sim()->getClockSkewMinimizationServer()->getGlobalTime());
-					ActiveTaskID.pop();
-					taskNumber++;
-		
+							for (int i = 0; i < numberOfCores; i++) {
+								if (systemCores[i].assignedTaskID == app_id) {
+									systemCores[i].assignedTaskID = -1;
+									cout << "\n[Vidhi]: Releasing Core " << i << " from Task " << app_id << "\n";
+								}
+							}
+						}
+
+					
+						 	
+													
+						//cout << "\n[Vidhi][Result]: Task " << app_id << " (Response/Service/Wait) Time (ns) "  << " :\t" <<  time.getNS() - openTasks[app_id].taskArrivalTime << "\t" <<  time.getNS() - openTasks[app_id].taskStartTime << "\t" << openTasks[app_id].taskStartTime - openTasks[app_id].taskArrivalTime << "\n";
+					}
 				}
-
-			}
-
-		}
+				 	
+				openTasks[ActiveTaskID.top().taskID].active = false;
+				// openTasks[ActiveTaskID.top().taskID].completed = false;
+				// openTasks[ActiveTaskID.top().taskID].waitingToSchedule = false;
+				openTasks[ActiveTaskID.top().taskID].waitingInQueue = true;
+				if(TaskIDQ.top().taskID != ActiveTaskID.top().taskID){
+					TaskIDQ.push(ActiveTaskID.top());
+				}
+				ActiveTaskID.pop();
+				k++;
+				//schedule(taskID, true, time);
+			 }																							
+	 	}
 		 
-		else{
-			
+		else{						
 			cout <<"\n[Scheduler]: Not Enough Free Cores (" << numberOfFreeCores () << ") to Schedule the Task " << taskID << " with cores requirement " << openTasks[taskID].taskCoreRequirement  << endl;
 			return false;
-
 		}
-			
 	}
 
 	mappingSuccesfull = executeMappingPolicy(taskID, time);
-
+	cout << "We've reached here" << endl;
 	if (mappingSuccesfull) {
+		//cout << "We've reached here" << endl;
 		if (!isInitialCall) 
 			cout << "\n[Scheduler]: Waking Task " << taskID << " at core " << setAffinity (taskID) << endl;
-		
-		
-		//showpq(Q);
+		if((TaskIDQ.size() != 0) && (taskID == 0) && (k != 0)){
+		//	cout << "We've reached here!!!!!" << endl;
 		openTasks [taskID].taskStartTime = time.getNS();
+		}
 		openTasks [taskID].active = true;
 		
-		// ActiveQ.push(openTasks [taskID]); //push to active task priority queue
-		ActiveTaskID.push(taskID);
+		ActiveTaskID.push(openTasks[taskID]);
 		openTasks [taskID].waitingInQueue = false;
-		//Q.pop();
-		TaskIDQ.pop();
+		
+		if(TaskIDQ.top().taskID == taskID){
+			TaskIDQ.pop();
+		}
+		else{
+
+			cout << "SOMETHING IS WRONG" << endl;
+
+		}
+		
 		openTasks [taskID].waitingToSchedule = false;
 	} 
 
@@ -695,7 +782,8 @@ core_id_t SchedulerOpen::threadCreate(thread_id_t thread_id) {
 		m_thread_info.resize(m_thread_info.size() + 16);
 
 	if (m_thread_info[thread_id].hasAffinity()) {
-     		// Thread already has an affinity set at/before creation
+     	//cout<< "IT IS STOPPING HERE" << endl;	// Thread already has an affinity set at/before creation
+		 
    	}
 	else {
       		threadSetInitialAffinity(thread_id);
@@ -727,30 +815,40 @@ core_id_t SchedulerOpen::threadCreate(thread_id_t thread_id) {
     This function pulls tasks into the openSystem Queue.
 */
 void fetchTasksIntoQueue (SubsecondTime time) {
-	for (int taskCounter = 0; taskCounter < numberOfTasks; taskCounter++) {
-		if (openTasks [taskCounter].waitingToSchedule && openTasks [taskCounter].taskArrivalTime <= time.getNS ()) {
-			cout <<"\n[Scheduler]: Task " << taskCounter << " put into execution queue. \n";
-			openTasks [taskCounter].waitingInQueue = true;
-			//Q.push(openTasks [taskCounter]);
-			TaskIDQ.push(taskCounter);
-			openTasks [taskCounter].waitingToSchedule = false;
 
-			cout << "Task " << taskCounter << " has been pushed to TaskID" << endl;
-			//cout << "\n *TASK WILL NOW BE PUSHED TO Q* ";
-			// push tasks Q here
+	if(queuePolicy == "priority"){
+		for (int taskCounter = 0; taskCounter < numberOfTasks; taskCounter++) {
+			if (openTasks [taskCounter].waitingToSchedule && openTasks [taskCounter].taskArrivalTime <= time.getNS ()) {
+				
+				cout <<"\n[Scheduler]: Task " << taskCounter << " put into execution queue. \n";
+				openTasks [taskCounter].waitingInQueue = true;
+				//if(TaskIDQ.size() != 0){
+					if(TaskIDQ.top().taskID != taskCounter){
+					TaskIDQ.push(openTasks [taskCounter]);
+					}
+					
+					if(TaskIDQ.top().taskID == ActiveTaskID.top().taskID){
+						TaskIDQ.pop();
+					}
+			//	}
+				// else{
+				// 	TaskIDQ.push(openTasks[taskCounter]);
+				// }
+				openTasks [taskCounter].waitingToSchedule = false;
 
-		// if ((openTasks [taskCounter].active == false) && (openTasks [taskCounter].taskArrivalTime <= time.getNS ())){
-
-
-		// 	//Q.push(openTasks [taskCounter]);
-		// 	cout << "\n * [Trial]: Task " << taskCounter << " has been pushed to the Q queue * \n";
-
-		// }
-			
-			
+				cout << "Task " << taskCounter << " has been pushed to TaskIDQ" << endl;
+			}
 		}
-			
-		
+	}
+
+	else{
+		for (int taskCounter = 0; taskCounter < numberOfTasks; taskCounter++) {
+			if (openTasks [taskCounter].waitingToSchedule && openTasks [taskCounter].taskArrivalTime <= time.getNS ()) {
+				cout <<"\n[Scheduler]: Task " << taskCounter << " put into execution queue. \n";
+				openTasks [taskCounter].waitingInQueue = true;
+				openTasks [taskCounter].waitingToSchedule = false;
+			}
+		}
 	}
 }
 
@@ -781,51 +879,8 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 
 
 	if (thread_id < numberOfTasks) {
-
-		// if(k != 0){
-		// 	cout << "\n[Scheduler]: Task " << app_id << " is Halted." << "\n";
-
-		// 	for (int i = 0; i < numberOfCores; i++) {
-		// 		if (systemCores[i].assignedTaskID == app_id) {
-		// 			systemCores[i].assignedTaskID = -1;
-		// 			cout << "\n[Scheduler]: Releasing Core " << i << " from Task " << app_id << "\n";
-		// 		}
-		// 	}
-
-		// 	//openTasks[app_id].taskDepartureTime = time.getNS();
-		// 	openTasks[app_id].completed = false;
-		// 	openTasks[app_id].active = false;
-		// 	openTasks[app_id].waitingInQueue = true;
-		// 	Q.push(openTasks [app_id]);
-
-		// 	//AQ.remove(openTasks [app_id]);
-		// 	int size=ActiveQ.size();
-		// 	for (int n = 0; n < size; n++){
-
-		// 		if(ActiveQ.top().taskID == app_id){
-		// 			ActiveQ.pop();
-		// 		}
-		// 		else{
-
-		// 			tempSet.insert(ActiveQ.top().taskID);
-		// 			ActiveQ.pop();
-		// 		}
-
-		// 	}
-
-		// 	while( !tempSet.empty()){
-
-		// 		set<int> :: iterator it;
-				
-		// 		it = tempSet.begin();				
-		// 		ActiveQ.push(openTasks[*it]);
-		// 		tempSet.erase(*it);
-				
-		// 	}
-		// }		
-		//else{
 		
-			cout << "\n[Scheduler]: Task " << app_id << " Finished." << "\n";
+		cout << "\n[Scheduler]: Task " << app_id << " Finished." << "\n";
 
 			for (int i = 0; i < numberOfCores; i++) {
 				if (systemCores[i].assignedTaskID == app_id) {
@@ -838,28 +893,32 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 			openTasks[app_id].completed = true;
 			openTasks[app_id].active = false;
 
-			priority_queue<int> tempQ;
+			priority_queue<openTask, vector<openTask>, ComparePriority> tempQ;
 
-			while(ActiveTaskID.top() != app_id){
+			if(ActiveTaskID.top().taskID == app_id){
 
-				tempQ.push(ActiveTaskID.top());
 				ActiveTaskID.pop();
 
 			}
+			else{
+				while(ActiveTaskID.top().taskID != app_id){
 
-			while(tempQ.size() != 0){
+					tempQ.push(ActiveTaskID.top());
+					ActiveTaskID.pop();
 
-				ActiveTaskID.push(tempQ.top());
-				tempQ.pop();
+				}
 
+				while(tempQ.size() != 0){
+
+					ActiveTaskID.push(tempQ.top());
+					tempQ.pop();
+
+				}
 			}
 
-			//AQ.remove(openTasks [app_id]);
+			
+		cout << "\n[Scheduler][Result]: Task " << app_id << " (Response/Service/Wait) Time (ns) "  << " :\t" <<  time.getNS() - openTasks[app_id].taskArrivalTime << "\t" <<  time.getNS() - openTasks[app_id].taskStartTime << "\t" << openTasks[app_id].taskStartTime - openTasks[app_id].taskArrivalTime << "\n";
 
-
-
-			cout << "\n[Scheduler][Result]: Task " << app_id << " (Response/Service/Wait) Time (ns) "  << " :\t" <<  time.getNS() - openTasks[app_id].taskArrivalTime << "\t" <<  time.getNS() - openTasks[app_id].taskStartTime << "\t" << openTasks[app_id].taskStartTime - openTasks[app_id].taskArrivalTime << "\n";
-	//	}
 
 		
 	}
@@ -1153,9 +1212,15 @@ void SchedulerOpen::executeDVFSPolicy() {
     This function is called periodically by Sniper at Interval of 100ns.
 */
 void SchedulerOpen::periodic(SubsecondTime time) {
-	if (time.getNS () % 1000000 == 0) { //Error Checking at every 1ms. Can be faster but will have overhead in simulation time.
+	if (time.getNS () % 1000000 == 0) { //Vidhi changed error checking to every 100ms//Error Checking at every 1ms. Can be faster but will have overhead in simulation time.
 		cout << "\n[Scheduler]: Time " << formatTime(time) << " [Active Tasks =  " << numberOfActiveTasks () << " | Completed Tasks = " <<  numberOfTasksCompleted () << " | Queued Tasks = "  << numberOfTasksInQueue () << " | Non-Queued Tasks  = " <<  numberOfTasksWaitingToSchedule () <<  " | Free Cores = " << numberOfFreeCores () << " | Active Tasks Requirements = " << totalCoreRequirementsOfActiveTasks () << " ] \n" << endl;
-
+		
+		// if((TaskIDQ.top().taskID == ActiveTaskID.top().taskID) && (TaskIDQ.size()>1)){
+		// 	TaskIDQ.pop();
+		// }
+		showtaskID(TaskIDQ);
+		showAQ(ActiveTaskID);
+		
 
 		//Vidhi added
 		if (openTasks [0].active==true){
@@ -1193,8 +1258,10 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
 
 		fetchTasksIntoQueue (time);
-				
 
+		// if(!(openTasks[TaskIDQ.top().taskID].active)){		
+		// 	schedule(TaskIDQ.top().taskID,false,time);
+		// }
 
 		while (	numberOfTasksInQueue () != 0) {	
 			if (!schedule (taskFrontOfQueue (), false,time)) break; //Scheduler can't map the task in front of queue.
@@ -1236,7 +1303,9 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 			}
 			cout << endl;
 		}
+	//schedule(0,false, time);
 	}
+
 
 
 	SubsecondTime delta = time - m_last_periodic;
