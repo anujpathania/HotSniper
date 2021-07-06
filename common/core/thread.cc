@@ -9,10 +9,11 @@
 #include "routine_tracer.h"
 #include "config.hpp"
 
-Thread::Thread(thread_id_t thread_id, app_id_t app_id,String app_name)
+Thread::Thread(thread_id_t thread_id, app_id_t app_id,String app_name, bool secure)
    : m_thread_id(thread_id)
    , m_app_id(app_id)
    , m_name(app_name)
+   , m_secure(secure)
    , m_core(NULL)
    , m_rtn_tracer(NULL)
    , m_va2pa_func(NULL)

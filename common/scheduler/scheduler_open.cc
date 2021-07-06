@@ -868,6 +868,9 @@ int coreRequirementTranslation (String compositionString) {
 			int t[] = {1, 2, 0, 4, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 16};  // zeros are  placeholders, other parallelism values run but are suboptimal -> don't allow in the first place
 			requirements.insert(requirements.end(), std::begin(t), std::end(t));
 		}
+	} else if (suite == "myapps") { 
+		int t[] = {1, 2, 4, 6, 8, 12, 16, 24, 32, 42, 48};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
 	} else {
 		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString << " (only PARSEC and SPLASH2 are implemented). Please add the profile." << endl;		
 		exit (1);
@@ -977,7 +980,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		}
 	}
 
-	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
+/* 	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
 		cout << "\n[Scheduler]: DVFS Control Loop invoked at " << formatTime(time) << endl;
 
 		executeDVFSPolicy();
@@ -986,9 +989,23 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
 			frequencies.push_back(Sim()->getMagicServer()->getFrequency(coreCounter));
 		}
-	}
+	} */
 
-	if (time.getNS () % mappingEpoch == 0) {
+	if (time.getNS () % 1000000 == 0) { //mappingEpoch
+		core_id_t nextCore;
+		nextCore = getMigrationCandidate(0);
+		migrateThread(0, nextCore) ;
+/* 		for (int y = 0; y < coreRows; y++) {
+            for (int x = 0; x < coreColumns; x++) {
+                int coreId = getCoreNb(y, x);
+                if (isAssignedToThread(coreId)) {
+                    //if ((coreId<63) && (!isAssignedToThread(coreId + 1))) {
+                	migrateThread(0, (coreId +1) % 63);
+                	break;
+            	}
+
+            }
+        } */
 		
 		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
 
@@ -1069,3 +1086,17 @@ std::string SchedulerOpen::formatTime(SubsecondTime time) {
 	ss << formatLong(time.getNS()) << " ns";
 	return ss.str();
 }
+
+core_id_t SchedulerOpen::getMigrationCandidate(thread_id_t thread_id) {
+    app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
+    core_id_t nextCore = (core_id_t)Sim()->getThreadManager()->getThreadFromID(thread_id)->getCore()->getId();
+
+    if (Sim()->getThreadManager()->getThreadFromID(thread_id)->isSecure()) {
+		cout<< "Trying to move secure application"<<endl;
+        if (!isAssignedToThread(((int)nextCore +1) % 63))
+            nextCore = (core_id_t)(((int)nextCore +1) % 63);
+		}
+    return nextCore;
+}
+
+	

@@ -20,7 +20,7 @@ class Thread
       thread_id_t m_thread_id;
       app_id_t m_app_id;
       String m_name;
-
+      bool m_secure;
       ConditionVariable m_cond;
       SubsecondTime m_wakeup_time;
       void *m_wakeup_msg;
@@ -32,7 +32,7 @@ class Thread
       UInt64 m_va2pa_arg;
 
    public:
-      Thread(thread_id_t thread_id, app_id_t app_id, String app_name="X");
+      Thread(thread_id_t thread_id, app_id_t app_id, String app_name="X", bool secure=false);
       ~Thread();
 
       struct {
@@ -46,7 +46,8 @@ class Thread
 
       String getName() const { return m_name; }
       void setName(String name) { m_name = name; }
-
+      void setSecure() {m_secure = true; }
+      bool isSecure() const { return m_secure; }
       SyncClient *getSyncClient() const { return m_sync_client; }
       RoutineTracerThread* getRoutineTracer() const { return m_rtn_tracer; }
 

@@ -4,12 +4,14 @@
 #include "omp.h"
 #include "stdio.h"
 #include "hooks_base.h"
+#include "sim_api.h"
 
 long num_steps;
 double step;
 
 void main(int argc, char* argv[])
 {
+   SimSetSecure();
    int i;
    double x, pi, sum = 0.0;
 

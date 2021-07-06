@@ -47,6 +47,9 @@ UInt64 handleMagicInstruction(thread_id_t thread_id, UInt64 cmd, UInt64 arg0, UI
       return Sim()->getThreadManager()->getNumThreads();
    case SIM_CMD_IN_SIMULATOR:
       return 0;
+   case SIM_CMD_SET_SECURE:
+      Sim()->getThreadManager()->getThreadFromID(thread_id)->setSecure();
+      return 0;
    default:
       LOG_PRINT_WARNING_ONCE("Encountered unknown magic instruction cmd(%u)", cmd);
       return 1;
