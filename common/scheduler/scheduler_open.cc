@@ -868,6 +868,9 @@ int coreRequirementTranslation (String compositionString) {
 			int t[] = {1, 2, 0, 4, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 16};  // zeros are  placeholders, other parallelism values run but are suboptimal -> don't allow in the first place
 			requirements.insert(requirements.end(), std::begin(t), std::end(t));
 		}
+	} else if (suite == "myapps") { 
+		int t[] = {1, 2, 4, 6, 8, 12, 16, 24, 32, 42, 48};
+		requirements.insert(requirements.end(), std::begin(t), std::end(t));
 	} else {
 		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString << " (only PARSEC and SPLASH2 are implemented). Please add the profile." << endl;		
 		exit (1);
