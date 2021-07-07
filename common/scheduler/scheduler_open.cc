@@ -400,7 +400,7 @@ bool SchedulerOpen::threadSetAffinity(thread_id_t calling_thread_id, thread_id_t
 int SchedulerOpen::setAffinity (thread_id_t thread_id) {
 	int coreFound = -1;
 	app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
-
+	cout<< "Number of cores = "<< numberOfCores <<endl;
 	for (int  i = 0; i<numberOfCores; i++) 
 		if (systemCores[i].assignedTaskID == app_id && systemCores[i].assignedThreadID == -1) {
 				coreFound = i;
@@ -992,21 +992,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 	} */
 
 	if (time.getNS () % 1000000 == 0) { //mappingEpoch
-		core_id_t nextCore;
-		nextCore = getMigrationCandidate(0);
-		migrateThread(0, nextCore) ;
-/* 		for (int y = 0; y < coreRows; y++) {
-            for (int x = 0; x < coreColumns; x++) {
-                int coreId = getCoreNb(y, x);
-                if (isAssignedToThread(coreId)) {
-                    //if ((coreId<63) && (!isAssignedToThread(coreId + 1))) {
-                	migrateThread(0, (coreId +1) % 63);
-                	break;
-            	}
-
-            }
-        } */
-		
+		executeMigrationPolicy();
 		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
 
 		fetchTasksIntoQueue (time);
@@ -1088,15 +1074,26 @@ std::string SchedulerOpen::formatTime(SubsecondTime time) {
 }
 
 core_id_t SchedulerOpen::getMigrationCandidate(thread_id_t thread_id) {
-    app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
-    core_id_t nextCore = (core_id_t)Sim()->getThreadManager()->getThreadFromID(thread_id)->getCore()->getId();
+    //app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
+    core_id_t currentCore = (core_id_t)Sim()->getThreadManager()->getThreadFromID(thread_id)->getCore()->getId();
 
-    if (Sim()->getThreadManager()->getThreadFromID(thread_id)->isSecure()) {
-		cout<< "Trying to move secure application"<<endl;
-        if (!isAssignedToThread(((int)nextCore +1) % 63))
-            nextCore = (core_id_t)(((int)nextCore +1) % 63);
+    //if (Sim()->getThreadManager()->getThreadFromID(thread_id)->isSecure()) {
+	cout<< "Trying to move secure application"<<endl;
+	for(core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); ++core_id) {
+			if (!isAssignedToThread((core_id + 1) % 63))
+				return (core_id_t)((core_id + 1) % 63);
 		}
-    return nextCore;
+	return currentCore;
 }
 
+void SchedulerOpen::executeMigrationPolicy() {
+	for (size_t i = 0; i < Sim()->getThreadManager()->getNumThreads() - 1 ; i++){
+		if (Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->isSecure()) {
+			core_id_t nextCore;
+			nextCore = getMigrationCandidate((thread_id_t)i);
+			migrateThread((thread_id_t)i,nextCore);
+			
+		}
+	}
 	
+}

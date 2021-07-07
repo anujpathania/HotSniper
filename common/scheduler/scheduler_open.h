@@ -66,6 +66,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		int setAffinity (thread_id_t thread_id);
 		bool schedule (int taskID, bool isInitialCall, SubsecondTime time);
 		core_id_t getMigrationCandidate(thread_id_t thread_id);
+		void executeMigrationPolicy();
 };
 
 #endif // __SCHEDULER_OPEN_H
