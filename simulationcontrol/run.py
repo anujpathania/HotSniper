@@ -73,7 +73,7 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
     create_plots(run)
 
 
-def run1(base_configuration, benchmark, benchmark1, benchmark2, benchmark3, benchmark4, ignore_error=False):
+def run1(base_configuration, benchmark, benchmark1, benchmark2, benchmark3, benchmark4, benchmark5, benchmark6, ignore_error=False):
     print('running {} with configuration {}'.format(benchmark, '+'.join(base_configuration)))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
@@ -83,7 +83,7 @@ def run1(base_configuration, benchmark, benchmark1, benchmark2, benchmark3, benc
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
         periodicPower = 100000
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark},{benchmark1},{benchmark2},{benchmark3},{benchmark4} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}' \
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark},{benchmark1},{benchmark2},{benchmark3},{benchmark4},{benchmark5},{benchmark6} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
@@ -91,6 +91,8 @@ def run1(base_configuration, benchmark, benchmark1, benchmark2, benchmark3, benc
                 benchmark2=benchmark2,
                 benchmark3=benchmark3,
                 benchmark4=benchmark4,
+                benchmark5=benchmark5,
+                benchmark6=benchmark6,
                 periodic=periodicPower)
     console_output = ''
     print(args)
@@ -917,11 +919,63 @@ def example1():
                       ):
             min_parallelism = get_feasible_parallelisms(benchmark4)[0]
             max_parallelism = get_feasible_parallelisms(benchmark4)[-1]
+
+        for benchmark5 in (
+                      'parsec-blackscholes', 
+                      #'parsec-bodytrack',
+                      #'parsec-canneal',
+                      #'parsec-dedup',
+                      #'parsec-fluidanimate',
+                      #'parsec-streamcluster',
+                      #'parsec-swaptions',
+                      #'parsec-x264',
+                      #'splash2-barnes',
+                      #'splash2-fmm',
+                      #'splash2-ocean.cont',
+                      #'splash2-ocean.ncont',
+                      #'splash2-radiosity',
+                      #'splash2-raytrace',
+                      #'splash2-water.nsq',
+                      #'splash2-water.sp',
+                      #'splash2-cholesky',
+                      #'splash2-fft',
+                      #'splash2-lu.cont',
+                      #'splash2-lu.ncont',
+                      #'splash2-radix'
+                      ):
+            min_parallelism = get_feasible_parallelisms(benchmark5)[0]
+            max_parallelism = get_feasible_parallelisms(benchmark5)[-1]
+
+        for benchmark6 in (
+                      'parsec-blackscholes', 
+                      #'parsec-bodytrack',
+                      #'parsec-canneal',
+                      #'parsec-dedup',
+                      #'parsec-fluidanimate',
+                      #'parsec-streamcluster',
+                      #'parsec-swaptions',
+                      #'parsec-x264',
+                      #'splash2-barnes',
+                      #'splash2-fmm',
+                      #'splash2-ocean.cont',
+                      #'splash2-ocean.ncont',
+                      #'splash2-radiosity',
+                      #'splash2-raytrace',
+                      #'splash2-water.nsq',
+                      #'splash2-water.sp',
+                      #'splash2-cholesky',
+                      #'splash2-fft',
+                      #'splash2-lu.cont',
+                      #'splash2-lu.ncont',
+                      #'splash2-radix'
+                      ):
+            min_parallelism = get_feasible_parallelisms(benchmark6)[0]
+            max_parallelism = get_feasible_parallelisms(benchmark6)[-1]
         
         for freq in (1, 4):
             for parallelism in (max_parallelism,):
                 # you can also use try_run instead
-                run1(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'), get_instance(benchmark1, parallelism, input_set='simsmall'), get_instance(benchmark2, parallelism, input_set='simsmall'),get_instance(benchmark3, parallelism, input_set='simsmall'), get_instance(benchmark4, parallelism, input_set='simsmall'))
+                run1(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'), get_instance(benchmark1, parallelism, input_set='simsmall'), get_instance(benchmark2, parallelism, input_set='simsmall'),get_instance(benchmark3, parallelism, input_set='simsmall'), get_instance(benchmark4, parallelism, input_set='simsmall'), get_instance(benchmark5, parallelism, input_set='simsmall'), get_instance(benchmark6, parallelism, input_set='simsmall'))
 
 
 def test_static_power():
