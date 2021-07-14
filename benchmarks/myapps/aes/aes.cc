@@ -1,22 +1,19 @@
 #include <openssl/aes.h>
 #include <iostream>
+#include <fstream>
 #include <stdlib.h>
 #include "sim_api.h"
-
-
-/* void AES_encrypt(const unsigned char *in, unsigned char *out,
-                 const AES_KEY *key);
-void AES_decrypt(const unsigned char *in, unsigned char *out,
-                 const AES_KEY *key); */
-
 
 using namespace std;
 int main(int argc, char* argv[]){
     SimSetSecure();
-    const unsigned char in[16] = "78765634sbast3w";
+    std::ifstream file("plaintext");
+    // const unsigned char in[16] = "78765634sbast3w";
     const unsigned char userkey[16] = "0123456789abcdf";
+    int outcounter = 0;
 
-    unsigned char * out = (unsigned char *)malloc(16*sizeof(unsigned char));  
+    unsigned char * out =  (unsigned char *)malloc(16*sizeof(unsigned char));  
+     unsigned char * in =  (unsigned char *)malloc(16*sizeof(unsigned char));   
     int num_encrypts;
 
     if (argc > 1)
@@ -27,30 +24,26 @@ int main(int argc, char* argv[]){
     SimRoiStart();  
     
     for (size_t i = 0; i < num_encrypts; i++){
+        // Get plain text from file
+        if (file.is_open()) {
+            std::string line;
+            std::getline(file, line);
+            std::copy(line.begin(), line.end(), in);
+        }
+
         //set KEY
         AES_KEY *newkey = new AES_KEY ;
         newkey->rounds = 10;
         int retval = AES_set_encrypt_key(userkey, 128, newkey);
         //encrypt
         AES_encrypt(in, out, newkey);
+        outcounter += out[0];
         delete(newkey);
     }
-   /*  int retval = AES_set_encrypt_key(userkey, 128, newkey);
-    AES_encrypt(in, out, newkey);
-
-    retval = AES_set_decrypt_key(userkey, 128, newkey);
-
-    unsigned char * newout = (unsigned char *)malloc(16*sizeof(unsigned char));
-
-    AES_decrypt(out, newout, newkey); 
-    for (size_t i = 0; i < 5; i++)
-    {
-       cout<<newout[i]<<endl;
-    }
-    
-    delete(newkey); */
+    file.close();
+    cout <<outcounter<<endl;
     SimRoiEnd();
-return (int) out[15]; 
+return outcounter; 
 }
 
 
