@@ -1078,7 +1078,7 @@ core_id_t SchedulerOpen::getMigrationCandidate(thread_id_t thread_id) {
 		core_id_t currentCore = (core_id_t)Sim()->getThreadManager()->getThreadFromID(thread_id)->getCore()->getId();
 		int cores = Sim()->getConfig()->getApplicationCores();
 		for(core_id_t core_id = 0; core_id < (core_id_t)cores; ++core_id) {
-				if (core_id >= currentCore && !isAssignedToThread((core_id + 4) % cores))
+				if (core_id >= currentCore && !isAssignedToTask((core_id + 4) % cores))
 					return (core_id_t)((core_id + 4) % cores);
 			}
 		return currentCore;
