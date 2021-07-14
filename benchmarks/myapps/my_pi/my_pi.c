@@ -24,7 +24,6 @@ void main(int argc, char* argv[])
 
    parmacs_roi_begin();
 
-   #pragma omp parallel for private(x) reduction(+:sum)
    for (i=0;i<= num_steps; i++)
    {
       x = (i+0.5)*step;

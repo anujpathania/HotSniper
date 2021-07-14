@@ -19,7 +19,8 @@ class Program:
     if postcmd != '':
       sys.stderr.write('Error: postcmd not supported\n')
       return 1
-    os.putenv('OMP_NUM_THREADS', str(self.nthreads))
+    if self.program == 'pi':
+      os.putenv('OMP_NUM_THREADS', str(self.nthreads))
     apppath = (graphitecmd.split() + [('{}/' + self.program + '/' + self.program + ' ' + self.inputsize).format(HOME)])
     proc = subprocess.Popen(apppath)
     #subprocess.Popen(graphitecmd.split() + [('{}/' + self.program + '/' + self.program).format(HOME)])

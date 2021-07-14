@@ -8,6 +8,7 @@
 #include "config.hpp"
 #include "thread.h"
 #include "core_manager.h"
+
 #include "performance_model.h"
 #include "magic_server.h"
 
@@ -116,7 +117,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
     double maxTemperature = Sim()->getCfg()->getFloat("periodic_thermal/max_temperature");
     double inactivePower = Sim()->getCfg()->getFloat("periodic_thermal/inactive_power");
     double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
-	thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, Sim()->getCfg()->getString("periodic_thermal/thermal_model"), ambientTemperature, maxTemperature, inactivePower, tdp);
+	//thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, Sim()->getCfg()->getString("periodic_thermal/thermal_model"), ambientTemperature, maxTemperature, inactivePower, tdp);
 
 	//Initialize the cores in the system.
 	for (int coreIterator=0; coreIterator < numberOfCores; coreIterator++) {
@@ -174,7 +175,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	}
 
 	initMappingPolicy(Sim()->getCfg()->getString("scheduler/open/logic").c_str());
-	initDVFSPolicy(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str());
+	//initDVFSPolicy(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str());
 }
 
 /** initMappingPolicy
@@ -203,7 +204,7 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 /** initDVFSPolicy
  * Initialize the DVFS policy to the policy with the given name
  */
-void SchedulerOpen::initDVFSPolicy(String policyName) {
+/* void SchedulerOpen::initDVFSPolicy(String policyName) {
 	cout << "[Scheduler] [Info]: Initializing DVFS policy" << endl;
 	if (policyName == "off") {
 		dvfsPolicy = NULL;
@@ -221,7 +222,7 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
  		exit (1);
 	}
-}
+} */
 
 /** taskFrontOfQueue
     Returns the ID of the task in front of queue. Place to implement a new queuing policy.
@@ -400,7 +401,6 @@ bool SchedulerOpen::threadSetAffinity(thread_id_t calling_thread_id, thread_id_t
 int SchedulerOpen::setAffinity (thread_id_t thread_id) {
 	int coreFound = -1;
 	app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
-	cout<< "Number of cores = "<< numberOfCores <<endl;
 	for (int  i = 0; i<numberOfCores; i++) 
 		if (systemCores[i].assignedTaskID == app_id && systemCores[i].assignedThreadID == -1) {
 				coreFound = i;
@@ -869,7 +869,7 @@ int coreRequirementTranslation (String compositionString) {
 			requirements.insert(requirements.end(), std::begin(t), std::end(t));
 		}
 	} else if (suite == "myapps") { 
-		int t[] = {1, 2, 4, 6, 8, 12, 16, 24, 32, 42, 48};
+		int t[] = {1, 2, 3, 4, 5, 6, 7, 8, 32, 42, 48};
 		requirements.insert(requirements.end(), std::begin(t), std::end(t));
 	} else {
 		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString << " (only PARSEC and SPLASH2 are implemented). Please add the profile." << endl;		
@@ -978,32 +978,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 			cout <<"\n[Scheduler] [Error]: Task State Does Not Match.\n";		
 			exit (1);
 		}
-	}
-
-/* 	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
-		cout << "\n[Scheduler]: DVFS Control Loop invoked at " << formatTime(time) << endl;
-
-		executeDVFSPolicy();
-
-		std::vector<int> frequencies;
-		for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
-			frequencies.push_back(Sim()->getMagicServer()->getFrequency(coreCounter));
-		}
-	} */
-
-	if (time.getNS () % 1000000 == 0) { //mappingEpoch
-		executeMigrationPolicy();
-		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
-
-		fetchTasksIntoQueue (time);
-				
-
-
-		while (	numberOfTasksInQueue () != 0) {	
-			if (!schedule (taskFrontOfQueue (), false,time)) break; //Scheduler can't map the task in front of queue.
-		}
-
-		cout << "[Scheduler]: Current mapping:" << endl;
+			cout << "[Scheduler]: Current mapping:" << endl;
 
 		for (int y = 0; y < coreRows; y++) {
 			for (int x = 0; x < coreColumns; x++) {
@@ -1041,6 +1016,31 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		}
 	}
 
+/* 	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
+		cout << "\n[Scheduler]: DVFS Control Loop invoked at " << formatTime(time) << endl;
+
+		executeDVFSPolicy();
+
+		std::vector<int> frequencies;
+		for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
+			frequencies.push_back(Sim()->getMagicServer()->getFrequency(coreCounter));
+		}
+	} */
+
+	if (time.getNS () % mappingEpoch == 0) { //mappingEpoch
+		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
+		executeMigrationPolicy();
+		fetchTasksIntoQueue (time);
+				
+
+
+		while (	numberOfTasksInQueue () != 0) {	
+			if (!schedule (taskFrontOfQueue (), false,time)) break; //Scheduler can't map the task in front of queue.
+		}
+
+
+	}
+
 
 	SubsecondTime delta = time - m_last_periodic;
 
@@ -1074,26 +1074,27 @@ std::string SchedulerOpen::formatTime(SubsecondTime time) {
 }
 
 core_id_t SchedulerOpen::getMigrationCandidate(thread_id_t thread_id) {
-    //app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
-    core_id_t currentCore = (core_id_t)Sim()->getThreadManager()->getThreadFromID(thread_id)->getCore()->getId();
-
-    //if (Sim()->getThreadManager()->getThreadFromID(thread_id)->isSecure()) {
-	cout<< "Trying to move secure application"<<endl;
-	for(core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); ++core_id) {
-			if (!isAssignedToThread((core_id + 1) % 63))
-				return (core_id_t)((core_id + 1) % 63);
-		}
-	return currentCore;
+	if (Sim()->getThreadManager()->getThreadFromID(thread_id)->isSecure()) {
+		core_id_t currentCore = (core_id_t)Sim()->getThreadManager()->getThreadFromID(thread_id)->getCore()->getId();
+		int cores = Sim()->getConfig()->getApplicationCores();
+		for(core_id_t core_id = 0; core_id < (core_id_t)cores; ++core_id) {
+				if (core_id >= currentCore && !isAssignedToThread((core_id + 4) % cores))
+					return (core_id_t)((core_id + 4) % cores);
+			}
+		return currentCore;
+	}
+	return 0;
 }
 
 void SchedulerOpen::executeMigrationPolicy() {
-	for (size_t i = 0; i < Sim()->getThreadManager()->getNumThreads() - 1 ; i++){
-		if (Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->isSecure()) {
+	for (size_t i = 0; i < Sim()->getThreadManager()->getNumThreads() ; i++){
+		if (Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->isSecure() &&
+		    Sim()->getThreadManager()->getThreadState((thread_id_t)i) == 0) {
+			cout<< "[Scheduler]: Moving secure thread"<<endl;
 			core_id_t nextCore;
 			nextCore = getMigrationCandidate((thread_id_t)i);
 			migrateThread((thread_id_t)i,nextCore);
 			
-		}
+		} 
 	}
-	
 }
