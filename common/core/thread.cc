@@ -46,6 +46,8 @@ void Thread::setCore(Core* core)
       LOG_ASSERT_ERROR(core->getThread() == NULL, "Cannot move thread %d to core %d as it is already running thread %d", getId(), core->getId(), core->getThread()->getId());
       m_core->setThread(this);
    }
+   //Once the core has been set, we should also set the tile.
+   setTile();
 }
 
 void Thread::setVa2paFunc(va2pa_func_t va2pa_func, UInt64 va2pa_arg)
@@ -87,4 +89,11 @@ bool Thread::updateCoreTLS(int threadIndex)
    }
    else
       return false;
+}
+
+void Thread::setTile() 
+{
+   int s_cores = atoi (Sim()->getCfg()->getString("perf_model/l2_cache/shared_cores").c_str());
+   if (m_core)
+      m_tile_id = m_core->getId()/s_cores; 
 }

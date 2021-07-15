@@ -45,6 +45,7 @@ typedef uintptr_t carbon_reg_t;
 typedef SInt32 thread_id_t;
 typedef SInt32 app_id_t;
 typedef SInt32 core_id_t;
+typedef SInt32 tile_id_t;
 typedef SInt32 carbon_thread_t;
 
 #define INVALID_THREAD_ID ((thread_id_t) -1)

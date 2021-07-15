@@ -19,6 +19,7 @@ class Thread
    private:
       thread_id_t m_thread_id;
       app_id_t m_app_id;
+      tile_id_t m_tile_id;
       String m_name;
       bool m_secure;
       ConditionVariable m_cond;
@@ -30,6 +31,7 @@ class Thread
       RoutineTracerThread *m_rtn_tracer;
       va2pa_func_t m_va2pa_func;
       UInt64 m_va2pa_arg;
+      void setTile();
 
    public:
       Thread(thread_id_t thread_id, app_id_t app_id, String app_name="X", bool secure=false);
@@ -43,6 +45,7 @@ class Thread
 
       thread_id_t getId() const { return m_thread_id; }
       app_id_t getAppId() const { return m_app_id; }
+      tile_id_t getTileId() const {return m_tile_id; }
 
       String getName() const { return m_name; }
       void setName(String name) { m_name = name; }

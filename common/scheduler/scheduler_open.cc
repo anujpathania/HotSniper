@@ -17,6 +17,8 @@
 #include "policies/dvfsTSP.h"
 #include "policies/dvfsTestStaticPower.h"
 #include "policies/mapFirstUnused.h"
+#include "policies/migNextTile.h"
+#include "policies/migRandom.h"
 
 #include <iomanip>
 #include <random>
@@ -113,10 +115,11 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 		cout<<"\n[Scheduler] [Error]: Invalid system size: " << numberOfCores << ", expected rectangular-shaped system." << endl;
 		exit (1);
 	}
-	double ambientTemperature = Sim()->getCfg()->getFloat("periodic_thermal/ambient_temperature");
-    double maxTemperature = Sim()->getCfg()->getFloat("periodic_thermal/max_temperature");
-    double inactivePower = Sim()->getCfg()->getFloat("periodic_thermal/inactive_power");
-    double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+	// Thermal sim disabled
+	// double ambientTemperature = Sim()->getCfg()->getFloat("periodic_thermal/ambient_temperature");
+    // double maxTemperature = Sim()->getCfg()->getFloat("periodic_thermal/max_temperature");
+    // double inactivePower = Sim()->getCfg()->getFloat("periodic_thermal/inactive_power");
+    // double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
 	//thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, Sim()->getCfg()->getString("periodic_thermal/thermal_model"), ambientTemperature, maxTemperature, inactivePower, tdp);
 
 	//Initialize the cores in the system.
@@ -175,6 +178,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	}
 
 	initMappingPolicy(Sim()->getCfg()->getString("scheduler/open/logic").c_str());
+	initMigrationPolicy(Sim()->getCfg()->getString("scheduler/open/migration").c_str());
 	//initDVFSPolicy(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str());
 }
 
@@ -869,7 +873,7 @@ int coreRequirementTranslation (String compositionString) {
 			requirements.insert(requirements.end(), std::begin(t), std::end(t));
 		}
 	} else if (suite == "myapps") { 
-		int t[] = {1, 2, 3, 4, 5, 6, 7, 8, 32, 42, 48};
+		int t[] = {1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 32, 42, 48};
 		requirements.insert(requirements.end(), std::begin(t), std::end(t));
 	} else {
 		cout <<"\n[Scheduler] [Error]: Can't find core requirement of " << compositionString << " (only PARSEC and SPLASH2 are implemented). Please add the profile." << endl;		
@@ -1027,7 +1031,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		}
 	} */
 
-	if (time.getNS () % mappingEpoch == 0) { //mappingEpoch
+	if (time.getNS () % 1000000 == 0) { //mappingEpoch
 		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
 		executeMigrationPolicy();
 		fetchTasksIntoQueue (time);
@@ -1073,28 +1077,39 @@ std::string SchedulerOpen::formatTime(SubsecondTime time) {
 	return ss.str();
 }
 
-core_id_t SchedulerOpen::getMigrationCandidate(thread_id_t thread_id) {
-	if (Sim()->getThreadManager()->getThreadFromID(thread_id)->isSecure()) {
-		core_id_t currentCore = (core_id_t)Sim()->getThreadManager()->getThreadFromID(thread_id)->getCore()->getId();
-		int cores = Sim()->getConfig()->getApplicationCores();
-		for(core_id_t core_id = 0; core_id < (core_id_t)cores; ++core_id) {
-				if (core_id >= currentCore && !isAssignedToTask((core_id + 4) % cores))
-					return (core_id_t)((core_id + 4) % cores);
-			}
-		return currentCore;
+void SchedulerOpen::initMigrationPolicy(String policyName) {
+	cout << "[Scheduler] [Info]: Initializing migration policy" << endl;
+	if (policyName == "random") {
+		//Random seed generation for random migration policy
+		std::random_device rd;  //Will be used to obtain a seed for the random number engine
+		std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+		migrationPolicy = new MigRandom(gen);
 	}
-	return 0;
+	else if (policyName == "next_tile")
+			migrationPolicy = new MigNextTile;
+	else {
+		cout <<"Scheduler] [Info]: Migration policy not supported"<<endl;
+		exit (1);
+	}
 }
 
 void SchedulerOpen::executeMigrationPolicy() {
+	vector<bool> availableCores(numberOfCores);
+	//First we should find the available cores
+	for (int i = 0; i < numberOfCores; i++) {
+		availableCores.at(i) = m_core_mask[i] && !isAssignedToTask(i);
+	}
 	for (size_t i = 0; i < Sim()->getThreadManager()->getNumThreads() ; i++){
+		//If the thread is marked as secure and is still running
 		if (Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->isSecure() &&
 		    Sim()->getThreadManager()->getThreadState((thread_id_t)i) == 0) {
-			cout<< "[Scheduler]: Moving secure thread"<<endl;
-			core_id_t nextCore;
-			nextCore = getMigrationCandidate((thread_id_t)i);
-			migrateThread((thread_id_t)i,nextCore);
-			
+				cout<< "[Scheduler]: Moving secure thread on tile "<< Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getTileId()<<endl;
+				core_id_t currentCore = (core_id_t)Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getCore()->getId();
+				//Get a migration candidate following policy from current core and available cores
+				core_id_t nextCore = migrationPolicy->getMigrationCandidate(currentCore, availableCores);
+				//Migrate to candidate
+				migrateThread((thread_id_t)i,nextCore);
+				
 		} 
 	}
 }
