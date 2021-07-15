@@ -1031,7 +1031,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		}
 	} */
 
-	if (time.getNS () % 1000000 == 0) { //mappingEpoch
+	if (time.getNS () % mappingEpoch == 0) { //mappingEpoch
 		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
 		executeMigrationPolicy();
 		fetchTasksIntoQueue (time);
@@ -1081,8 +1081,8 @@ void SchedulerOpen::initMigrationPolicy(String policyName) {
 	cout << "[Scheduler] [Info]: Initializing migration policy" << endl;
 	if (policyName == "random") {
 		//Random seed generation for random migration policy
-		std::random_device rd;  //Will be used to obtain a seed for the random number engine
-		std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+		std::random_device rd;  
+		std::mt19937 gen(rd());
 		migrationPolicy = new MigRandom(gen);
 	}
 	else if (policyName == "next_tile")

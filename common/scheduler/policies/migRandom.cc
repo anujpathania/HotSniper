@@ -18,7 +18,6 @@ core_id_t MigRandom::getMigrationCandidate(core_id_t currentCore, const std::vec
 
 	while (!found){
         candidate = distrib(m_gen);
-        cout <<"Candidate = "<<candidate<<endl;
 		if (availableCores.at(candidate))
 				found = true;
     }
