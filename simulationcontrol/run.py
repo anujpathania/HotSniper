@@ -983,8 +983,8 @@ def test_static_power():
 
 
 def main():
-    #example()
-    example1()
+    example()
+    #example1()
     #example2()
     #test_static_power()
 
