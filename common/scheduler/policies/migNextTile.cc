@@ -3,7 +3,7 @@
 
 
 
-core_id_t MigNextTile::getMigrationCandidate(core_id_t currentCore, const std::vector<bool> &availableCores) 
+core_id_t MigNextTile::getMigrationCandidate(core_id_t currentCore, const std::vector<bool> &availableCores, const std::vector<bool> &freeTiles) 
 {
 	int cores = Sim()->getConfig()->getApplicationCores();
 	for(core_id_t core_id = 0; core_id < (core_id_t)cores; ++core_id) {

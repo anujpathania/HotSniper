@@ -18,6 +18,9 @@ Thread::Thread(thread_id_t thread_id, app_id_t app_id,String app_name, bool secu
    , m_rtn_tracer(NULL)
    , m_va2pa_func(NULL)
    , m_va2pa_arg(0)
+   , m_shared_slots(0)
+   , m_last_instr(0)
+   , m_periodic_performance(0)
 {
    m_syscall_model = new SyscallMdl(this);
    m_sync_client = new SyncClient(this);
@@ -96,4 +99,16 @@ void Thread::setTile()
    int s_cores = atoi (Sim()->getCfg()->getString("perf_model/l2_cache/shared_cores").c_str());
    if (m_core)
       m_tile_id = m_core->getId()/s_cores; 
+}
+
+void Thread::incSharedSlots()
+{
+   m_shared_slots += 1;
+}
+
+void Thread::updatePeriodicPerformance(UInt64 instructions, UInt64 time_interval) 
+{
+   UInt64 instr_lapse = instructions - m_last_instr;
+   m_periodic_performance =((double)instr_lapse/(double)time_interval);
+   m_last_instr = instructions;
 }

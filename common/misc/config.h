@@ -52,6 +52,7 @@ public:
    // Return the total number of modules in all processes
    UInt32 getTotalCores();
    UInt32 getApplicationCores();
+   UInt32 getCoresPerTile();
 
    // For mapping between user-land communication id's to actual core id's
    void updateCommToCoreMap(UInt32 comm_id, core_id_t core_id);
@@ -108,6 +109,7 @@ public:
 private:
    UInt32  m_total_cores;           // Total number of cores in all processes
    UInt32  m_core_id_length;        // Number of bytes needed to store a core_id
+   UInt32  m_cores_per_tile;
 
    CommToCoreMap m_comm_to_core_map;
 

@@ -31,7 +31,11 @@ class Thread
       RoutineTracerThread *m_rtn_tracer;
       va2pa_func_t m_va2pa_func;
       UInt64 m_va2pa_arg;
+      UInt32 m_shared_slots;
+      UInt64 m_last_instr;
+      double m_periodic_performance;
       void setTile();
+      
 
    public:
       Thread(thread_id_t thread_id, app_id_t app_id, String app_name="X", bool secure=false);
@@ -80,6 +84,14 @@ class Thread
 
       Core* getCore() const { return m_core; }
       void setCore(Core* core);
+
+      void incSharedSlots();
+      int getSharedSlots() const { return m_shared_slots; }
+
+      double getPeriodicPerformance() const { return m_periodic_performance; }
+      UInt64 getLastInstructionCount() const { return m_last_instr; }
+      void updatePeriodicPerformance(UInt64 instructions, UInt64 time_interval);
+
 
       bool reschedule(SubsecondTime &time, Core *current_core);
       bool updateCoreTLS(int threadIndex = -1);

@@ -66,10 +66,11 @@ class SchedulerOpen : public SchedulerPinnedBase {
 
 		int setAffinity (thread_id_t thread_id);
 		bool schedule (int taskID, bool isInitialCall, SubsecondTime time);
-		//core_id_t getMigrationCandidate(thread_id_t thread_id);
+		
 		void initMigrationPolicy(String policyName);
 		MigrationPolicy * migrationPolicy;
 		void executeMigrationPolicy();
+		void updateSharedTimeSlots(SubsecondTime time);
 };
 
 #endif // __SCHEDULER_OPEN_H

@@ -9,7 +9,7 @@ MigRandom::MigRandom(std::mt19937 gen){
 }
 
 
-core_id_t MigRandom::getMigrationCandidate(core_id_t currentCore, const std::vector<bool> &availableCores) 
+core_id_t MigRandom::getMigrationCandidate(core_id_t currentCore, const std::vector<bool> &availableCores, const std::vector<bool> &freeTiles) 
 {
 	int cores = Sim()->getConfig()->getApplicationCores();
     bool found = false;

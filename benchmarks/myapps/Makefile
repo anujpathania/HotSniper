@@ -11,6 +11,8 @@ all:
 	make -C my_pi
 	make -C openssl -j8
 	make -C aes
+	make -C noaes
+
 
 # all:
 # 	for dir in $(SUBDIRS) ; do \

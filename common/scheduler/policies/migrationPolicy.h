@@ -10,7 +10,7 @@
 class MigrationPolicy {
 public:
     virtual ~MigrationPolicy() {}
-    virtual core_id_t getMigrationCandidate(core_id_t currentCore, const std::vector<bool> &availableCores) = 0;
+    virtual core_id_t getMigrationCandidate(core_id_t currentCore, const std::vector<bool> &availableCores, const std::vector<bool> &freeTiles) = 0;
 };
 
 #endif

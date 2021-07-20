@@ -4,16 +4,13 @@
 #include <map>
 #include <set>
 
-MapFirstUnused::MapFirstUnused(unsigned int coreRows, unsigned int coreColumns, std::vector<int> preferredCoresOrder)
-	: coreRows(coreRows), coreColumns(coreColumns), preferredCoresOrder(preferredCoresOrder) {
-	for (unsigned int i = 0; i < coreRows * coreColumns; i++) {
-		if (std::find(this->preferredCoresOrder.begin(), this->preferredCoresOrder.end(), i) == this->preferredCoresOrder.end()) {
+MapFirstUnused::MapFirstUnused(unsigned int numTasks, unsigned int coreRows, unsigned int coreColumns)
+	: coreRows(coreRows), coreColumns(coreColumns) {
+	for (unsigned int i = 0; i < coreRows * coreColumns; i++) 
 			this->preferredCoresOrder.push_back(i);
-		}
-	}
 }
 
-std::vector<int> MapFirstUnused::map(String taskName, int taskCoreRequirement, const std::vector<bool> &availableCores, const std::vector<bool> &activeCores) {
+std::vector<int> MapFirstUnused::map(UInt32 taskID, int taskCoreRequirement, const std::vector<bool> &availableCores, const std::vector<bool> &activeCores) {
 	std::vector<int> cores;
 
 	// try to fill with preferred cores

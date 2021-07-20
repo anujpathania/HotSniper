@@ -17,12 +17,15 @@
 #include "policies/dvfsTSP.h"
 #include "policies/dvfsTestStaticPower.h"
 #include "policies/mapFirstUnused.h"
+#include "policies/mapOnTile.h"
 #include "policies/migNextTile.h"
 #include "policies/migRandom.h"
+#include "policies/migFreeTile.h"
 
 #include <iomanip>
 #include <random>
 #include <vector>
+#include <fstream>
 
 using namespace std;
 
@@ -34,6 +37,8 @@ int arrivalInterval; //Stores the arrival interval of the workload from base.cfg
 
 int numberOfTasks; //Stores the number of tasks in the open workload.
 int numberOfCores; //Stores the number of cores in the system.
+int numberOfTiles;
+int coresPerTile;
 
 int coreRequirementTranslation (String compositionString);
 
@@ -105,6 +110,9 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	arrivalInterval = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalInterval").c_str());
 	numberOfTasks = Sim()->getCfg()->getInt("traceinput/num_apps");
 	numberOfCores = Sim()->getConfig()->getApplicationCores();
+	coresPerTile = atoi (Sim()->getCfg()->getString("perf_model/l2_cache/shared_cores").c_str());
+	numberOfTiles = numberOfCores / coresPerTile;
+	
 
 	coreRows = (int)sqrt(numberOfCores);
 	while ((numberOfCores % coreRows) != 0) {
@@ -188,17 +196,25 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 void SchedulerOpen::initMappingPolicy(String policyName) {
 	cout << "[Scheduler] [Info]: Initializing mapping policy" << endl;
 	if (policyName == "first_unused") {
-		vector<int> preferredCoresOrder;
-		for (core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); core_id++) {
-			int p = Sim()->getCfg()->getIntArray("scheduler/open/preferred_core", core_id);
-			if (p != -1) {
-				preferredCoresOrder.push_back(p);
-			} else {
-				break;
-			}
+		mappingPolicy = new MapFirstUnused(numberOfTasks, coreRows, coreColumns);
+	} 
+	else 
+	if (policyName == "on_tile"){
+		vector<int> preferredTiles;
+		for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
+			cout << "Entramos con tarea "<<taskIterator<<endl;
+			int preferredTile = Sim()->getCfg()->getIntArray("scheduler/open/preferred_tiles", taskIterator);
+			cout<< "Tile preferido: "<<preferredTile<<endl;
+			preferredTiles.push_back(preferredTile);
+		
 		}
-		mappingPolicy = new MapFirstUnused(coreRows, coreColumns, preferredCoresOrder);
-	} //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+		mappingPolicy = new MapOnTile(numberOfTasks, coreRows, coreColumns, preferredTiles);
+	
+	}
+	
+	//else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+	
+	
 	else {
 		cout << "\n[Scheduler] [Error]: Unknown Mapping Algorithm" << endl;
  		exit (1);
@@ -503,7 +519,7 @@ bool SchedulerOpen::executeMappingPolicy(int taskID, SubsecondTime time) {
 		activeCores.at(i) = isAssignedToTask(i);
 	}
 	// get the cores
-	vector<int> bestCores = mappingPolicy->map(openTasks[taskID].taskName, openTasks[taskID].taskCoreRequirement, availableCores, activeCores);
+	vector<int> bestCores = mappingPolicy->map(taskID, openTasks[taskID].taskCoreRequirement, availableCores, activeCores);
 	if ((int)bestCores.size() < openTasks[taskID].taskCoreRequirement) {
 		cout << "[Scheduler]: Policy returned too few cores, mapping failed." << endl;
 		return false;
@@ -1032,6 +1048,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 	} */
 
 	if (time.getNS () % mappingEpoch == 0) { //mappingEpoch
+		updateSharedTimeSlots(time);
 		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
 		executeMigrationPolicy();
 		fetchTasksIntoQueue (time);
@@ -1087,6 +1104,8 @@ void SchedulerOpen::initMigrationPolicy(String policyName) {
 	}
 	else if (policyName == "next_tile")
 			migrationPolicy = new MigNextTile;
+	else if (policyName == "free_tile")
+			migrationPolicy = new MigFreeTile;
 	else {
 		cout <<"Scheduler] [Info]: Migration policy not supported"<<endl;
 		exit (1);
@@ -1095,21 +1114,61 @@ void SchedulerOpen::initMigrationPolicy(String policyName) {
 
 void SchedulerOpen::executeMigrationPolicy() {
 	vector<bool> availableCores(numberOfCores);
+	vector<bool> freeTiles(numberOfTiles);
 	//First we should find the available cores
 	for (int i = 0; i < numberOfCores; i++) {
 		availableCores.at(i) = m_core_mask[i] && !isAssignedToTask(i);
 	}
+	//Then the free tiles
+	for (int tile = 0; tile < numberOfTiles; tile++){
+		bool empty = true;
+		for (int core = 0; core < coresPerTile; core++){
+			if (!availableCores.at(tile*coresPerTile + core)) {
+				empty = false;
+			}
+		}
+		freeTiles.at(tile) = empty;	
+	}
+	
 	for (size_t i = 0; i < Sim()->getThreadManager()->getNumThreads() ; i++){
+		
 		//If the thread is marked as secure and is still running
 		if (Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->isSecure() &&
 		    Sim()->getThreadManager()->getThreadState((thread_id_t)i) == 0) {
 				cout<< "[Scheduler]: Moving secure thread on tile "<< Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getTileId()<<endl;
 				core_id_t currentCore = (core_id_t)Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getCore()->getId();
 				//Get a migration candidate following policy from current core and available cores
-				core_id_t nextCore = migrationPolicy->getMigrationCandidate(currentCore, availableCores);
+				core_id_t nextCore = migrationPolicy->getMigrationCandidate(currentCore, availableCores, freeTiles);
 				//Migrate to candidate
 				migrateThread((thread_id_t)i,nextCore);
 				
 		} 
 	}
+}
+
+void SchedulerOpen::updateSharedTimeSlots(SubsecondTime time){
+	ofstream myfile;
+	myfile.open ("results.txt", ios::app);
+	for (size_t i = 0; i < Sim()->getThreadManager()->getNumThreads() ; i++){
+		//If the thread is marked as secure and is still running
+		if (Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->isSecure() &&
+		    Sim()->getThreadManager()->getThreadState(i) == 0) {
+				//Performance Computation
+				UInt64 inst = Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getCore()->getPerformanceModel()->getInstructionCount();
+				Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->updatePeriodicPerformance(inst, mappingEpoch);
+				double IPT = Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getPeriodicPerformance();
+				myfile << time.getNS()<<"\t"<<inst<<"\t"<<IPT<<"\n";
+				
+				// For each other Thread
+				for (size_t other_thread = 0; other_thread < Sim()->getThreadManager()->getNumThreads() ; other_thread++){
+					// If the thread is running and exists on the same tile as the secure thread, increase shared slots
+					if ((other_thread != i) && (Sim()->getThreadManager()->getThreadState(other_thread) == 0) &&
+					   (Sim()->getThreadManager()->getThreadFromID((thread_id_t)other_thread)->getTileId() == Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getTileId()))
+							Sim()->getThreadManager()->getThreadFromID((thread_id_t)other_thread)->incSharedSlots();
+				}
+				
+		} 
+	cout<< "Thread: " << i  << " Shared slots: " << Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getSharedSlots()<<endl;
+	}
+	myfile.close();
 }

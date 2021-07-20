@@ -12,7 +12,7 @@
 class MappingPolicy {
 public:
     virtual ~MappingPolicy() {}
-    virtual std::vector<int> map(String taskName, int taskCoreRequirement, const std::vector<bool> &availableCores, const std::vector<bool> &activeCores) = 0;
+    virtual std::vector<int> map(UInt32 taskID, int taskCoreRequirement, const std::vector<bool> &availableCores, const std::vector<bool> &activeCores) = 0;
 };
 
 #endif
