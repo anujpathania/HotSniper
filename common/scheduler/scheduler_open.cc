@@ -27,7 +27,6 @@
 
 using namespace std;
 
-int taskiditerator = 0;
 int k=0;
 
 String queuePolicy; //Stores Queuing Policy for Open System from base.cfg.

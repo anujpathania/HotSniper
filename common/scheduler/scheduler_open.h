@@ -69,9 +69,6 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		int setAffinity (thread_id_t thread_id);
 		bool schedule (int taskID, bool isInitialCall, SubsecondTime time);
 		
-		
-		int resetAffinity(thread_id_t thread_id); //testing
-		
 };
 
 #endif // __SCHEDULER_OPEN_H
