@@ -714,10 +714,9 @@ bool SchedulerOpen::schedule (int taskID, bool isInitialCall, SubsecondTime time
 		if (mappingSuccesfull) {
 			if (!isInitialCall) 
 			cout << "\n[Scheduler]: Waking Task " << taskID << " at core " << setAffinity (taskID) << endl;
-		if((waitingTaskQ.size() != 0) && (taskID == 0) && (k != 0)){
-		
+				
 		openTasks [taskID].taskStartTime = time.getNS();
-		}
+		
 		openTasks [taskID].active = true;		
 		ActiveTaskQ.push(openTasks[taskID]);
 		openTasks [taskID].waitingInQueue = false;
