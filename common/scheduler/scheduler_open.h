@@ -69,7 +69,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		
 		void initMigrationPolicy(String policyName);
 		MigrationPolicy * migrationPolicy;
-		void executeMigrationPolicy();
+		void executeMigrationPolicy(SubsecondTime time);
 		void updateSharedTimeSlots(SubsecondTime time);
 };
 

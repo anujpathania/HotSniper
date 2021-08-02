@@ -19,7 +19,7 @@ Thread::Thread(thread_id_t thread_id, app_id_t app_id,String app_name, bool secu
    , m_va2pa_func(NULL)
    , m_va2pa_arg(0)
    , m_shared_slots(0)
-   , m_last_instr(0)
+   //, m_last_instr(0)
    , m_periodic_performance(0)
 {
    m_syscall_model = new SyscallMdl(this);
@@ -106,9 +106,12 @@ void Thread::incSharedSlots()
    m_shared_slots += 1;
 }
 
-void Thread::updatePeriodicPerformance(UInt64 instructions, UInt64 time_interval) 
+// void Thread::setInstructionCount(UInt64 instructionCount){
+//    m_last_instr = instructionCount;
+// }
+void Thread::updatePeriodicPerformance(double CPI) 
 {
-   UInt64 instr_lapse = instructions - m_last_instr;
-   m_periodic_performance =((double)instr_lapse/(double)time_interval);
-   m_last_instr = instructions;
+   
+   m_periodic_performance  = 1.0/CPI;
+
 }

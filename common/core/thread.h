@@ -32,7 +32,6 @@ class Thread
       va2pa_func_t m_va2pa_func;
       UInt64 m_va2pa_arg;
       UInt32 m_shared_slots;
-      UInt64 m_last_instr;
       double m_periodic_performance;
       void setTile();
       
@@ -89,8 +88,10 @@ class Thread
       int getSharedSlots() const { return m_shared_slots; }
 
       double getPeriodicPerformance() const { return m_periodic_performance; }
-      UInt64 getLastInstructionCount() const { return m_last_instr; }
-      void updatePeriodicPerformance(UInt64 instructions, UInt64 time_interval);
+      //UInt64 getLastInstructionCount() const { return m_last_instr; }
+      void updatePeriodicPerformance(double CPI);
+
+      //void setInstructionCount(UInt64 instructionCount);
 
 
       bool reschedule(SubsecondTime &time, Core *current_core);
