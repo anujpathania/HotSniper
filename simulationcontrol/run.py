@@ -239,10 +239,9 @@ def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 def test_custom_app(appname = 'myapps-my_pi'):# note: the app name should in the format myapps-appname
-    run(['4.0GHz', 'slowtDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 10000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1)+ ',{}-{}-{}'.format('myapps-noaes', 500000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1) + ',{}-{}-{}'.format('myapps-pi', 9000000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1) , save=False)
-    #run(['4.0GHz', 'slowtDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 5000, 1), save=False)
+    run(['4.0GHz', 'fastDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 90000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1)+ ',{}-{}-{}'.format('myapps-noaes', 500000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1) + ',{}-{}-{}'.format('myapps-pi', 9000000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1)  , save=False)
+    #run(['4.0GHz', 'slowtDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 40000000, 1), save=False)
     #run(['4.0GHz', 'slowtDVFS', 'maxFreq'],  '{}-{}-{}'.format(appname,1000000, 1) + ',{}-{}-{}'.format('myapps-pi', 40000000,8), save=False)
-    #                                                    APP, num_steps, threads  +',{}-{}-{}'.format(appname, 150000, 1)
     #run(['4.0GHz', 'fastDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 15000, 2) +',splash2-lu.ncont-large-4', save=False)
 
 def my_parallel_execution():

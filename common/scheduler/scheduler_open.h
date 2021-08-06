@@ -19,6 +19,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 
 	public:
 		SchedulerOpen (ThreadManager *thread_manager); //This function is the constructor for Open System Scheduler.
+		virtual ~SchedulerOpen() {migfile.close();}
 		virtual void periodic(SubsecondTime time);
 		virtual void threadSetInitialAffinity(thread_id_t thread_id);
 		virtual bool threadSetAffinity(thread_id_t calling_thread_id, thread_id_t thread_id, size_t cpusetsize, const cpu_set_t *mask);
@@ -70,7 +71,11 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		void initMigrationPolicy(String policyName);
 		MigrationPolicy * migrationPolicy;
 		void executeMigrationPolicy(SubsecondTime time);
-		void updateSharedTimeSlots(SubsecondTime time);
+		void updateMigrationMetrics(SubsecondTime time);
+		double m_prev_ipc;
+
+		ofstream migfile;
+
 };
 
 #endif // __SCHEDULER_OPEN_H
