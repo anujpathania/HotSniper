@@ -1,9 +1,12 @@
 include ../../tools/hooks/buildconf.makefile
 TARGET = aes
-HOOKS_CFLAGS +=-I../openssl/include -I../../../include
+HOOKS_CFLAGS += -std=c++11 -I../openssl/include -I../../../include
 
-$(TARGET):
-	g++ -o $(TARGET) $(TARGET).cc $(HOOKS_CFLAGS) ../openssl/libcrypto.a
+$(TARGET): obj
+	g++ -o $(TARGET) $(TARGET).o  ../openssl/libcrypto.a
+
+obj:
+	g++ -c $(TARGET).cc $(HOOKS_CFLAGS)
 clean :
 	rm -f *.o $(TARGET)
 

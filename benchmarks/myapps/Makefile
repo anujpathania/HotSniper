@@ -7,6 +7,7 @@ SUBDIRS = $(shell ls -d */)
 
 
 all:
+	make -C tools
 	make -C pi
 	make -C my_pi
 	make -C openssl -j8
