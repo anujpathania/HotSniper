@@ -197,7 +197,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 			for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
 				openTasks[taskIterator].priority = rand()%10;
 				
-				cout << "[Scheduler]: Setting Priority for Task "<< taskIterator << " (" + openTasks[taskIterator].taskName + ")" << " to " << openTasks[taskIterator].priority << endl;
+				cout << "[Scheduler]: Setting Priority for Task " << taskIterator << " (" + openTasks[taskIterator].taskName + ")" << " to " << openTasks[taskIterator].priority << endl;
 			}
 		}
 		else{
