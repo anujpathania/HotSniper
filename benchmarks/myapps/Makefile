@@ -10,7 +10,7 @@ all:
 	make -C tools
 	make -C pi
 	make -C my_pi
-	make -C openssl -j8
+	cd openssl && ./config && make -j8
 	make -C aes
 	make -C noaes
 
