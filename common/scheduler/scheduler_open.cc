@@ -188,7 +188,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
 		openTasks.push_back (openTask (taskIterator,benchmarks.substr(0, benchmarks.find(benchmarksDelimiter))));
 		benchmarks.erase(0, benchmarks.find(benchmarksDelimiter) + benchmarksDelimiter.length());		
-	}
+	}						
 
 	//Initialize the priority values (only when queuePolicy is "priority")
 	if(queuePolicy == "priority"){
@@ -665,7 +665,6 @@ bool SchedulerOpen::schedule (int taskID, bool isInitialCall, SubsecondTime time
 					if(ActiveTaskQ.top().taskID == app_id ){
 						 SubsecondTime time = Sim()->getClockSkewMinimizationServer()->getGlobalTime();
 						
-						cout << "\n[Vidhi]: Thread " << t << " from Task "  << app_id << " Leaving at Time " << formatTime(time) << endl;
 						for (int i = 0; i < numberOfCores; i++) {
 							if (systemCores[i].assignedThreadID == t){
 								systemCores[i].assignedThreadID = -1;
@@ -681,12 +680,11 @@ bool SchedulerOpen::schedule (int taskID, bool isInitialCall, SubsecondTime time
 						}
 					
 						if (t < numberOfTasks) {									
-							cout << "\n[Vidhi]: Task " << app_id << " Pushed Back." << "\n";
+							
 
 							for (int i = 0; i < numberOfCores; i++) {
 								if (systemCores[i].assignedTaskID == app_id) {
 									systemCores[i].assignedTaskID = -1;
-									cout << "\n[Vidhi]: Releasing Core " << i << " from Task " << app_id << "\n";
 								}
 							}
 						}				 	
