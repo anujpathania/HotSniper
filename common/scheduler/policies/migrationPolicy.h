@@ -21,14 +21,14 @@ public:
    
    
     double getMigrationFunction() { 
-        cout << "Performance " <<m_curr_performance<< " Slots: "<<m_curr_shared_slots<<endl;
         //double m_migra_function =   m_alpha*(1 - (m_curr_performance/m_max_performance)) + ((double)m_curr_shared_slots/m_max_slots);
         m_migra_function =   m_alpha*(m_max_performance - m_curr_performance ) + ((double)m_curr_shared_slots/m_max_slots);
-        cout << "Migrationfunction = "<< m_migra_function<<endl;
         return m_migra_function; 
         }
 
     bool evaluateMigrationFunction() {
+        cout << "Performance " <<m_curr_performance<< " Slots: "<<m_curr_shared_slots<<endl;
+        cout << "Migrationfunction = "<< m_migra_function<<endl;
         return  ((m_migra_function >= 1) && (m_curr_shared_slots > 0));
     }
 

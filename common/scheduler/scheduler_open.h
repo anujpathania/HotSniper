@@ -13,6 +13,7 @@
 #include "policies/dvfspolicy.h"
 #include "policies/mappingpolicy.h"
 #include "policies/migrationPolicy.h"
+#include "tile_manager.h"
 
 
 class SchedulerOpen : public SchedulerPinnedBase {
@@ -75,6 +76,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		double m_prev_ipc;
 
 		ofstream migfile;
+		TileManager * tileManager;
 
 };
 

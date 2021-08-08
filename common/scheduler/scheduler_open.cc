@@ -186,6 +186,8 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
  		exit (1);
 	}
 
+	tileManager = new TileManager(numberOfTiles, coresPerTile);
+
 	initMappingPolicy(Sim()->getCfg()->getString("scheduler/open/logic").c_str());
 	initMigrationPolicy(Sim()->getCfg()->getString("scheduler/open/migration").c_str());
 	//initDVFSPolicy(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str());
@@ -203,11 +205,8 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 	if (policyName == "on_tile"){
 		vector<int> preferredTiles;
 		for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
-			cout << "Entramos con tarea "<<taskIterator<<endl;
 			int preferredTile = Sim()->getCfg()->getIntArray("scheduler/open/preferred_tiles", taskIterator);
-			cout<< "Tile preferido: "<<preferredTile<<endl;
 			preferredTiles.push_back(preferredTile);
-		
 		}
 		mappingPolicy = new MapOnTile(numberOfTasks, coreRows, coreColumns, preferredTiles);
 	
@@ -442,6 +441,7 @@ int SchedulerOpen::setAffinity (thread_id_t thread_id) {
 		CPU_SET(coreFound, &my_set);
 		threadSetAffinity(INVALID_THREAD_ID, thread_id, sizeof(cpu_set_t), &my_set); 
 		systemCores[coreFound].assignedThreadID = thread_id; 
+		tileManager->registerThreadOnTile(thread_id, coreFound);
 	}
 
 	return coreFound;
@@ -467,11 +467,14 @@ void SchedulerOpen::migrateThread(thread_id_t thread_id, core_id_t core_id)
 	if (from_core_id == core_id) {
 		cout << "[Scheduler] skipped moving thread " << thread_id << " to core " << core_id << " (already there)" << endl;
 	} else {
-		cout << "[Scheduler] moving thread " << thread_id << " from core " << from_core_id << " to core " << core_id << endl;
+		cout << "[Scheduler]: Moving thread " << thread_id << " from core " << from_core_id << " to core " << core_id << endl;
 		if (isAssignedToTask(core_id)) {
 			cout << "[Scheduler] [Error] core is already in use" << endl;
 			exit(1);
 		}
+		
+		tileManager->unregisterThreadOnTile(thread_id, from_core_id);
+		tileManager->registerThreadOnTile(thread_id, core_id);
 		
 		cpu_set_t my_set; 
 		CPU_ZERO(&my_set); 
@@ -483,6 +486,8 @@ void SchedulerOpen::migrateThread(thread_id_t thread_id, core_id_t core_id)
 
 		systemCores[from_core_id].assignedTaskID = -1;
 		systemCores[from_core_id].assignedThreadID = -1;
+
+
 	}
 }
 
@@ -664,11 +669,11 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 
 	app_id_t app_id =  Sim()->getThreadManager()->getThreadFromID(thread_id)->getAppId();
 	cout << "\n[Scheduler]: Thread " << thread_id << " from Task "  << app_id << " Exiting at Time " << formatTime(time) << endl;
-
 	for (int i = 0; i < numberOfCores; i++) {
 		if (systemCores[i].assignedThreadID == thread_id) {
 			systemCores[i].assignedThreadID = -1;
 			cout << "\n[Scheduler]: Releasing Core " << i << " from Thread " << thread_id << "\n";
+			tileManager->unregisterThreadOnTile(thread_id, i);
 			
 			cpu_set_t my_set; 
 			CPU_ZERO(&my_set); 
@@ -987,7 +992,8 @@ void SchedulerOpen::executeDVFSPolicy() {
 void SchedulerOpen::periodic(SubsecondTime time) {
 	if (time.getNS () % 1000000 == 0) { //Error Checking at every 1ms. Can be faster but will have overhead in simulation time.
 		cout << "\n[Scheduler]: Time " << formatTime(time) << " [Active Tasks =  " << numberOfActiveTasks () << " | Completed Tasks = " <<  numberOfTasksCompleted () << " | Queued Tasks = "  << numberOfTasksInQueue () << " | Non-Queued Tasks  = " <<  numberOfTasksWaitingToSchedule () <<  " | Free Cores = " << numberOfFreeCores () << " | Active Tasks Requirements = " << totalCoreRequirementsOfActiveTasks () << " ] \n" << endl;
-		updateMigrationMetrics(time);
+		//updateMigrationMetrics(time);
+		
 		//Following error checking code makes sure that the system state is not messed up.
 
 		if (numberOfCores - totalCoreRequirementsOfActiveTasks () != numberOfFreeCores ()) {
@@ -1051,6 +1057,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 
 	if (time.getNS () % mappingEpoch == 0) { //mappingEpoch
 		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
+		//tileManager->printTileInfo();
 		executeMigrationPolicy(time);
 		fetchTasksIntoQueue (time);
 				
@@ -1123,7 +1130,8 @@ void SchedulerOpen::initMigrationPolicy(String policyName) {
 
 	// Opens migration log file
 	migfile.open ("MigrationMetrics.log", ios::app);
-	migfile <<"Time"<<"\t"<<"Tile Id"<<"\t"<<"Core Id"<<"\t"<<"Shared time"<<"\t"<< "IPC" <<"\t"<<"Migration function"<<endl; 
+	migfile <<"Time"<<"\t"<<"Tile Id"<<"\t"<<"Core Id"<<"\t"<<"Threads on tile \t"
+	<<"Shared time"<<"\t"<< "IPC" <<"\t"<<"Migration function"<<endl; 
 }
 
 void SchedulerOpen::executeMigrationPolicy(SubsecondTime time) {
@@ -1167,15 +1175,16 @@ void SchedulerOpen::executeMigrationPolicy(SubsecondTime time) {
 
 void SchedulerOpen::updateMigrationMetrics(SubsecondTime time){
 	for (size_t i = 0; i < Sim()->getThreadManager()->getNumThreads() ; i++){
+		Thread* currThread = Sim()->getThreadManager()->getThreadFromID((thread_id_t)i);
 		//If the thread is marked as secure and is still running
-		if (Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->isSecure() &&
+		if (currThread->isSecure() &&
 		    Sim()->getThreadManager()->getThreadState(i) == 0) {
-				tile_id_t currTile = Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getTileId(); 
-				core_id_t currCore = Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getCore()->getId();
+				tile_id_t currTile = currThread->getTileId(); 
+				core_id_t currCore = currThread->getCore()->getId();
 				
 				//Performance Computation
-				Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->updatePeriodicPerformance(performanceCounters->getCPIOfCore(currCore));
-				double IPC = Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getPeriodicPerformance();
+				currThread->updatePeriodicPerformance(performanceCounters->getCPIOfCore(currCore));
+				double IPC = currThread->getPeriodicPerformance();
 				//cout << "Current performance of core "<<currCore<<" = "<< IPC<<endl;
 				migrationPolicy->setCurrentPerformance(IPC);
 
@@ -1185,16 +1194,20 @@ void SchedulerOpen::updateMigrationMetrics(SubsecondTime time){
 				// Shared time computation
 				// For each other Thread
 				for (size_t other_thread = 0; other_thread < Sim()->getThreadManager()->getNumThreads() ; other_thread++){
+					Thread * otherThread = Sim()->getThreadManager()->getThreadFromID((thread_id_t)other_thread);
 					// If the thread is running and exists on the same tile as the secure thread, increase shared slots
 					if ((other_thread != i) && (Sim()->getThreadManager()->getThreadState(other_thread) == 0) &&
-					   (Sim()->getThreadManager()->getThreadFromID((thread_id_t)other_thread)->getTileId() == Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getTileId())) {
-						 Sim()->getThreadManager()->getThreadFromID((thread_id_t)other_thread)->incSharedSlots();
+					   (otherThread->getTileId() == currThread->getTileId())) {
+						 otherThread->incSharedSlots();
 						 // Setting current sharedSlots
-						  migrationPolicy->setCurrentSharedSlots(Sim()->getThreadManager()->getThreadFromID((thread_id_t)other_thread)->getSharedSlots());
+						  UInt32  sharedTime = otherThread->getSharedSlots();
+						  tileManager->setThreadSharedTime(other_thread, sharedTime);
+						  migrationPolicy->setCurrentSharedSlots(tileManager->getMaxSharedTimeOnTile(currTile));
 					   }					
 				}
 				int sharedSlots = migrationPolicy->getCurrentSharedSlots();
-				migfile <<time.getNS()<<"\t"<<currTile<<"\t"<<currCore<<"\t"<<sharedSlots<<"\t"<< IPC <<"\t"<<migrationFunction<<endl; 
+				int threadsOnTile = tileManager->getActiveThreadsOnTile(currThread->getTileId());
+				migfile <<time.getNS()<<"\t"<<currTile<<"\t"<<currCore<<"\t"<<threadsOnTile<<"\t"<<sharedSlots<<"\t"<< IPC <<"\t"<<migrationFunction<<endl; 
 
 		} 
 	//cout<< "Thread: " << i  << " Shared slots: " << Sim()->getThreadManager()->getThreadFromID((thread_id_t)i)->getSharedSlots()<<endl;
