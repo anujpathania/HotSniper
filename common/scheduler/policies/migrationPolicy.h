@@ -24,7 +24,9 @@ public:
 
    
     void computeMigrationFunction() {
-        m_migra_function =   m_alpha*(m_max_performance - m_curr_performance ) + m_curr_shared_slots / m_max_slots;
+        double secondFactor = ((double)m_curr_shared_slots / (double)m_max_slots);
+        //cout<< "P " << m_curr_performance<<" ts "<< m_curr_shared_slots << " max "<<m_max_slots<< " sf"<<secondFactor<<endl;
+        m_migra_function =   m_alpha*(m_max_performance - m_curr_performance ) +  secondFactor;
     }
 
     double getMigrationFunction() { 
