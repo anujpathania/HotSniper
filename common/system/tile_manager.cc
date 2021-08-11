@@ -54,6 +54,14 @@ UInt32 TileManager::getActiveThreadsOnTile(tile_id_t tileId){
     return m_tiles[tileId]->getActiveThreads();
 }
 
+tile_id_t TileManager::findTileFromThreadId(thread_id_t threadId){
+    for (unsigned int i = 0; i < m_number_of_tiles; i++){
+        if (m_tiles[i]->findCoreFromThreadId(threadId) != -1)
+            return i;
+    }
+    return -1;
+}
+
 void TileManager::printTileInfo(){
     cout<< "************Tile information*************"<<endl;
     for (unsigned int i = 0; i < m_number_of_tiles; i++){

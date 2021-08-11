@@ -13,6 +13,7 @@ all:
 	cd openssl && ./config && make -j8
 	make -C aes
 	make -C noaes
+	make -C aggro
 
 
 # all:

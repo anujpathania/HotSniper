@@ -22,6 +22,7 @@ public:
     void setThreadSharedTime(thread_id_t threadId, UInt32 sharedTime);
     UInt32 getMaxSharedTimeOnTile(tile_id_t tileId);
     UInt32 getActiveThreadsOnTile(tile_id_t tileId);
+    tile_id_t findTileFromThreadId(thread_id_t tileId);
     
 private:
     UInt32 m_number_of_tiles;

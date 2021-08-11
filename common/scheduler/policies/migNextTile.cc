@@ -3,12 +3,16 @@
 
 
 
-core_id_t MigNextTile::getMigrationCandidate(core_id_t currentCore, const std::vector<bool> &availableCores, const std::vector<bool> &freeTiles) 
+core_id_t MigNextTile::getMigrationCandidate(tile_id_t currentTile, const std::vector<bool> &availableCores, const std::vector<UInt32> sharedTimePerTile, 
+                                            const std::vector<UInt32> activeThreadsPerTile)
 {
-	int cores = Sim()->getConfig()->getApplicationCores();
-	for(core_id_t core_id = 0; core_id < (core_id_t)cores; ++core_id) {
-			if (core_id >= currentCore && availableCores.at((core_id + 4) % cores))
-				return (core_id_t)((core_id + 4) % cores);
+	core_id_t currentCore = -1;
+	for(tile_id_t tile_id = 0; tile_id < sharedTimePerTile.size(); tile_id++) {
+			if (tile_id != currentTile)
+				for (core_id_t core_id  = 0; core_id < 4; core_id++){
+					if (availableCores.at((tile_id*4  + core_id )))
+						return (core_id_t)(tile_id * 4 + core_id );
+				}
 		}
 	return currentCore;
 }

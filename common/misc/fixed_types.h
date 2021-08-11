@@ -51,6 +51,7 @@ typedef SInt32 carbon_thread_t;
 #define INVALID_THREAD_ID ((thread_id_t) -1)
 #define INVALID_APP_ID ((app_id_t) -1)
 #define INVALID_CORE_ID ((core_id_t) -1)
+#define INVALID_TILE_ID ((tile_id_t) -1)
 #define INVALID_ADDRESS  ((IntPtr) -1)
 
 #if defined(__cplusplus)

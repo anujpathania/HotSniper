@@ -12,22 +12,29 @@ using namespace std;
 class MigrationPolicy {
 public:
     MigrationPolicy(){ m_curr_shared_slots = 0; m_migra_function = 0; }
-    virtual ~MigrationPolicy() {}
-    virtual core_id_t getMigrationCandidate(core_id_t currentCore, const std::vector<bool> &availableCores, const std::vector<bool> &freeTiles) = 0;
+    virtual core_id_t getMigrationCandidate(tile_id_t currentTile, const std::vector<bool> &availableCores, const std::vector<UInt32> sharedTimePerTile, 
+                                            const std::vector<UInt32> activeThreadsPerTile) = 0;
     void setCurrentSharedSlots(int sharedSlots){ m_curr_shared_slots = sharedSlots; }
     void setCurrentPerformance(double performance){ m_curr_performance = performance; }
     int getCurrentSharedSlots() const { return m_curr_shared_slots; }
     double getCurrentPerformance() const { return m_curr_performance; }
+    virtual core_id_t getMigrationCandidateNonSecure(tile_id_t currentTile, const std::vector<bool> &availableCores) = 0;
+    virtual tile_id_t getTileWLessThreads(tile_id_t secureThreadTile, std::vector<UInt32> activeThreadsPerTile) = 0;
+    virtual core_id_t getFreeCoreOnTile(tile_id_t tileId, const std::vector<bool> &availableCores) = 0;
+
    
-   
+    void computeMigrationFunction() {
+        m_migra_function =   m_alpha*(m_max_performance - m_curr_performance ) + m_curr_shared_slots / m_max_slots;
+    }
+
     double getMigrationFunction() { 
         //double m_migra_function =   m_alpha*(1 - (m_curr_performance/m_max_performance)) + ((double)m_curr_shared_slots/m_max_slots);
-        m_migra_function =   m_alpha*(m_max_performance - m_curr_performance ) + ((double)m_curr_shared_slots/m_max_slots);
         return m_migra_function; 
         }
 
     bool evaluateMigrationFunction() {
         cout << "Performance " <<m_curr_performance<< " Slots: "<<m_curr_shared_slots<<endl;
+        computeMigrationFunction();
         cout << "Migrationfunction = "<< m_migra_function<<endl;
         return  ((m_migra_function >= 1) && (m_curr_shared_slots > 0));
     }
