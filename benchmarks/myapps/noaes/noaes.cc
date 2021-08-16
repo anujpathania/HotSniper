@@ -6,7 +6,8 @@
 #include <chrono>
 #include "sim_api.h"
 
-#define LINES 8*16*1024
+#define LINES 8
+#define INTENSITY 1
 
 using namespace std;
 using namespace std::chrono;
@@ -37,12 +38,16 @@ int main(int argc, char* argv[]){
     //mem allocation for inputs
    
     SimRoiStart();
-    double ** big_ins = (double **) malloc(LINES*sizeof(double *)); 
+    char ** big_ins = (char **) malloc(LINES*sizeof(char *)); 
    while (1) {
-    for(int i = 0; i < LINES; i++)
-      big_ins[i] = (double *)(malloc (128*sizeof(double)));
-
+    for(int i = 0; i < LINES; i++) {
+      big_ins[i] = (char *)(malloc (INTENSITY*sizeof(char)));
+      for (size_t j = 0; j < 1024*50; j++){
+        outcounter += j*i;
+      }
     }
+      
+  }
     long int lcount = LINES - 1;
   
     //Generating random input 

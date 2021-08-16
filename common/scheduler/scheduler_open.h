@@ -77,6 +77,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		double m_prev_ipc;
 
 		ofstream migfile;
+		ofstream otherfile;
 		
 
 };

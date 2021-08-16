@@ -24,19 +24,19 @@ public:
 
    
     void computeMigrationFunction() {
-        double secondFactor = ((double)m_curr_shared_slots / (double)m_max_slots);
-        //cout<< "P " << m_curr_performance<<" ts "<< m_curr_shared_slots << " max "<<m_max_slots<< " sf"<<secondFactor<<endl;
-        m_migra_function =   m_alpha*(m_max_performance - m_curr_performance ) +  secondFactor;
+        float ff = (float) m_alpha*(m_max_performance - m_curr_performance);
+        float secondFactor = (m_curr_shared_slots / (float)m_max_slots);
+        cout<< "ff " << ff<<" ts "<< m_curr_shared_slots << " max "<<m_max_slots<< " sf"<<secondFactor<<endl;
+        m_migra_function =  ff +  secondFactor;
     }
 
-    double getMigrationFunction() { 
-        //double m_migra_function =   m_alpha*(1 - (m_curr_performance/m_max_performance)) + ((double)m_curr_shared_slots/m_max_slots);
+    float getMigrationFunction() { 
+        //float m_migra_function =   m_alpha*(1 - (m_curr_performance/m_max_performance)) + ((float)m_curr_shared_slots/m_max_slots);
         return m_migra_function; 
         }
 
     bool evaluateMigrationFunction() {
         cout << "Performance " <<m_curr_performance<< " Slots: "<<m_curr_shared_slots<<endl;
-        computeMigrationFunction();
         cout << "Migrationfunction = "<< m_migra_function<<endl;
         return  ((m_migra_function >= 1) && (m_curr_shared_slots > 0));
     }
@@ -52,8 +52,8 @@ private:
     float m_alpha, m_beta,  m_max_performance;
 	UInt32 m_max_slots;
     int m_curr_shared_slots;
-    double m_curr_performance;
-    double m_migra_function;
+    float m_curr_performance;
+    float m_migra_function;
 };
 
 #endif

@@ -992,9 +992,7 @@ void SchedulerOpen::executeDVFSPolicy() {
 */
 void SchedulerOpen::periodic(SubsecondTime time) {
 	if (time.getNS () % 1000000 == 0) { //Error Checking at every 1ms. Can be faster but will have overhead in simulation time.
-		cout << "\n[Scheduler]: Time " << formatTime(time) << " [Active Tasks =  " << numberOfActiveTasks () << " | Completed Tasks = " <<  numberOfTasksCompleted () << " | Queued Tasks = "  << numberOfTasksInQueue () << " | Non-Queued Tasks  = " <<  numberOfTasksWaitingToSchedule () <<  " | Free Cores = " << numberOfFreeCores () << " | Active Tasks Requirements = " << totalCoreRequirementsOfActiveTasks () << " ] \n" << endl;
-		//updateMigrationMetrics(time);
-		
+		cout << "\n[Scheduler]: Time " << formatTime(time) << " [Active Tasks =  " << numberOfActiveTasks () << " | Completed Tasks = " <<  numberOfTasksCompleted () << " | Queued Tasks = "  << numberOfTasksInQueue () << " | Non-Queued Tasks  = " <<  numberOfTasksWaitingToSchedule () <<  " | Free Cores = " << numberOfFreeCores () << " | Active Tasks Requirements = " << totalCoreRequirementsOfActiveTasks () << " ] \n" << endl;		
 		//Following error checking code makes sure that the system state is not messed up.
 
 		if (numberOfCores - totalCoreRequirementsOfActiveTasks () != numberOfFreeCores ()) {
@@ -1043,7 +1041,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 			cout << endl;
 		}
 	}
-	//if (time.getNS() % 500000 == 0) updateMigrationMetrics(time);
+	if (time.getNS() % 1000000 == 0) updateMigrationMetrics(time);
 
 	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
 		cout << "\n[Scheduler]: DVFS Control Loop invoked at " << formatTime(time) << endl;
@@ -1061,7 +1059,7 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		cout << "\n[Scheduler]: Scheduler Invoked at " << formatTime(time) << "\n" << endl;
 		//tileManager->printTileInfo();
 		fetchTasksIntoQueue (time);
-		updateMigrationMetrics(time);
+		
 		executeMigrationPolicy(time);
 				
 
@@ -1139,6 +1137,9 @@ void SchedulerOpen::initMigrationPolicy(String policyName) {
 	migfile.open ("MigrationMetrics.log", ios::app);
 	migfile <<"Time"<<"\t"<<"Tile Id"<<"\t"<<"Core Id"<<"\t"<<"Threads on tile \t"
 	<<"Shared time"<<"\t"<< "IPC" <<"\t"<<"Migration function"<<endl; 
+
+	otherfile.open ("OtherMetrics.log", ios::app);
+	otherfile <<"Time"<<"\t"<<"Core Id"<<"\t"<<"IPC"<<"Thread Id"<<"App"<<endl;
 }
 
 void SchedulerOpen::executeMigrationPolicy(SubsecondTime time) {
@@ -1223,20 +1224,23 @@ void SchedulerOpen::executeMigrationPolicy(SubsecondTime time) {
 void SchedulerOpen::updateMigrationMetrics(SubsecondTime time){
 	for (size_t i = 0; i < Sim()->getThreadManager()->getNumThreads() ; i++){
 		Thread* currThread = Sim()->getThreadManager()->getThreadFromID((thread_id_t)i);
+		core_id_t currCore;
+		double IPC;
+		if (Sim()->getThreadManager()->getThreadState(i) == 0) {
+		currCore = currThread->getCore()->getId();
+		currThread->updatePeriodicPerformance(performanceCounters->getCPIOfCore(currCore));
+		IPC = currThread->getPeriodicPerformance();
+
+		otherfile <<time.getMS()<<"\t"<<currCore<<"\t"<<IPC<<"\t"<<i<<endl;
+		}
 		//If the thread is marked as secure and is still running
 		if (currThread->isSecure() &&
 		    Sim()->getThreadManager()->getThreadState(i) == 0) {
+				currCore = currThread->getCore()->getId();
 				tile_id_t currTile = currThread->getTileId(); 
-				core_id_t currCore = currThread->getCore()->getId();
-				
-				//Performance Computation
-				currThread->updatePeriodicPerformance(performanceCounters->getCPIOfCore(currCore));
-				double IPC = currThread->getPeriodicPerformance();
-				
+				//Performance Computation	
 				migrationPolicy->setCurrentPerformance(IPC);
 
-				//Migration function computation
-				migrationPolicy->computeMigrationFunction();
 
 				// Shared time computation
 				// For each other Thread
@@ -1252,6 +1256,8 @@ void SchedulerOpen::updateMigrationMetrics(SubsecondTime time){
 						  migrationPolicy->setCurrentSharedSlots(tileManager->getMaxSharedTimeOnTile(currTile));
 					   }					
 				}
+				//Migration function computation
+				migrationPolicy->computeMigrationFunction();
 				int sharedSlots = migrationPolicy->getCurrentSharedSlots();
 				double migrationFunction = migrationPolicy->getMigrationFunction();
 				
