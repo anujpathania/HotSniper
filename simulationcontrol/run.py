@@ -79,9 +79,9 @@ def run(base_configuration, benchmark, ignore_error=False, save=True):
 
     periodicPower = 1000000
     if 'mediumDVFS' in base_configuration:
-        periodicPower = 250000
+        periodicPower = 500000
     if 'fastDVFS' in base_configuration:
-        periodicPower = 100000
+        periodicPower = 10000 #100
     args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
@@ -239,15 +239,16 @@ def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 def test_custom_app(appname = 'myapps-my_pi'):# note: the app name should in the format myapps-appname
-    run(['4.0GHz', 'fastDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 250000, 1), save=False)
-    #                                                    APP, num_steps, threads
-    #run(['4.0GHz', 'fastDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 15000, 2) +',splash2-lu.ncont-large-4', save=False)
+    #run(['4.0GHz', 'fastDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 100000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1)+ ',{}-{}-{}'.format('myapps-noaes', 500000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1) + ',{}-{}-{}'.format('myapps-pi', 9000000, 1) + ',{}-{}-{}'.format('myapps-noaes', 500000, 1)  , save=False)
+    #run(['4.0GHz', 'fastDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 40000000, 1), save=False)
+    run(['4.0GHz', 'mediumDVFS', 'maxFreq'], '{}-{}-{}'.format('myapps-my_pi', 100000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 100000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 100000000,1) + ',{}-{}-{}'.format(appname,1000000, 1)  + ',{}-{}-{}'.format('myapps-my_pi', 100000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 100000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 100000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 100000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 1000000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 1000000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 1000000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 1000000000,1) + ',{}-{}-{}'.format('myapps-my_pi', 100000000,1) ,save=False)
+    #run(['4.0GHz', 'slowDVFS', 'maxFreq'], '{}-{}-{}'.format(appname, 15000, 2) +',splash2-lu.ncont-large-4', save=False)
 
 def my_parallel_execution():
     run(['4.0GHz', 'fastDVFS', 'maxFreq'], 'splash2-lu.ncont-large-4,parsec-canneal-simmedium-3,splash2-fmm-large-4')
 
 def main():
-    test_custom_app('myapps-my_pi')
+    test_custom_app('myapps-aes')
     #my_parallel_execution()
 
 if __name__ == '__main__':

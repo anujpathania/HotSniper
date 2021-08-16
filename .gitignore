@@ -41,6 +41,7 @@ sift/libsift.a
 sift/siftdump
 sift/recorder/sift_recorder
 tools/pinversion
+*.so
 
 # result files
 results/
@@ -57,6 +58,8 @@ riscv/rv8
 riscv/Speckle
 xed_kit
 mbuild
+benchmarks/myapps/openssl
+
 
 # Pin3 output
 frontend/pin-frontend/obj-intel64

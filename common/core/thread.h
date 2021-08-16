@@ -19,6 +19,7 @@ class Thread
    private:
       thread_id_t m_thread_id;
       app_id_t m_app_id;
+      tile_id_t m_tile_id;
       String m_name;
       bool m_secure;
       ConditionVariable m_cond;
@@ -30,6 +31,10 @@ class Thread
       RoutineTracerThread *m_rtn_tracer;
       va2pa_func_t m_va2pa_func;
       UInt64 m_va2pa_arg;
+      UInt32 m_shared_slots;
+      double m_periodic_performance;
+      void setTile();
+      
 
    public:
       Thread(thread_id_t thread_id, app_id_t app_id, String app_name="X", bool secure=false);
@@ -43,6 +48,7 @@ class Thread
 
       thread_id_t getId() const { return m_thread_id; }
       app_id_t getAppId() const { return m_app_id; }
+      tile_id_t getTileId() const {return m_tile_id; }
 
       String getName() const { return m_name; }
       void setName(String name) { m_name = name; }
@@ -77,6 +83,16 @@ class Thread
 
       Core* getCore() const { return m_core; }
       void setCore(Core* core);
+
+      void incSharedSlots();
+      int getSharedSlots() const { return m_shared_slots; }
+
+      double getPeriodicPerformance() const { return m_periodic_performance; }
+      //UInt64 getLastInstructionCount() const { return m_last_instr; }
+      void updatePeriodicPerformance(double CPI);
+
+      //void setInstructionCount(UInt64 instructionCount);
+
 
       bool reschedule(SubsecondTime &time, Core *current_core);
       bool updateCoreTLS(int threadIndex = -1);

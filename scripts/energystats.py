@@ -58,7 +58,7 @@ class EnergyStats:
         sim.stats.register('core', core, metric, self.get_stat)
         sim.stats.register('L1-I', core, metric, self.get_stat)
         sim.stats.register('L1-D', core, metric, self.get_stat)
-        sim.stats.register('L2', core, metric, self.get_stat)
+        #sim.stats.register('L2', core, metric, self.get_stat)
       #sim.stats.register_per_thread('core-'+metric, 'core', metric)
       #sim.stats.register_per_thread('L1-I-'+metric, 'L1-I', metric)
       #sim.stats.register_per_thread('L1-D-'+metric, 'L1-D', metric)
@@ -109,8 +109,11 @@ class EnergyStats:
     for core in range(sim.config.ncores):
       self.power[('L1-I', core)] = get_power(power['Core'][core], 'Instruction Fetch Unit/Instruction Cache/')
       self.power[('L1-D', core)] = get_power(power['Core'][core], 'Load Store Unit/Data Cache/')
-      self.power[('L2',   core)] = get_power(power['Core'][core], 'L2/')
-      self.power[('core', core)] = get_power(power['Core'][core]) - (self.power[('L1-I', core)] + self.power[('L1-D', core)] + self.power[('L2', core)])
+      self.power[('core', core)] = get_power(power['Core'][core]) - (self.power[('L1-I', core)] + self.power[('L1-D', core)])
+
+      #self.power[('L2',   core)] = get_power(power['Core'][core], 'L2/')
+      #self.power[('core', core)] = get_power(power['Core'][core]) - (self.power[('L1-I', core)] + self.power[('L1-D', core)] + self.power[('L2', core)])self.power[('core', core)] = get_power(power['Core'][core]) - (self.power[('L1-I', core)] + self.power[('L1-D', core)] 
+
     self.power[('processor', 0)] = get_power(power['Processor'])
     self.power[('dram', 0)] = get_power(power['DRAM'])
 

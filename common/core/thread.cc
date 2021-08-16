@@ -18,6 +18,9 @@ Thread::Thread(thread_id_t thread_id, app_id_t app_id,String app_name, bool secu
    , m_rtn_tracer(NULL)
    , m_va2pa_func(NULL)
    , m_va2pa_arg(0)
+   , m_shared_slots(0)
+   //, m_last_instr(0)
+   , m_periodic_performance(0)
 {
    m_syscall_model = new SyscallMdl(this);
    m_sync_client = new SyncClient(this);
@@ -46,6 +49,8 @@ void Thread::setCore(Core* core)
       LOG_ASSERT_ERROR(core->getThread() == NULL, "Cannot move thread %d to core %d as it is already running thread %d", getId(), core->getId(), core->getThread()->getId());
       m_core->setThread(this);
    }
+   //Once the core has been set, we should also set the tile.
+   setTile();
 }
 
 void Thread::setVa2paFunc(va2pa_func_t va2pa_func, UInt64 va2pa_arg)
@@ -87,4 +92,26 @@ bool Thread::updateCoreTLS(int threadIndex)
    }
    else
       return false;
+}
+
+void Thread::setTile() 
+{
+   int s_cores = atoi (Sim()->getCfg()->getString("perf_model/l2_cache/shared_cores").c_str());
+   if (m_core)
+      m_tile_id = m_core->getId()/s_cores; 
+}
+
+void Thread::incSharedSlots()
+{
+   m_shared_slots += 1;
+}
+
+// void Thread::setInstructionCount(UInt64 instructionCount){
+//    m_last_instr = instructionCount;
+// }
+void Thread::updatePeriodicPerformance(double CPI) 
+{
+   
+   m_periodic_performance  = 1.0/CPI;
+
 }

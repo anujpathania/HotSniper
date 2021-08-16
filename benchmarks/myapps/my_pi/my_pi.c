@@ -3,7 +3,6 @@
 
 #include "omp.h"
 #include "stdio.h"
-#include "hooks_base.h"
 #include "sim_api.h"
 
 long num_steps;
@@ -22,9 +21,8 @@ void main(int argc, char* argv[])
 
    step = 1.0/(double) num_steps;
 
-   parmacs_roi_begin();
+   SimRoiStart(); 
 
-   #pragma omp parallel for private(x) reduction(+:sum)
    for (i=0;i<= num_steps; i++)
    {
       x = (i+0.5)*step;
@@ -32,7 +30,7 @@ void main(int argc, char* argv[])
    }
    pi = step * sum;
 
-   parmacs_roi_end();
+   SimRoiEnd(); 
 
    printf("%lf\n", pi);
 }

@@ -115,6 +115,8 @@ Config::Config(SimulationMode mode)
 
    m_total_cores = m_knob_total_cores;
 
+   m_cores_per_tile = Sim()->getCfg()->getInt("perf_model/l2_cache/shared_cores");
+
    m_singleton = this;
 
    assert(m_total_cores > 0);
@@ -140,6 +142,9 @@ UInt32 Config::getApplicationCores()
    return getTotalCores();
 }
 
+UInt32 Config::getCoresPerTile() {
+   return m_cores_per_tile;
+}
 UInt32 Config::computeCoreIDLength(UInt32 core_count)
 {
    UInt32 num_bits = ceilLog2(core_count);
