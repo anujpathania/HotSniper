@@ -11,7 +11,7 @@ double step;
 
 void main(int argc, char* argv[])
 {
-   SimSetSecure();
+
    int i;
    double x, pi, sum = 0.0;
 
