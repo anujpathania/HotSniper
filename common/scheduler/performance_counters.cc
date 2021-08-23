@@ -5,9 +5,24 @@
 
 using namespace std;
 
-PerformanceCounters::PerformanceCounters(std::string instPowerFileName, std::string instTemperatureFileName, std::string instCPIStackFileName)
-    : instPowerFileName(instPowerFileName), instTemperatureFileName(instTemperatureFileName), instCPIStackFileName(instCPIStackFileName) {
+PerformanceCounters::PerformanceCounters(const char* output_dir, std::string instPowerFileNameParam, std::string instTemperatureFileNameParam, std::string instCPIStackFileNameParam)
+    : instPowerFileName(instPowerFileNameParam), instTemperatureFileName(instTemperatureFileNameParam), instCPIStackFileName(instCPIStackFileNameParam) {
 
+	//gkothar1: fix log file path names
+	std::string temp = instPowerFileName;
+	instPowerFileName = std::string(output_dir);
+	instPowerFileName.append("/");
+	instPowerFileName.append(temp);
+
+	temp = instTemperatureFileName;
+	instTemperatureFileName = std::string(output_dir);
+	instTemperatureFileName.append("/");
+	instTemperatureFileName.append(temp);
+
+	temp = instCPIStackFileName;
+	instCPIStackFileName = std::string(output_dir);
+	instCPIStackFileName.append("/");
+	instCPIStackFileName.append(temp);
 }
 
 /** getPowerOfComponent

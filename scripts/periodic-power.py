@@ -16,7 +16,7 @@ class StatTrace:
     filename = 'Temp'
 
     interval_ns = long(args.get(0, 100000))
-    with open("Interval.dat", 'w') as f:
+    with open(os.path.join(sim.config.output_dir, "Interval.dat"), 'w') as f:
       f.write(str(interval_ns))
 
     self.clean_files()
@@ -57,11 +57,12 @@ class StatTrace:
     sim.util.Every(interval_ns * sim.util.Time.NS, self.periodic, statsdelta = self.sd, roi_only = True)
     
   def clean_files(self):
-    for filename in ('PeriodicCPIStack.log',
-                     'PeriodicPower.log',
-                     'PeriodicThermal.log',
-                     'PeriodicFrequency.log',
-                     'PeriodicVdd.log',):
+    # gkothar1
+    for filename in (os.path.join(sim.config.output_dir, 'PeriodicCPIStack.log'),
+                     os.path.join(sim.config.output_dir, 'PeriodicPower.log'),
+                     os.path.join(sim.config.output_dir, 'PeriodicThermal.log'),
+                     os.path.join(sim.config.output_dir, 'PeriodicFrequency.log'),
+                     os.path.join(sim.config.output_dir, 'PeriodicVdd.log')):
       open(filename, 'w')  # empties the file
 
   def periodic(self, time, time_delta):
