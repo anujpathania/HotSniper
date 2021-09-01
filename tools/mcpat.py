@@ -131,7 +131,10 @@ def log_frequencies(results):
   ncores = int(results['config']['general/total_cores'])
   frequencies = [float(results['config']['perf_model/core/frequency'].get(i)) for i in range(ncores)]
 
-  filename = 'PeriodicFrequency.log'
+  # gkothar1
+  filename = os.path.join(results['config']['general/output_dir'],
+                          'PeriodicFrequency.log')
+
   write_header = os.stat(filename).st_size == 0
   with open(filename, 'a') as f:
     if write_header:
@@ -155,7 +158,11 @@ def log_vdd(results):
   else:
       raise Exception('do not know how to scale vdd to {} nm'.format(size_nm))
   vdd = [float(results['config']['power/vdd'].get(i))*scale for i in range(ncores)]
-  filename = 'PeriodicVdd.log'
+
+  # gkothar1
+  filename = os.path.join(results['config']['general/output_dir'],
+                          'PeriodicVdd.log')
+
   write_header = os.stat(filename).st_size == 0
   with open(filename, 'a') as f:
     if write_header:
@@ -169,8 +176,12 @@ def log_cpi_stack(results):
   cpiStackData = cpiStack.get_data('cpi')
 
   ncores = int(results['config']['general/total_cores'])
-  cpi_stack_file = 'InstantaneousCPIStack.log'
-  cpi_stack_periodic_file = 'PeriodicCPIStack.log'
+
+  # gkothar1
+  cpi_stack_file = os.path.join(results['config']['general/output_dir'],
+                                'InstantaneousCPIStack.log')
+  cpi_stack_periodic_file = os.path.join(
+      results['config']['general/output_dir'], 'PeriodicCPIStack.log')
 
   labels = cpiStack.cpiitems.names
   compactify = ('issue', 'sync', 'imbalance')
@@ -443,13 +454,17 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   }
   data['core-other'] = getpower(power_dat['Processor']) - (sum(data.values()) - data['dram'])
 
-  
-  powerLogFileName = file("PeriodicPower.log", 'a');
-  powerInstantaneousFileName = file("InstantaneousPower.log", 'w');
-  if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
-   thermalLogFileName = file("PeriodicThermal.log", 'a');
+  # gkothar1
+  powerLogFileName = file(
+      os.path.join(sniper_config.get_config(cfg, "general/output_dir"),
+                   "PeriodicPower.log"), 'a')
+  powerInstantaneousFileName = file(
+      os.path.join(sniper_config.get_config(cfg, "general/output_dir"),
+                   "InstantaneousPower.log"), 'w')
 
-  
+  if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
+    thermalLogFileName = file(os.path.join(sniper_config.get_config(cfg, "general/output_dir"), "PeriodicThermal.log"), 'a')
+
   id = 0
   Headings = ""
 
@@ -522,8 +537,12 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
     Headings += "Core"+str(id)+"-TP\t" # Total Power
 
    id = id+1
-   
-  needInitializing = os.stat("PeriodicPower.log").st_size == 0
+
+  #gkothar1
+  needInitializing = os.stat(
+      os.path.join(sniper_config.get_config(cfg, "general/output_dir"),
+                   "PeriodicPower.log")).st_size == 0
+
   if needInitializing:
     powerLogFileName.write (Headings+"\n")
     if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
@@ -598,26 +617,31 @@ def power_stack(power_dat, cfg, powertype = 'total',  nocollapse = False):
   if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
 
    #HotSpot Integration Code
-   floorplan = os.path.abspath(os.path.join('../hotspot', sniper_config.get_config(cfg, "periodic_thermal/floorplan")))
-
-   with open("Interval.dat", 'r') as f:
+   with open(os.path.join(sniper_config.get_config(cfg, "general/output_dir"), "Interval.dat"), 'r') as f:
      interval_ns = float(f.read())
    interval_s = interval_ns * 1e-9
 
-   hotspot_binary = '../hotspot/hotspot'
-   hotspot_args = ['-c', '../hotspot/hotspot.config',
+   # gkothar1
+   hotspot_dir = os.path.dirname(__file__)
+   hotspot_dir = hotspot_dir[:hotspot_dir.rfind("/")]
+   hotspot_dir = os.path.join(hotspot_dir, "hotspot")
+   hotspot_binary = os.path.join(hotspot_dir, "hotspot")
+
+   floorplan = os.path.abspath(os.path.join(hotspot_dir, sniper_config.get_config(cfg, "periodic_thermal/floorplan")))
+
+   hotspot_args = ['-c', os.path.join(hotspot_dir, 'hotspot.config'),
                   '-f', floorplan,
                   '-sampling_intvl', str(interval_s),
-                  '-p', 'InstantaneousPower.log',
-                  '-o', 'InstantaneousTemperature.log']
+                  '-p', os.path.join(sniper_config.get_config(cfg, "general/output_dir"), 'InstantaneousPower.log'),
+                  '-o', os.path.join(sniper_config.get_config(cfg, "general/output_dir"), 'InstantaneousTemperature.log')]
    if not needInitializing:
-     hotspot_args += ['-init_file', 'Temperature.init']
+     hotspot_args += ['-init_file', os.path.join(sniper_config.get_config(cfg, "general/output_dir"), 'Temperature.init')]
 
    temperatures = subprocess.check_output([hotspot_binary] + hotspot_args)
-   with open('Temperature.init', 'w') as f:
+   with open(os.path.join(sniper_config.get_config(cfg, "general/output_dir"), 'Temperature.init'), 'w') as f:
      f.write(temperatures)
 
-   with open('InstantaneousTemperature.log', 'r') as instTemperatureFile:
+   with open(os.path.join(sniper_config.get_config(cfg, "general/output_dir"), 'InstantaneousTemperature.log'), 'r') as instTemperatureFile:
      instTemperatureFile.readline()  # ignore first line that contains the header
      thermalLogFileName.write(instTemperatureFile.readline())
 
