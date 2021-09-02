@@ -1,8 +1,6 @@
 # HotSniper 7
 
 An EDA toolchain for interval thermal simulations of 2D multi-/many-cores in an open system.
--   Creators: Martin Rapp, Anuj Pathania, Mohammed Bakr Sikal, Jörg Henkel
--   License: MIT
 
 Note: If you have a problem, please first browse the closed issues here - https://github.com/anujpathania/HotSniper/issues. If your problem continues to remain unresolved, please feel free to contact us by raising a new issue. Also, please do not forget to close the issue once we have addressed your problem. We prefer not to resolve issues over e-mail.
 
