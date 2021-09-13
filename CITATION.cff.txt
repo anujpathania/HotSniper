@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Anuj"
+    given-names: "Pathania"
+  - family-names: "Jörg"
+    given-names: "Henkel"
+  doi: "10.1109/LES.2018.2866594"
+  journal: "IEEE Embedded Systems Letters"
+  month: 6
+  start: 54 # First page number
+  end: 57 # Last page number
+  title: "HotSniper: Sniper-Based Toolchain for Many-Core Thermal Simulations in Open Systems"
+  issue: 2
+  volume: 11
+  year: 2019
