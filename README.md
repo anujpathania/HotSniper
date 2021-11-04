@@ -20,6 +20,10 @@ Details of HotSniper can be found in our ESL 2018 paper, and please consider cit
 
 [IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/8444047) 
 
+## The HotSniper User Manual
+
+Please refer to [Hot Sniper User Manual](https://github.com/anujpathania/HotSniper/blob/master/The%20HotSniper%20User%20Manual.pdf) to learn how to write custom scheduling policies that perform thermal-aware Dynamic Voltage Frequency Scaling (DVFS), Task Mapping, and Task Migration.
+
 
 ## 1- Requirements
 ### Docker
