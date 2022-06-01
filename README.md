@@ -29,6 +29,9 @@ Please refer to [Hot Sniper User Manual](https://github.com/anujpathania/HotSnip
 ### Docker
 HotSniper7 compiles and runs inside a Docker container. Therefore, you need to download & install Docker. 
 For more info: https://docs.docker.com/engine/install/ubuntu/
+
+After installing Docker, make sure you are able to run it without needing sudo by following instructions here - https://docs.docker.com/engine/install/linux-postinstall/
+
 ### PinPlay 
 Download and extract Pinplay 3.2 to the root HotSniper7 directory as ```pin_kit```
 ```sh
@@ -38,7 +41,7 @@ mv pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux pin_kit
 ```
 
 ## 2- Compiling HotSniper7
-At this stage, the root HotSniper7 directory has a folder named ```pin_kit``` containing the PinPlay-3.2 library and a folder named ```hotspot```containing the *compiled* HotSpot simulator. Since you now have Docker installed, let's create a ```container``` using the shipped ```Dockerfile```.
+At this stage, the root HotSniper7 directory has a folder named ```pin_kit``` containing the PinPlay-3.2 library and a folder named ```hotspot```containing the HotSpot simulator. Since you now have Docker installed, let's create a ```container``` using the shipped ```Dockerfile```.
 ```sh
 cd docker
 make
