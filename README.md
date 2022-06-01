@@ -28,7 +28,7 @@ Please refer to [Hot Sniper User Manual](https://github.com/anujpathania/HotSnip
 ## 1- Requirements
 ### Docker
 HotSniper7 compiles and runs inside a Docker container. Therefore, you need to download & install Docker. 
-For more info: https://www.docker.com/
+For more info: https://docs.docker.com/engine/install/ubuntu/
 ### PinPlay 
 Download and extract Pinplay 3.2 to the root HotSniper7 directory as ```pin_kit```
 ```sh
