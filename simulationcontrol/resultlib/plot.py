@@ -32,7 +32,7 @@ def set_color_palette(num_colors):
         sns.set_palette(pal)
 
 
-def plot_trace(run, name, title, traces_function, active_cores, yMin=None, yMax=None, smooth=None, force_recreate=False):
+def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=None, yMax=None, smooth=None, force_recreate=False):
     filename = os.path.join(find_run(run), '{}.png'.format(name))
 
     if not os.path.exists(filename) or force_recreate:
@@ -85,6 +85,8 @@ def plot_trace(run, name, title, traces_function, active_cores, yMin=None, yMax=
 
         plt.title('{} {}'.format(title, run))
         plt.legend()
+        plt.xlabel('Time (ms)')
+        plt.ylabel(ylabel)
         plt.grid()
         plt.grid(which='minor', linestyle=':')
         plt.minorticks_on()
@@ -116,6 +118,8 @@ def plot_cpi_stack_trace(run, active_cores, force_recreate=False):
             handles, labels = ax.get_legend_handles_labels()
             ax.legend(handles[::-1], labels[::-1], loc='upper left', bbox_to_anchor=(1, 1))
             
+            plt.xlabel('Time (ms)')
+            plt.ylabel('CPI')
             plt.grid()
             plt.grid(which='minor', linestyle=':')
             plt.minorticks_on()
@@ -127,16 +131,16 @@ def create_plots(run, force_recreate=False):
     print('creating plots for {}'.format(run))
     active_cores = get_active_cores(run)
 
-    plot_trace(run, 'frequency', 'frequency', lambda: get_freq_traces(run), active_cores, yMin=0, yMax=4.1e9, force_recreate=force_recreate)
-    plot_trace(run, 'temperature', 'temperature', lambda: get_temperature_traces(run), active_cores, yMin=45, yMax=100, force_recreate=force_recreate)
-    plot_trace(run, 'peak_temperature', 'peak_temperature', lambda: get_peak_temperature_traces(run), [0], yMin=45, yMax=100, force_recreate=force_recreate)
-    plot_trace(run, 'power', 'power', lambda: get_power_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
-    plot_trace(run, 'utilization', 'utilization', lambda: get_utilization_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
-    plot_trace(run, 'rel_nuca_cpi', 'rel. NUCA CPI', lambda: get_rel_nuca_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
-    plot_trace(run, 'cpi', 'CPI', lambda: get_cpi_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
-    #plot_trace(run, 'abs_nuca_cpi', 'abs. NUCA CPI', lambda: get_nuca_cpi_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
-    plot_trace(run, 'ips', 'IPS', lambda: get_ips_traces(run), active_cores, yMin=0, yMax=8e9, force_recreate=force_recreate)
-    plot_trace(run, 'ipssmooth', 'Smoothed IPS', lambda: get_ips_traces(run), active_cores, yMin=0, yMax=8e9, smooth=10, force_recreate=force_recreate)
+    plot_trace(run, 'frequency', 'Frequency', 'Frequency (GHz)', lambda: get_freq_traces(run), active_cores, yMin=0, yMax=4.1e9, force_recreate=force_recreate)
+    plot_trace(run, 'temperature', 'Temperature', 'Temperature (C)', lambda: get_temperature_traces(run), active_cores, yMin=45, yMax=100, force_recreate=force_recreate)
+    plot_trace(run, 'peak_temperature', 'Peak Temperature', 'Temperature (C)', lambda: get_peak_temperature_traces(run), [0], yMin=45, yMax=100, force_recreate=force_recreate)
+    plot_trace(run, 'power', 'Power', 'Power (W)', lambda: get_power_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
+    plot_trace(run, 'utilization', 'Utilization', 'Utilization (%)', lambda: get_utilization_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
+    plot_trace(run, 'rel_nuca_cpi', 'Rel. NUCA CPI', 'Rel. NUCA CPI', lambda: get_rel_nuca_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
+    plot_trace(run, 'cpi', 'CPI', 'CPI', lambda: get_cpi_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
+    #plot_trace(run, 'abs_nuca_cpi', 'Abs. NUCA CPI', 'Abs. NUCA CPI', lambda: get_nuca_cpi_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
+    plot_trace(run, 'ips', 'IPS', 'IPS', lambda: get_ips_traces(run), active_cores, yMin=0, yMax=8e9, force_recreate=force_recreate)
+    plot_trace(run, 'ipssmooth', 'Smoothed IPS', 'Smoothed IPS', lambda: get_ips_traces(run), active_cores, yMin=0, yMax=8e9, smooth=10, force_recreate=force_recreate)
     plot_cpi_stack_trace(run, active_cores, force_recreate=force_recreate)
 
 
