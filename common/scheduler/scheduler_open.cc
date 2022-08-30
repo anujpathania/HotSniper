@@ -802,7 +802,7 @@ core_id_t SchedulerOpen::threadCreate(thread_id_t thread_id) {
 			cout <<"\n[Scheudler] [Error]: A non-intial Thread " << thread_id << " From Task " << app_id << " failed to get a core.\n";
 			exit (1);
 		}
-	cout <<"\n[Scheudler]: Putting Thread " << thread_id << " From Task " << app_id << " to sleep.\n";
+	cout <<"\n[Scheduler]: Putting Thread " << thread_id << " From Task " << app_id << " to sleep.\n";
       	m_thread_info[thread_id].setCoreRunning(INVALID_CORE_ID);
       	return INVALID_CORE_ID;
    	}
