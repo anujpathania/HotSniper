@@ -17,6 +17,7 @@
 #include "policies/dvfsTSP.h"
 #include "policies/dvfsTestStaticPower.h"
 #include "policies/mapFirstUnused.h"
+#include "policies/pcgov.h"
 
 #include <iomanip>
 #include <random>
@@ -286,6 +287,9 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 			}
 		}
 		mappingPolicy = new MapFirstUnused(coreRows, coreColumns, preferredCoresOrder);
+	} else if (policyName == "PCGov") {
+		float delta = Sim()->getCfg()->getFloat("scheduler/open/dvfs/pcgov/delta");
+		mappingPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
 	} //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
 	else {
 		cout << "\n[Scheduler] [Error]: Unknown Mapping Algorithm" << endl;
@@ -309,6 +313,9 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		dvfsPolicy = new DVFSFixedPower(performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, perCorePowerBudget);
 	} else if (policyName == "tsp") {
 		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
+	} else if (policyName == "PCGov") {
+		float delta = Sim()->getCfg()->getFloat("scheduler/open/dvfs/pcgov/delta");
+		dvfsPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
 	} //else if (policyName ="XYZ") {... } //Place to instantiate a new DVFS logic. Implementation is put in "policies" package.
 	else {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
