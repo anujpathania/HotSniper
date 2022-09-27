@@ -63,6 +63,19 @@ class StatTrace:
                      os.path.join(sim.config.output_dir, 'PeriodicVdd.log')):
       open(filename, 'w')  # empties the file
 
+      # The following files need to be *removed* not just emptied.
+      sum_file = os.path.join(sim.config.output_dir,
+              sim.config.get('reliability/sum_file'))
+      rvalues_file = os.path.join(sim.config.output_dir,
+              sim.config.get('reliability/reliability_file'))
+      if os.path.exists(sum_file):
+          print("DEBUG: removing {}".format(sum_file))
+          os.remove(sum_file)
+      if os.path.exists(rvalues_file):
+          print("DEBUG: removing {}".format(rvalues_file))
+          os.remove(rvalues_file)
+
+
   def periodic(self, time, time_delta):
     if self.isTerminal:
       self.fd.write('[STAT:%s] ' % self.stat_name)
