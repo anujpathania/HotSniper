@@ -16,8 +16,6 @@ class StatTrace:
     filename = 'Temp'
 
     interval_ns = long(args.get(0, 100000))
-    with open(os.path.join(sim.config.output_dir, "Interval.dat"), 'w') as f:
-      f.write(str(interval_ns))
 
     self.clean_files()
 

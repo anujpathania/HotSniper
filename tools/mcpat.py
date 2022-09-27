@@ -351,7 +351,7 @@ def main(jobid, resultsdir, outputfile, powertype='dynamic', config=None, no_gra
     time0_begin = results['results']['global.time_begin']
     time0_end = results['results']['global.time_end']
     seconds = (time0_end - time0_begin)/1e15
-    results = power_stack(power_dat, results['config'], powertype)
+    results = power_stack(power_dat, results['config'], seconds, powertype)
     # Plot stack
     plot_labels = []
     plot_data = {}
@@ -439,7 +439,8 @@ def scale_power(suffix, power, size_nm):
         raise Exception('do not know how to scale power: {}'.format(suffix))
 
 
-def power_stack(power_dat, cfg, powertype='total',  nocollapse=False):
+def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
+    # `seconds` is the sampling time interval.
     size_nm = int(sniper_config.get_config(cfg, "power/technology_node"))
 
     def getpower(powers, key=None):
@@ -694,10 +695,6 @@ def power_stack(power_dat, cfg, powertype='total',  nocollapse=False):
     if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
 
         # HotSpot Integration Code
-        with open(os.path.join(sniper_config.get_config(cfg, "general/output_dir"), "Interval.dat"), 'r') as f:
-            interval_ns = float(f.read())
-        interval_s = interval_ns * 1e-9
-
         # gkothar1
         hotspot_dir = os.path.dirname(__file__)
         hotspot_dir = hotspot_dir[:hotspot_dir.rfind("/")]
@@ -709,7 +706,7 @@ def power_stack(power_dat, cfg, powertype='total',  nocollapse=False):
 
         hotspot_args = ['-c', os.path.join(hotspot_dir, 'hotspot.config'),
                         '-f', floorplan,
-                        '-sampling_intvl', str(interval_s),
+                        '-sampling_intvl', str(seconds),
                         '-p', os.path.join(sniper_config.get_config(cfg,
                                                                     "general/output_dir"), 'InstantaneousPower.log'),
                         '-o', os.path.join(sniper_config.get_config(cfg, "general/output_dir"), 'InstantaneousTemperature.log')]
