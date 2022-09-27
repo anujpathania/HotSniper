@@ -693,7 +693,6 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
     powerLogFileName.close()
 
     if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
-
         # HotSpot Integration Code
         # gkothar1
         hotspot_dir = os.path.dirname(__file__)
@@ -724,7 +723,33 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
 
         thermalLogFileName.close()
 
+        # Update reliability values of all the cores.
+        update_reliability_values(cfg, 'InstantaneousTemperature.log', seconds)
+
     return buildstack.merge_items({0: data}, all_items, nocollapse=nocollapse)
+
+
+def update_reliability_values(cfg, instant_temperatures, delta_t_s):
+    # Update the reliability values of the cores.
+    # Wearout is calculated using on the temperatures in the file
+    # `instant_temperatures` (in celsius) over the time period `delta_t` (in
+    # seconds)
+
+    # Setup call to reliability binary `reliability_external`.
+    delta_t_ms = delta_t_s * 1000
+    reliability_exec = os.path.join(os.getenv('SNIPER_ROOT'),
+            sniper_config.get_config(cfg, "reliability/reliability_executable"))
+    output_dir = sniper_config.get_config(cfg, "general/output_dir")
+    temperature_filename = os.path.join(output_dir, instant_temperatures)
+    sums_filename = os.path.join(output_dir,
+            sniper_config.get_config(cfg, "reliability/sum_file"))
+    rvalues_filename = os.path.join(output_dir,
+            sniper_config.get_config(cfg, "reliability/reliability_file"))
+    reliability_cmd = "{} {} {} {} {}".format(reliability_exec, delta_t_ms,
+            temperature_filename, sums_filename, rvalues_filename)
+
+    #print("DEBUG: executing: {}".format(reliability_cmd))
+    os.system(reliability_cmd)
 
 
 def edit_XML(statsobj, stats, cfg):

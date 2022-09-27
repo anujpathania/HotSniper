@@ -73,6 +73,19 @@ class EnergyStats:
             sim.stats.register('processor', 0, metric, self.get_stat)
             sim.stats.register('dram', 0, metric, self.get_stat)
 
+        # Cleanup stale reliability files from previous simulations.
+        sum_file = os.path.join(sim.config.output_dir,
+                sim.config.get('reliability/sum_file'))
+        rvalues_file = os.path.join(sim.config.output_dir,
+                sim.config.get('reliability/reliability_file'))
+        if os.path.exists(sum_file):
+            #print("DEBUG: removing {}".format(sum_file))
+            os.remove(sum_file)
+        if os.path.exists(rvalues_file):
+            #print("DEBUG: removing {}".format(rvalues_file))
+            os.remove(rvalues_file)
+
+
     def periodic(self, time, time_delta):
         self.update()
 
