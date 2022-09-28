@@ -751,6 +751,20 @@ def update_reliability_values(cfg, instant_temperatures, delta_t_s):
     #print("DEBUG: executing: {}".format(reliability_cmd))
     os.system(reliability_cmd)
 
+    # Periodic logging of the R values.
+    periodic_rvalues = os.path.join(output_dir, 'PeriodicRvalues.log')
+    # Add header if file is empty.
+    if os.stat(periodic_rvalues).st_size == 0:
+        ncores = int(cfg['general/total_cores'])
+        header = '\t'.join(["Core{}".format(i) for i in range(0, ncores)])
+        with open(periodic_rvalues, 'w') as f:
+            f.write(header + '\n')
+
+    # Copy current rvalues to periodic log.
+    with open(rvalues_filename) as current_rval:
+        with open(periodic_rvalues, 'a') as rvalues:
+            rvalues.write(current_rval.readline())
+
 
 def edit_XML(statsobj, stats, cfg):
     # param = res['param']         #do it separately

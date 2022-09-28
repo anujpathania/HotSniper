@@ -60,7 +60,8 @@ class StatTrace:
                      os.path.join(sim.config.output_dir, 'PeriodicPower.log'),
                      os.path.join(sim.config.output_dir, 'PeriodicThermal.log'),
                      os.path.join(sim.config.output_dir, 'PeriodicFrequency.log'),
-                     os.path.join(sim.config.output_dir, 'PeriodicVdd.log')):
+                     os.path.join(sim.config.output_dir, 'PeriodicVdd.log'),
+                     os.path.join(sim.config.output_dir, 'PeriodicRvalues.log')):
       open(filename, 'w')  # empties the file
 
       # The following files need to be *removed* not just emptied.
@@ -69,10 +70,10 @@ class StatTrace:
       rvalues_file = os.path.join(sim.config.output_dir,
               sim.config.get('reliability/reliability_file'))
       if os.path.exists(sum_file):
-          print("DEBUG: removing {}".format(sum_file))
+          #print("DEBUG: removing {}".format(sum_file))
           os.remove(sum_file)
       if os.path.exists(rvalues_file):
-          print("DEBUG: removing {}".format(rvalues_file))
+          #print("DEBUG: removing {}".format(rvalues_file))
           os.remove(rvalues_file)
 
 
