@@ -66,7 +66,8 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
               'PeriodicThermal.log',
               'PeriodicFrequency.log',
               'PeriodicVdd.log',
-              'PeriodicCPIStack.log',):
+              'PeriodicCPIStack.log',
+              'PeriodicRvalues.log'):
         with open(os.path.join(BENCHMARKS, f), 'rb') as f_in, gzip.open('{}.gz'.format(os.path.join(directory, f)), 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
     create_plots(run)
