@@ -133,6 +133,7 @@ def create_plots(run, force_recreate=False):
 
     plot_trace(run, 'frequency', 'Frequency', 'Frequency (GHz)', lambda: get_freq_traces(run), active_cores, yMin=0, yMax=4.1e9, force_recreate=force_recreate)
     plot_trace(run, 'temperature', 'Temperature', 'Temperature (C)', lambda: get_temperature_traces(run), active_cores, yMin=45, yMax=100, force_recreate=force_recreate)
+    plot_trace(run, 'rvalues', 'R values', 'Reliability', lambda: get_rvalues_traces(run), active_cores, yMin=0, yMax=1, force_recreate=force_recreate)
     plot_trace(run, 'peak_temperature', 'Peak Temperature', 'Temperature (C)', lambda: get_peak_temperature_traces(run), [0], yMin=45, yMax=100, force_recreate=force_recreate)
     plot_trace(run, 'power', 'Power', 'Power (W)', lambda: get_power_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
     plot_trace(run, 'utilization', 'Utilization', 'Utilization (%)', lambda: get_utilization_traces(run), active_cores, yMin=0, force_recreate=force_recreate)

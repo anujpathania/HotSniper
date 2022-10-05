@@ -193,6 +193,10 @@ def get_temperature_traces(run):
     return _get_traces(run, 'PeriodicThermal.log')
 
 
+def get_rvalues_traces(run):
+    return _get_traces(run, 'PeriodicRvalues.log')
+
+
 def get_peak_temperature_traces(run):
     traces = get_temperature_traces(run)
     peak = []
