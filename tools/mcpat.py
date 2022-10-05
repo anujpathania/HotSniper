@@ -745,8 +745,12 @@ def update_reliability_values(cfg, instant_temperatures, delta_t_s):
             sniper_config.get_config(cfg, "reliability/sum_file"))
     rvalues_filename = os.path.join(output_dir,
             sniper_config.get_config(cfg, "reliability/reliability_file"))
-    reliability_cmd = "{} {} {} {} {}".format(reliability_exec, delta_t_ms,
-            temperature_filename, sums_filename, rvalues_filename)
+
+    rvalues_acceleration_factor = sniper_config.get_config_default(
+            cfg, "reliability/acceleration_factor", 1)
+    reliability_cmd = "{} {} {} {} {} {}".format(
+            reliability_exec, delta_t_ms, temperature_filename,
+            sums_filename, rvalues_filename, rvalues_acceleration_factor)
 
     #print("DEBUG: executing: {}".format(reliability_cmd))
     os.system(reliability_cmd)

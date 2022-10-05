@@ -32,7 +32,7 @@ def set_color_palette(num_colors):
         sns.set_palette(pal)
 
 
-def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=None, yMax=None, smooth=None, force_recreate=False):
+def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=None, yMax=None, smooth=None, force_recreate=False, xlabel='Time (ms)'):
     filename = os.path.join(find_run(run), '{}.png'.format(name))
 
     if not os.path.exists(filename) or force_recreate:
@@ -85,7 +85,7 @@ def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=Non
 
         plt.title('{} {}'.format(title, run))
         plt.legend()
-        plt.xlabel('Time (ms)')
+        plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.grid()
         plt.grid(which='minor', linestyle=':')
@@ -133,7 +133,7 @@ def create_plots(run, force_recreate=False):
 
     plot_trace(run, 'frequency', 'Frequency', 'Frequency (GHz)', lambda: get_freq_traces(run), active_cores, yMin=0, yMax=4.1e9, force_recreate=force_recreate)
     plot_trace(run, 'temperature', 'Temperature', 'Temperature (C)', lambda: get_temperature_traces(run), active_cores, yMin=45, yMax=100, force_recreate=force_recreate)
-    plot_trace(run, 'rvalues', 'R values', 'Reliability', lambda: get_rvalues_traces(run), active_cores, yMin=0, yMax=1, force_recreate=force_recreate)
+    plot_trace(run, 'rvalues', 'R values', 'Reliability', lambda: get_rvalues_traces(run), active_cores, yMin=0, yMax=1.1, force_recreate=force_recreate, xlabel='time (ms) * acceleration factor')
     plot_trace(run, 'peak_temperature', 'Peak Temperature', 'Temperature (C)', lambda: get_peak_temperature_traces(run), [0], yMin=45, yMax=100, force_recreate=force_recreate)
     plot_trace(run, 'power', 'Power', 'Power (W)', lambda: get_power_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
     plot_trace(run, 'utilization', 'Utilization', 'Utilization (%)', lambda: get_utilization_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
