@@ -150,7 +150,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 
 
 	performanceCounters = new PerformanceCounters(Sim()->getCfg()->getString("general/output_dir").c_str(),
-		"InstantaneousPower.log", "InstantaneousTemperature.log", "InstantaneousCPIStack.log");
+		"InstantaneousPower.log", "InstantaneousTemperature.log", "InstantaneousCPIStack.log", "InstantaneousRvalue.log");
 
 	mappingEpoch = atol (Sim()->getCfg()->getString("scheduler/open/epoch").c_str());
 	queuePolicy = Sim()->getCfg()->getString("scheduler/open/queuePolicy").c_str();

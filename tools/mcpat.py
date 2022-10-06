@@ -743,8 +743,7 @@ def update_reliability_values(cfg, instant_temperatures, delta_t_s):
     temperature_filename = os.path.join(output_dir, instant_temperatures)
     sums_filename = os.path.join(output_dir,
             sniper_config.get_config(cfg, "reliability/sum_file"))
-    rvalues_filename = os.path.join(output_dir,
-            sniper_config.get_config(cfg, "reliability/reliability_file"))
+    rvalues_filename = os.path.join(output_dir, "InstantaneousRvalue.log")
 
     rvalues_acceleration_factor = sniper_config.get_config_default(
             cfg, "reliability/acceleration_factor", 1)
@@ -756,7 +755,7 @@ def update_reliability_values(cfg, instant_temperatures, delta_t_s):
     os.system(reliability_cmd)
 
     # Periodic logging of the R values.
-    periodic_rvalues = os.path.join(output_dir, 'PeriodicRvalues.log')
+    periodic_rvalues = os.path.join(output_dir, 'PeriodicRvalue.log')
     # Add header if file is empty.
     if os.stat(periodic_rvalues).st_size == 0:
         ncores = int(cfg['general/total_cores'])

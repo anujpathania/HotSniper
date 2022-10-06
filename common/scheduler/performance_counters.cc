@@ -5,8 +5,14 @@
 
 using namespace std;
 
-PerformanceCounters::PerformanceCounters(const char* output_dir, std::string instPowerFileNameParam, std::string instTemperatureFileNameParam, std::string instCPIStackFileNameParam)
-    : instPowerFileName(instPowerFileNameParam), instTemperatureFileName(instTemperatureFileNameParam), instCPIStackFileName(instCPIStackFileNameParam) {
+PerformanceCounters::PerformanceCounters(const char* output_dir,
+        std::string instPowerFileNameParam,
+        std::string instTemperatureFileNameParam,
+        std::string instCPIStackFileNameParam,
+        std::string instRvalueFileNameParam) :
+            instPowerFileName(instPowerFileNameParam),
+            instTemperatureFileName(instTemperatureFileNameParam),
+            instCPIStackFileName(instCPIStackFileNameParam) {
 
 	//gkothar1: fix log file path names
 	std::string temp = instPowerFileName;
@@ -23,6 +29,9 @@ PerformanceCounters::PerformanceCounters(const char* output_dir, std::string ins
 	instCPIStackFileName = std::string(output_dir);
 	instCPIStackFileName.append("/");
 	instCPIStackFileName.append(temp);
+
+    instRvalueFileName = std::string(output_dir) + "/" +
+        instRvalueFileNameParam;
 }
 
 /** getPowerOfComponent
@@ -207,4 +216,23 @@ void PerformanceCounters::notifyFreqsOfCores(std::vector<int> newFrequencies) {
  */
 double PerformanceCounters::getIPSOfCore(int coreId) const {
 	return 1e6 * getFreqOfCore(coreId) / getCPIOfCore(coreId);
+}
+
+/** getRvalueOfComponent
+    Returns the latest reliability value of a component being tracked
+    using base.cfg. Return -1 if power value not found.
+*/
+double PerformanceCounters::getRvalueOfComponent (std::string component) const {
+    // TODO
+    return 0.0;
+}
+
+/** getRvalueOfCore
+ * Return the latest reliability value of the given core.
+ * Requires "tp" (total power) to be tracked in base.cfg.
+ * Return -1 if power is not tracked.
+ */
+double PerformanceCounters::getRvalueOfCore (int coreId) const {
+    // TODO
+    return 0.0;
 }
