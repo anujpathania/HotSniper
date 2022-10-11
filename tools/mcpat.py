@@ -724,7 +724,8 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
         thermalLogFileName.close()
 
         # Update reliability values of all the cores.
-        update_reliability_values(cfg, 'InstantaneousTemperature.log', seconds)
+        if (sniper_config.get_config(cfg, "reliability/enabled") == 'true'):
+            update_reliability_values(cfg, 'InstantaneousTemperature.log', seconds)
 
     return buildstack.merge_items({0: data}, all_items, nocollapse=nocollapse)
 
@@ -756,6 +757,10 @@ def update_reliability_values(cfg, instant_temperatures, delta_t_s):
 
     # Periodic logging of the R values.
     periodic_rvalues = os.path.join(output_dir, 'PeriodicRvalue.log')
+
+    # TODO: too simplistic to assume we are measuring total power
+    #       Could be subcomponent power, so we need to fix the header here
+
     # Add header if file is empty.
     if os.stat(periodic_rvalues).st_size == 0:
         ncores = int(cfg['general/total_cores'])
