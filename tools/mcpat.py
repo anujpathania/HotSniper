@@ -770,6 +770,7 @@ def update_reliability_values(cfg, instant_temperatures, delta_t_s):
 
     # Copy current rvalues to periodic log.
     with open(rvalues_filename) as current_rval:
+        current_rval.readline()  # Skip header (assume core 0..n)
         with open(periodic_rvalues, 'a') as rvalues:
             rvalues.write(current_rval.readline())
 

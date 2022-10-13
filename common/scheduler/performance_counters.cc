@@ -219,12 +219,33 @@ double PerformanceCounters::getIPSOfCore(int coreId) const {
 }
 
 /** getRvalueOfComponent
-    Returns the latest reliability value of a component being tracked
-    using base.cfg. Return -1 if power value not found.
+    Returns the latest reliability value of the component `component`.
+    Return -1 if rvalue value not found.
 */
 double PerformanceCounters::getRvalueOfComponent (std::string component) const {
-    // TODO
-    return 0.0;
+    ifstream rvalueLogFile(instRvalueFileName);
+    string header;
+    string footer;
+
+    if (rvalueLogFile.good()) {
+        getline(rvalueLogFile, header);
+        getline(rvalueLogFile, footer);
+    }
+
+    std::istringstream issHeader(header);
+    std::istringstream issFooter(footer);
+    std::string token;
+
+    while(getline(issHeader, token, '\t')) {
+        std::string value;
+        getline(issFooter, value, '\t');
+
+        if (token == component) {
+            return stod(value);
+        }
+    }
+
+    return -1;
 }
 
 /** getRvalueOfCore
@@ -233,6 +254,6 @@ double PerformanceCounters::getRvalueOfComponent (std::string component) const {
  * Return -1 if power is not tracked.
  */
 double PerformanceCounters::getRvalueOfCore (int coreId) const {
-    // TODO
-    return 0.0;
+    string component = "Core" + std::to_string(coreId);
+    return getRvalueOfComponent(component);
 }
