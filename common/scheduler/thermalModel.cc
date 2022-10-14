@@ -14,6 +14,8 @@ ThermalModel::ThermalModel(unsigned int coreRows, unsigned int coreColumns, cons
     unsigned int numberNodesAmbient = readValue<unsigned int>(f);
     unsigned int numberThermalNodes = readValue<unsigned int>(f);
 
+    // SP: debug print.
+    std::cout << "row: " << coreRows << ", column: " << coreColumns << ", numerUnits" << numberUnits << std::endl;
     if (numberUnits != coreRows * coreColumns) {
         std::cout << "Assertion error in thermal model file: numberUnits != coreRows * coreColumns" << std::endl;
 		exit (1);
