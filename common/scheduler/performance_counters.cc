@@ -254,6 +254,6 @@ double PerformanceCounters::getRvalueOfComponent (std::string component) const {
  * Return -1 if power is not tracked.
  */
 double PerformanceCounters::getRvalueOfCore (int coreId) const {
-    string component = "Core" + std::to_string(coreId);
+    string component = "Core" + std::to_string(coreId) + "-TP";
     return getRvalueOfComponent(component);
 }

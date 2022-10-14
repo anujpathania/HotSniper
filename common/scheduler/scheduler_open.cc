@@ -1295,8 +1295,8 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 
 	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
 		cout << "\n[Scheduler]: DVFS Control Loop invoked at " << formatTime(time) << endl;
-        cout << "SP: Core 0 power:" << performanceCounters->getPowerOfCore(0) << endl;
-        cout << "SP: Core 0 rvalue:" << performanceCounters->getRvalueOfCore(0) << endl;
+        // SP: Debug: show that rvalues are now accessible to the scheduler
+        // cout << "SP: Core 0 rvalue:" << performanceCounters->getRvalueOfCore(0) << endl;
 
 		executeDVFSPolicy();
 

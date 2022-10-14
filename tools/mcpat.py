@@ -598,6 +598,10 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
         powerLogFileName.write(Headings+"\n")
         if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
             thermalLogFileName.write(Headings+"\n")
+        if (sniper_config.get_config(cfg, 'reliability/enabled') == 'true'):
+            periodic_rvalues = os.path.join(sniper_config.get_config(cfg, "general/output_dir"), 'PeriodicRvalue.log')
+            with open(periodic_rvalues, 'w') as f:
+                f.write(Headings + '\n')
 
     powerInstantaneousFileName.write(Headings+"\n")
 
@@ -758,19 +762,9 @@ def update_reliability_values(cfg, instant_temperatures, delta_t_s):
     # Periodic logging of the R values.
     periodic_rvalues = os.path.join(output_dir, 'PeriodicRvalue.log')
 
-    # TODO: too simplistic to assume we are measuring total power
-    #       Could be subcomponent power, so we need to fix the header here
-
-    # Add header if file is empty.
-    if os.stat(periodic_rvalues).st_size == 0:
-        ncores = int(cfg['general/total_cores'])
-        header = '\t'.join(["Core{}".format(i) for i in range(0, ncores)])
-        with open(periodic_rvalues, 'w') as f:
-            f.write(header + '\n')
-
     # Copy current rvalues to periodic log.
     with open(rvalues_filename) as current_rval:
-        current_rval.readline()  # Skip header (assume core 0..n)
+        current_rval.readline()  # Skip header
         with open(periodic_rvalues, 'a') as rvalues:
             rvalues.write(current_rval.readline())
 
