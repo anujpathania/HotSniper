@@ -177,7 +177,10 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
     double maxTemperature = Sim()->getCfg()->getFloat("periodic_thermal/max_temperature");
     double inactivePower = Sim()->getCfg()->getFloat("periodic_thermal/inactive_power");
     double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
-	thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, Sim()->getCfg()->getString("periodic_thermal/thermal_model"), ambientTemperature, maxTemperature, inactivePower, tdp);
+    // SP: Set thermalModel to NULL because it is only used for tsp mode
+    // Real fix would be to make it subcomp aware or guard it with a check on the dvfs policy
+	// thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, Sim()->getCfg()->getString("periodic_thermal/thermal_model"), ambientTemperature, maxTemperature, inactivePower, tdp);
+	thermalModel = NULL;
 
 	//Initialize the cores in the system.
 	for (int coreIterator=0; coreIterator < numberOfCores; coreIterator++) {
