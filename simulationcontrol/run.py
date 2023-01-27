@@ -231,7 +231,7 @@ def example():
 
         min_parallelism = get_feasible_parallelisms(benchmark)[0]
         max_parallelism = get_feasible_parallelisms(benchmark)[-1]
-        for freq in (1, 4):
+        for freq in (2,):
             # SP: temporary to run on dual core gainestown
             #for parallelism in (max_parallelism,):
             for parallelism in (2,):
