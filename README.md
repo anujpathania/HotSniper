@@ -1,6 +1,6 @@
 ### Next Release: CoMeT Simulator
 
-CoMeT: CoMeT is next-generation open-source EDA toolchain for integrated core-memory interval thermal simulations of 2D, 2.5, and 3D multi-/many-core processors. CoMeT *subsumes* the code of HotSniper.
+CoMeT: CoMeT is next-generation open-source EDA toolchain for integrated core-memory interval thermal simulations of 2D, 2.5, and 3D multi-/many-core processors. CoMeT (partially) *subsumes* the code of HotSniper.
 
 [Download CoMeT](https://github.com/marg-tools/CoMeT) 
 
@@ -140,14 +140,6 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
   - `simulationcontrol/config.py`: `RESULTS_FOLDER`
   - This folder usually is outside of the HotSniper folder because we don't want to commit results (large files) to the simulator repo.
 - [ ] verify all configurations in `sim.cfg` of a finished run
-
-
-## HOWTO
-
-### A- Implement your own mapping / DVFS policy
-These policies are implemented in `common/scheduler/policies`.
-Mapping policies derive from `MappingPolicy`, DVFS policies derive from `DVFSPolicy`.
-After implementing your policy, instantiate it in `SchedulerOpen::initMappingPolicy` / `SchedulerOpen::initDVFSPolicy`.
 
 
 ## Common Errors
