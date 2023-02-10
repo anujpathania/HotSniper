@@ -99,7 +99,7 @@ def mcpat_bin():
     os.path.join(mcpatdir, 'mcpat-1.0')
 
 def mcpat_run(inputfile, outputfile):
-  os.system("LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s %s -print_level 5 -opt_for_clk 1 -infile %s > %s" % \
+  os.system("LD_LIBRARY_PATH=$LD_LIBRARY_PATH:%s %s -print_level 5 -opt_for_clk 0 -infile %s > %s" % \
     (mcpat_path(), mcpat_bin(), inputfile, outputfile))
 
 
