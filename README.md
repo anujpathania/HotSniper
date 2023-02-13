@@ -8,8 +8,6 @@ CoMeT: CoMeT is next-generation open-source EDA toolchain for integrated core-me
 
 An EDA toolchain for interval thermal simulations of 2D multi-/many-cores in an open system.
 
-Note: If you have a problem, please first browse the closed issues here - https://github.com/anujpathania/HotSniper/issues. If your problem continues to remain unresolved, please feel free to contact us by raising a new issue. Also, please do not forget to close the issue once we have addressed your problem. We prefer not to resolve issues over e-mail.
-
 ## Publication
 
 ### HotSniper: Sniper-Based Toolchain for Many-Core Thermal Simulations in Open Systems
@@ -24,6 +22,11 @@ Details of HotSniper can be found in our ESL 2018 paper, and please consider cit
 
 Please refer to [Hot Sniper User Manual](https://github.com/anujpathania/HotSniper/blob/master/The%20HotSniper%20User%20Manual.pdf) to learn how to write custom scheduling policies that perform thermal-aware Dynamic Voltage Frequency Scaling (DVFS), Task Mapping, and Task Migration.
 
+## Ground Rules
+
+Found a Bug, Report [Here](https://github.com/anujpathania/HotSniper/issues)! Have a Question, Ask [Here](https://github.com/anujpathania/HotSniper/discussions)!
+
+**No Direct Emails.**
 
 ## 1- Requirements
 ### Docker
