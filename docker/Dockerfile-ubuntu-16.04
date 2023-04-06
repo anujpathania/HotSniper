@@ -72,3 +72,12 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 RUN pip3 install --upgrade pip==20.*  # pip 21 is not compatible with Ubuntu 16.04 Python version
 RUN pip3 install matplotlib seaborn diskcache tabulate
+
+# Install libheartbeats
+WORKDIR /build
+RUN git clone https://github.com/libheartbeats/heartbeats.git
+WORKDIR /build/heartbeats
+RUN make
+RUN make install
+RUN ldconfig # Reload shared libraries (benchmark programs failed to find them for some reason)
+

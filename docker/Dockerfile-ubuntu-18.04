@@ -50,3 +50,12 @@ RUN apt-get update && apt-get install -y \
     gdb \
     git \
  && rm -rf /var/lib/apt/lists/*
+
+# Install libheartbeats
+WORKDIR /build
+RUN git clone https://github.com/libheartbeats/heartbeats.git
+WORKDIR /build/heartbeats
+RUN make
+RUN make install
+RUN ldconfig # Reload shared libraries (benchmark programs failed to find them for some reason)
+
