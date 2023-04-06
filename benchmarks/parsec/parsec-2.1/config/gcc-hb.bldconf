@@ -1,0 +1,5 @@
+#!/bin/bash
+#
+# gcc-hb.bldconf - Configuration file for libheartbeats
+
+HB_LIBS="-lhb-shared"

@@ -1,6 +1,14 @@
---- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-04-05 16:10:00.238844405 +0200
-+++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-04-05 15:49:39.424410045 +0200
-@@ -43,6 +43,15 @@
+--- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-04-06 13:45:26.710297400 +0200
++++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-04-06 16:53:33.713507696 +0200
+@@ -11,6 +11,7 @@
+ #include <stdlib.h>
+ #include <math.h>
+ #include <string.h>
++#include <unistd.h>
+ 
+ #ifdef ENABLE_PARSEC_HOOKS
+ #include <hooks.h>
+@@ -43,6 +44,15 @@
  
  #define NUM_RUNS 100
  
@@ -16,7 +24,7 @@
  typedef struct OptionData_ {
          fptype s;          // spot price
          fptype strike;     // strike price
-@@ -69,6 +78,48 @@
+@@ -69,6 +79,57 @@
  int numError = 0;
  int nThreads;
  
@@ -24,7 +32,11 @@
 +    float min_heartrate;
 +    float max_heartrate;
 +    int window_size;
++    char pid_str[32];
++    char logdir_path[512];
 +    char logfile[512];
++    memset(pid_str, 0, sizeof(pid_str));
++    memset(logdir_path, 0, sizeof(logdir_path));
 +    memset(logfile, 0, sizeof(logfile));
 +
 +    if(getenv(PREFIX"_MIN_HEART_RATE") == NULL) {
@@ -42,14 +54,19 @@
 +    } else {
 +      window_size = atoi(getenv(PREFIX"_WINDOW_SIZE"));
 +    }
-+    if(getenv(PREFIX"_HB_LOGFILE_PATH") == NULL) {
-+      strcpy(logfile, "heartbeat.log");
-+    } else {
-+      strcpy(logfile, getenv(PREFIX"_HB_LOGFILE_PATH"));
++    if(getenv(PREFIX"_HB_LOGFILE_DIR") != NULL) {
++      strcpy(logdir_path, getenv(PREFIX"_HB_LOGFILE_DIR"));
++      if (strlen(logdir_path) > 0 && logdir_path[strlen(logdir_path)-1] != '/') {
++        strcat(logdir_path, "/");
++      }
++
++      sprintf(pid_str, "%d", getpid());
++      strcpy(logfile, strcat(logdir_path, pid_str));
++      strcat(logfile, ".log");
 +    }
 +
-+    printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate, window_size, logfile);
-+    heart = heartbeat_init(window_size, 100, logfile, min_heartrate, max_heartrate);
++    printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate, window_size, (logfile[0] == '\0') ? NULL : logfile);
++    heart = heartbeat_init(window_size, 100, (logfile[0] == '\0') ? NULL : logfile, min_heartrate, max_heartrate);
 +    if (heart == NULL) {
 +      fprintf(stderr, "Failed to init heartbeat.\n");
 +      exit(1);
@@ -65,7 +82,7 @@
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ///////////////////////////////////////////////////////////////////////////////
-@@ -231,6 +282,8 @@
+@@ -231,6 +292,8 @@
      int end = start + (numOptions / nThreads);
  
      for (j=0; j<NUM_RUNS; j++) {
@@ -74,7 +91,7 @@
  #ifdef ENABLE_OPENMP
  #pragma omp parallel for private(i, price, priceDelta)
          for (i=0; i<numOptions; i++) {
-@@ -268,6 +321,8 @@
+@@ -268,6 +331,8 @@
      int * buffer2;
      int rv;
  
@@ -83,7 +100,7 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -438,6 +493,8 @@
+@@ -438,6 +503,8 @@
      __parsec_bench_end();
  #endif
  
