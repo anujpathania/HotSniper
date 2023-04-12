@@ -132,6 +132,18 @@ class Program:
 
     if self.openmp:
       os.putenv('OMP_NUM_THREADS', str(self.get_nthreads()))
+
+    # TODO - Check with Anuj if this hb config is ok.
+    hb_enabled_dir = '%(rundir)s/heartbeat' % locals()
+    hb_results_dir = '%s/results' % HOME
+
+    os.system('mkdir %s' % hb_results_dir)
+    os.system('mkdir %s' % hb_enabled_dir)
+    os.putenv('HEARTBEAT_ENABLED_DIR', hb_enabled_dir)
+    # TODO - This needs documentation, because when implementing new benchmarks
+    #        the env var set in that bench must be same as what's resolved here 
+    os.putenv('%s_HB_LOGFILE_DIR' % self.program.upper(), hb_results_dir)
+
     proc = subprocess.Popen([ '%s/parsec-2.1/bin/parsecmgmt' % HOME,
                          '-a', 'run', '-p', self.program, '-c', PLATFORM, '-i', self.inputsize, '-n', str(self.get_nthreads()),
                          '-s', graphitecmd, '-d', rundir

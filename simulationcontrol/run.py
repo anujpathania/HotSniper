@@ -69,6 +69,13 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
               'PeriodicCPIStack.log',):
         with open(os.path.join(BENCHMARKS, f), 'rb') as f_in, gzip.open('{}.gz'.format(os.path.join(directory, f)), 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
+
+    pattern = r"^\d+\.log$"
+    for f in os.listdir(os.path.join(BENCHMARKS, "parsec/results")):
+        if not re.match(pattern, f):
+            continue
+        shutil.move(os.path.join(BENCHMARKS, "parsec/results", f), directory)
+
     create_plots(run)
 
 

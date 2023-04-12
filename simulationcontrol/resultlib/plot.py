@@ -31,6 +31,15 @@ def set_color_palette(num_colors):
         pal = list(interleave(sns.color_palette("hls", num_colors), 1))
         sns.set_palette(pal)
 
+def get_column_data(filepath, col_number):
+    col_data = []
+    with open(filepath, "r") as f:
+        next(f)  # Skip column header line
+        for line in f:
+            columns = line.split()
+            col_data.append(columns[col_number])
+
+    return col_data
 
 def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=None, yMax=None, smooth=None, force_recreate=False):
     filename = os.path.join(find_run(run), '{}.png'.format(name))
@@ -126,6 +135,40 @@ def plot_cpi_stack_trace(run, active_cores, force_recreate=False):
             plt.savefig(filename, bbox_inches='tight')
             plt.close()
 
+# TODO - Complete this implementation
+def plot_hb_trace(run, force_recreate=False):
+    import pdb
+    pdb.set_trace()  # Set a breakpoint here
+
+    final_results_path = find_run(run)
+    
+    pattern = r"^\d+\.log$"
+    for logfile in os.listdir(final_results_path):
+        if not re.match(pattern, logfile):
+            continue
+
+        plot_file = os.path.join(final_results_path, '{}.png'.format(logfile.strip(".log")))
+        if os.path.exists(plot_file) and not force_recreate:
+            continue
+
+        timestamps = get_column_data("%s/%s" % (final_results_path, logfile), 2) # Second col are timestamps
+
+        plt.figure(figsize=(20,10))
+
+        plt.xscale("linear")
+        plt.autoscale(True, "x", True)
+
+        plt.xlabel("Time")
+        plt.ylabel("Value")
+        plt.xticks(rotation=45, ha="right")
+
+        plt.plot(
+            timestamps, np.ones(len(timestamps)), "x"
+        )  # np.ones(), because y-axis doesn't have values (impulses)
+
+        plt.savefig(plot_file, bbox_inches="tight")
+        plt.close()
+
 
 def create_plots(run, force_recreate=False):
     print('creating plots for {}'.format(run))
@@ -142,7 +185,7 @@ def create_plots(run, force_recreate=False):
     plot_trace(run, 'ips', 'IPS', 'IPS', lambda: get_ips_traces(run), active_cores, yMin=0, yMax=8e9, force_recreate=force_recreate)
     plot_trace(run, 'ipssmooth', 'Smoothed IPS', 'Smoothed IPS', lambda: get_ips_traces(run), active_cores, yMin=0, yMax=8e9, smooth=10, force_recreate=force_recreate)
     plot_cpi_stack_trace(run, active_cores, force_recreate=force_recreate)
-
+    plot_hb_trace(run, force_recreate)
 
 if __name__ == '__main__':
     for run in sorted(get_runs())[::-1]:

@@ -1,5 +1,5 @@
---- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-04-06 13:45:26.710297400 +0200
-+++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-04-06 16:53:33.713507696 +0200
+--- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-04-09 09:55:35.317560199 +0000
++++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-04-09 09:55:06.389134188 +0000
 @@ -11,6 +11,7 @@
  #include <stdlib.h>
  #include <math.h>
@@ -24,7 +24,7 @@
  typedef struct OptionData_ {
          fptype s;          // spot price
          fptype strike;     // strike price
-@@ -69,6 +79,57 @@
+@@ -69,6 +79,53 @@
  int numError = 0;
  int nThreads;
  
@@ -32,10 +32,8 @@
 +    float min_heartrate;
 +    float max_heartrate;
 +    int window_size;
-+    char pid_str[32];
 +    char logdir_path[512];
 +    char logfile[512];
-+    memset(pid_str, 0, sizeof(pid_str));
 +    memset(logdir_path, 0, sizeof(logdir_path));
 +    memset(logfile, 0, sizeof(logfile));
 +
@@ -60,9 +58,7 @@
 +        strcat(logdir_path, "/");
 +      }
 +
-+      sprintf(pid_str, "%d", getpid());
-+      strcpy(logfile, strcat(logdir_path, pid_str));
-+      strcat(logfile, ".log");
++      sprintf(logfile, "%s%d.log", logdir_path, getpid());
 +    }
 +
 +    printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate, window_size, (logfile[0] == '\0') ? NULL : logfile);
@@ -82,7 +78,7 @@
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ///////////////////////////////////////////////////////////////////////////////
-@@ -231,6 +292,8 @@
+@@ -231,6 +288,8 @@
      int end = start + (numOptions / nThreads);
  
      for (j=0; j<NUM_RUNS; j++) {
@@ -91,7 +87,7 @@
  #ifdef ENABLE_OPENMP
  #pragma omp parallel for private(i, price, priceDelta)
          for (i=0; i<numOptions; i++) {
-@@ -268,6 +331,8 @@
+@@ -268,6 +327,8 @@
      int * buffer2;
      int rv;
  
@@ -100,7 +96,7 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -438,6 +503,8 @@
+@@ -438,6 +499,8 @@
      __parsec_bench_end();
  #endif
  
