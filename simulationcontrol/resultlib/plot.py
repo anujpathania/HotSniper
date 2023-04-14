@@ -9,6 +9,7 @@ mpl.use('Agg')
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from resultlib import *
 import seaborn as sns
 
@@ -136,9 +137,6 @@ def plot_cpi_stack_trace(run, active_cores, force_recreate=False):
             plt.close()
 
 def plot_hb_trace(run, force_recreate=False):
-    import pdb
-    pdb.set_trace()  # Set a breakpoint here
-
     final_results_path = find_run(run)
     
     pattern = r"^\d+\.log$"
@@ -151,18 +149,20 @@ def plot_hb_trace(run, force_recreate=False):
             continue
 
         timestamps = get_column_data("%s/%s" % (final_results_path, logfile), 2) # Second col are timestamps
+        timestamps = [pd.to_datetime(int(x), utc=True) for x in timestamps]
 
         plt.figure(figsize=(20,10))
 
         plt.xscale("linear")
         plt.autoscale(True, "x", True)
 
+        plt.title('Heartbeats for PID {} - {}'.format(logfile.strip(".log"), run))
         plt.xlabel("Time")
         plt.ylabel("Value")
         plt.xticks(rotation=45, ha="right")
 
         plt.plot(
-            timestamps, np.ones(len(timestamps)), "x"
+            timestamps, np.ones(len(timestamps)), "|", markersize=200
         )  # np.ones(), because y-axis doesn't have values (impulses)
 
         plt.savefig(plot_file, bbox_inches="tight")
