@@ -10,7 +10,7 @@ import subprocess
 import traceback
 import sys
 
-from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG
+from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPT
 from resultlib.plot import create_plots
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -89,11 +89,12 @@ def run(base_configuration, benchmark, ignore_error=False):
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
         periodicPower = 100000
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}' \
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic} -s {script}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
-                periodic=periodicPower)
+                periodic=periodicPower,
+                script=SCRIPT)
     console_output = ''
     print(args)
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')

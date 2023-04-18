@@ -136,6 +136,7 @@ def plot_cpi_stack_trace(run, active_cores, force_recreate=False):
             plt.savefig(filename, bbox_inches='tight')
             plt.close()
 
+
 def plot_hb_trace(run, force_recreate=False):
     final_results_path = find_run(run)
     
