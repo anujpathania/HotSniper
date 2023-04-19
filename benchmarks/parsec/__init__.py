@@ -133,7 +133,6 @@ class Program:
     if self.openmp:
       os.putenv('OMP_NUM_THREADS', str(self.get_nthreads()))
 
-    # TODO - Check with Anuj if this hb config is ok.
     hb_enabled_dir = '%(rundir)s/heartbeat' % locals()
     hb_results_dir = '%s/results' % HOME
 
