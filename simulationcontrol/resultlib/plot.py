@@ -140,7 +140,7 @@ def plot_cpi_stack_trace(run, active_cores, force_recreate=False):
 def plot_hb_trace(run, force_recreate=False):
     final_results_path = find_run(run)
     
-    pattern = r"^\d+\.log$"
+    pattern = r"^\d+\.hb.log$"
     for logfile in os.listdir(final_results_path):
         if not re.match(pattern, logfile):
             continue

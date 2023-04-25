@@ -1,5 +1,5 @@
---- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-04-24 21:02:34.815732474 +0000
-+++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-04-24 21:02:26.150921173 +0000
+--- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-04-25 11:10:30.688157676 +0000
++++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-04-25 10:30:23.888329654 +0000
 @@ -11,6 +11,7 @@
  #include <stdlib.h>
  #include <math.h>
@@ -25,7 +25,7 @@
  typedef struct OptionData_ {
          fptype s;          // spot price
          fptype strike;     // strike price
-@@ -69,6 +80,56 @@
+@@ -69,6 +80,49 @@
  int numError = 0;
  int nThreads;
  
@@ -33,9 +33,7 @@
 +  float min_heartrate;
 +  float max_heartrate;
 +  int window_size;
-+  char logdir_path[512];
 +  char logfile[512];
-+  memset(logdir_path, 0, sizeof(logdir_path));
 +  memset(logfile, 0, sizeof(logfile));
 +
 +  if (getenv(PREFIX "_MIN_HEART_RATE") == NULL) {
@@ -53,13 +51,8 @@
 +  } else {
 +    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
 +  }
-+  if (getenv(PREFIX "_HB_LOGFILE_DIR") != NULL) {
-+    strcpy(logdir_path, getenv(PREFIX "_HB_LOGFILE_DIR"));
-+    if (strlen(logdir_path) > 0 &&
-+        logdir_path[strlen(logdir_path) - 1] != '/') {
-+      strcat(logdir_path, "/");
-+    }
-+    sprintf(logfile, "%s%d.log", logdir_path, getpid());
++  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
++    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
 +  }
 +
 +  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
@@ -82,7 +75,7 @@
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ///////////////////////////////////////////////////////////////////////////////
-@@ -231,6 +292,11 @@
+@@ -231,6 +285,11 @@
      int end = start + (numOptions / nThreads);
  
      for (j=0; j<NUM_RUNS; j++) {
@@ -94,7 +87,7 @@
  #ifdef ENABLE_OPENMP
  #pragma omp parallel for private(i, price, priceDelta)
          for (i=0; i<numOptions; i++) {
-@@ -268,6 +334,13 @@
+@@ -268,6 +327,13 @@
      int * buffer2;
      int rv;
  
@@ -108,7 +101,7 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -438,6 +511,10 @@
+@@ -438,6 +504,10 @@
      __parsec_bench_end();
  #endif
  

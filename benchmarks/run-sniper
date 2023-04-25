@@ -289,7 +289,7 @@ try:
 
     applications = []
     for app_id, (package, programname, inputsize, app_nthreads) in enumerate(benchmarks):
-      program = __import__(package).Program(programname, int(app_nthreads), inputsize, benchmark_options)
+      program = __import__(package).Program(programname, int(app_nthreads), inputsize, benchmark_options, app_id)
       if program.rungraphiteoptions():
         print 'Program', programname, 'requires simulator options to run.  This is currently unsupported.'
         sys.exit(1)

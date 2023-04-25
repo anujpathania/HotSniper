@@ -70,7 +70,7 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
         with open(os.path.join(BENCHMARKS, f), 'rb') as f_in, gzip.open('{}.gz'.format(os.path.join(directory, f)), 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 
-    pattern = r"^\d+\.log$" # Heartbeat logs
+    pattern = r"^\d+\.hb.log$" # Heartbeat logs
     for f in os.listdir(os.path.join(BENCHMARKS, "parsec/results")):
         if not re.match(pattern, f):
             continue

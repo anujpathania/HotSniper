@@ -11,7 +11,7 @@ def allinputs():
 
 class Program:
 
-  def __init__(self, program, nthreads, inputsize, benchmark_options = []):
+  def __init__(self, program, nthreads, inputsize, benchmark_options = [], app_id = -1):
     if program not in allbenchmarks():
       raise ValueError("Invalid benchmark %s" % program)
     self.program = program
