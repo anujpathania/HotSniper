@@ -10,7 +10,7 @@ import subprocess
 import traceback
 import sys
 
-from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPT
+from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPT, ENABLE_HEARTBEATS
 from resultlib.plot import create_plots
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -70,7 +70,7 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
         with open(os.path.join(BENCHMARKS, f), 'rb') as f_in, gzip.open('{}.gz'.format(os.path.join(directory, f)), 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 
-    pattern = r"^\d+\.log$"
+    pattern = r"^\d+\.log$" # Heartbeat logs
     for f in os.listdir(os.path.join(BENCHMARKS, "parsec/results")):
         if not re.match(pattern, f):
             continue
@@ -84,17 +84,21 @@ def run(base_configuration, benchmark, ignore_error=False):
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
 
+    benchmark_options = []
+    if ENABLE_HEARTBEATS == True:
+        benchmark_options.append('enable_heartbeats')
     periodicPower = 1000000
     if 'mediumDVFS' in base_configuration:
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
-        periodicPower = 100000
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic} -s {script}' \
+        periodicPower = 100000    
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic} -s {script} {benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
                 periodic=periodicPower,
-                script=SCRIPT)
+                script=SCRIPT,
+                benchmark_options=''.join(['-B ' + opt if i == 0 else ' -B ' + opt for i, opt in enumerate(benchmark_options)]))
     console_output = ''
     print(args)
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
