@@ -92,13 +92,13 @@ def run(base_configuration, benchmark, ignore_error=False):
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
         periodicPower = 100000    
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic} -s {script} {benchmark_options}' \
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
                 periodic=periodicPower,
-                script=SCRIPT,
-                benchmark_options=''.join(['-B ' + opt if i == 0 else ' -B ' + opt for i, opt in enumerate(benchmark_options)]))
+                script=" -s %s" % SCRIPT if SCRIPT else '',
+                benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
     console_output = ''
     print(args)
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')

@@ -144,8 +144,8 @@ class Program:
       hb_results_file = '%s/%d.hb.log' % (hb_results_dir, self.app_id)
 
       os.putenv('ENABLE_HEARTBEATS', "true")
-      os.system('mkdir %s' % hb_results_dir)
-      os.system('mkdir %s' % hb_enabled_dir)
+      os.system('mkdir -p %s' % hb_results_dir)
+      os.system('mkdir -p %s' % hb_enabled_dir)
       os.putenv('HEARTBEAT_ENABLED_DIR', hb_enabled_dir)
       # TODO - This needs documentation, because when implementing new benchmarks
       #        the env var set in that bench must be same as what's resolved here 

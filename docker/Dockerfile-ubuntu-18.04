@@ -53,7 +53,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install libheartbeats
 WORKDIR /build
-RUN git clone https://github.com/jurrewolff/heartbeats.git
+RUN git clone -b time-from-file --single-branch https://github.com/jurrewolff/heartbeats.git
 WORKDIR /build/heartbeats
 COPY ./include/sim_api.h ./src
 RUN make

@@ -268,6 +268,20 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	initMappingPolicy(Sim()->getCfg()->getString("scheduler/open/logic").c_str());
 	initDVFSPolicy(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str());
 	initMigrationPolicy(Sim()->getCfg()->getString("scheduler/open/migration/logic").c_str());
+
+	strncpy(hb_timefile_name, "/tmp/hb_timefile", sizeof(hb_timefile_name));
+	hb_timefile.open(hb_timefile_name, std::ios::trunc); // Closed in destructor
+	if (!hb_timefile.is_open()) {
+		cout << "\n[Scheduler] [Error]: Failed to open/create heartbeats timefile: " << endl;
+	}
+}
+
+/** SchedulerOpen
+    Destructor for Open Scheduler
+*/
+SchedulerOpen::~SchedulerOpen() { // TODO - Destructor is never called...
+	hb_timefile.close();
+	std::remove(hb_timefile_name);
 }
 
 /** initMappingPolicy
@@ -1269,6 +1283,13 @@ void SchedulerOpen::executeMigrationPolicy(SubsecondTime time) {
     This function is called periodically by Sniper at Interval of 100ns.
 */
 void SchedulerOpen::periodic(SubsecondTime time) {
+	char buff[21] = {0};
+	snprintf(buff, sizeof(buff), "%" PRIu64 "\n", time.getNS());
+
+	hb_timefile.seekp(0, std::ios::beg);
+	hb_timefile.write(buff, sizeof(buff));
+	hb_timefile.flush();
+
 	if (time.getNS () % 1000000 == 0) { //Error Checking at every 1ms. Can be faster but will have overhead in simulation time.
 		cout << "\n[Scheduler]: Time " << formatTime(time) << " [Active Tasks =  " << numberOfActiveTasks () << " | Completed Tasks = " <<  numberOfTasksCompleted () << " | Queued Tasks = "  << numberOfTasksInQueue () << " | Non-Queued Tasks  = " <<  numberOfTasksWaitingToSchedule () <<  " | Free Cores = " << numberOfFreeCores () << " | Active Tasks Requirements = " << totalCoreRequirementsOfActiveTasks () << " ] \n" << endl;
 

@@ -6,5 +6,5 @@ SNIPER = os.path.dirname(HERE)
 RESULTS_FOLDER = os.path.join(SNIPER, 'results')
 NUMBER_CORES = 64
 SNIPER_CONFIG = 'gainestown'
-SCRIPT = 'hb-timestamp'
+SCRIPT = ''
 ENABLE_HEARTBEATS = True
