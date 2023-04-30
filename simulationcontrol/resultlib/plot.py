@@ -8,8 +8,8 @@ import matplotlib as mpl
 mpl.use('Agg')
 import math
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 import numpy as np
-import pandas as pd
 from resultlib import *
 import seaborn as sns
 
@@ -139,7 +139,7 @@ def plot_cpi_stack_trace(run, active_cores, force_recreate=False):
 
 def plot_hb_trace(run, force_recreate=False):
     final_results_path = find_run(run)
-    
+
     pattern = r"^\d+\.hb.log$"
     for logfile in os.listdir(final_results_path):
         if not re.match(pattern, logfile):
@@ -150,21 +150,24 @@ def plot_hb_trace(run, force_recreate=False):
             continue
 
         timestamps = get_column_data("%s/%s" % (final_results_path, logfile), 2) # Second col are timestamps
-        timestamps = [pd.to_datetime(int(x), utc=True) for x in timestamps]
+        timestamps = [int(x) for x in timestamps]
 
-        plt.figure(figsize=(20,10))
+        plt.figure(figsize=(60,10))
 
         plt.xscale("linear")
         plt.autoscale(True, "x", True)
 
-        plt.title('Heartbeats for PID {} - {}'.format(logfile.strip(".log"), run))
-        plt.xlabel("Time")
+        plt.title('Heartbeats for app id {} - {}'.format(logfile.strip(".hb.log"), run))
+        plt.xlabel("Simulation time (ns)")
         plt.ylabel("Value")
         plt.xticks(rotation=45, ha="right")
 
-        plt.plot(
-            timestamps, np.ones(len(timestamps)), "|", markersize=200
-        )  # np.ones(), because y-axis doesn't have values (impulses)
+        plt.vlines(timestamps, ymin=0, ymax=1, linewidth=1)
+
+        plt.grid(True, linestyle='--', color='gray', linewidth=0.5, alpha=0.5, which='both')
+        ax = plt.gca()
+        ax.xaxis.set_major_locator(MaxNLocator(200))
+        ax.ticklabel_format(useOffset=False, style="plain")
 
         plt.savefig(plot_file, bbox_inches="tight")
         plt.close()
