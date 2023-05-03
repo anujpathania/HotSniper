@@ -75,6 +75,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		int setAffinity (thread_id_t thread_id);
 		bool schedule (int taskID, bool isInitialCall, SubsecondTime time);
 		
+		bool hb_enabled;
 		int hb_timefile_fd;	
 		char hb_timefile_name[100];
 		std::ofstream hb_timefile;

@@ -247,14 +247,35 @@ def example():
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
 
+def multi_program():
+    base_configuration = ['4GHz']
+    benchmark_set = (
+        'parsec-blackscholes',
+        'parsec-blackscholes',
+    )
+
+    benchmarks = ''
+    for i, benchmark in enumerate(benchmark_set):
+        min_parallelism = get_feasible_parallelisms(benchmark)[0]
+        if i != 0:
+            benchmarks = benchmarks + ',' + get_instance(benchmark, min_parallelism, 'simsmall')
+        else:
+            benchmarks = benchmarks + get_instance(benchmark, min_parallelism, 'simsmall')
+
+    if ENABLE_HEARTBEATS == True:
+        base_configuration.append('hb_enabled')
+
+    run(base_configuration, benchmarks)
+
+    
 def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 
 def main():
-    example()
+    # example()
     #test_static_power()
-
+    multi_program()
 
 if __name__ == '__main__':
     main()
