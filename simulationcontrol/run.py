@@ -248,7 +248,11 @@ def example():
 
 
 def multi_program():
-    base_configuration = ['4GHz']
+    # In this example, two instances of blackscholes will be scheduled.
+    # By setting the scheduler/open/arrivalRate base.cfg parameter to 2, the
+    # tasks can be set to arrive at the same time.
+
+    base_configuration = ['4GHz', "nothermal"] # nothermal because chip floorplan doesn't match 4-core config
     benchmark_set = (
         'parsec-blackscholes',
         'parsec-blackscholes',
