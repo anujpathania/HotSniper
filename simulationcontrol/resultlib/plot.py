@@ -161,10 +161,10 @@ def plot_hb_trace(run, force_recreate=False):
         plt.xlabel("Simulation time (ns)")
         plt.ylabel("Value")
         plt.xticks(rotation=45, ha="right")
+        plt.yticks([0, 1])
 
         plt.vlines(timestamps, ymin=0, ymax=1, linewidth=1)
 
-        plt.grid(True, linestyle='--', color='gray', linewidth=0.5, alpha=0.5, which='both')
         ax = plt.gca()
         ax.xaxis.set_major_locator(MaxNLocator(200))
         ax.ticklabel_format(useOffset=False, style="plain")
