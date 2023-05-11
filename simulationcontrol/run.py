@@ -38,6 +38,21 @@ def change_base_configuration(base_configuration):
             f.write('\n')
 
 
+def prev_run_cleanup():
+    '''Cleanup files potentially left over from aborted previous runs.'''
+
+    hb_results_dir = os.path.join(BENCHMARKS, "parsec/results")
+
+    pattern = r"^\d+\.hb.log$" # Heartbeat logs
+    for f in os.listdir(hb_results_dir):
+        if not re.match(pattern, f):
+            continue
+
+        file_path = os.path.join(hb_results_dir, f)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
+
 def save_output(base_configuration, benchmark, console_output, cpistack, started, ended):
     benchmark_text = benchmark
     if len(benchmark_text) > 100:
@@ -83,6 +98,8 @@ def run(base_configuration, benchmark, ignore_error=False):
     print('running {} with configuration {}'.format(benchmark, '+'.join(base_configuration)))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
+
+    prev_run_cleanup()
 
     benchmark_options = []
     if ENABLE_HEARTBEATS == True:
@@ -252,22 +269,23 @@ def multi_program():
     # By setting the scheduler/open/arrivalRate base.cfg parameter to 2, the
     # tasks can be set to arrive at the same time.
 
+    input_set = 'simsmall'
     base_configuration = ['4GHz', "nothermal"] # nothermal because chip floorplan doesn't match 4-core config
     benchmark_set = (
         'parsec-blackscholes',
         'parsec-blackscholes',
     )
 
+    if ENABLE_HEARTBEATS == True:
+        base_configuration.append('hb_enabled')
+
     benchmarks = ''
     for i, benchmark in enumerate(benchmark_set):
         min_parallelism = get_feasible_parallelisms(benchmark)[0]
         if i != 0:
-            benchmarks = benchmarks + ',' + get_instance(benchmark, min_parallelism, 'simsmall')
+            benchmarks = benchmarks + ',' + get_instance(benchmark, min_parallelism, input_set)
         else:
-            benchmarks = benchmarks + get_instance(benchmark, min_parallelism, 'simsmall')
-
-    if ENABLE_HEARTBEATS == True:
-        base_configuration.append('hb_enabled')
+            benchmarks = benchmarks + get_instance(benchmark, min_parallelism, input_set)
 
     run(base_configuration, benchmarks)
 
