@@ -2,11 +2,12 @@
 
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 
 PerformanceCounters::PerformanceCounters(const char* output_dir, std::string instPowerFileNameParam, std::string instTemperatureFileNameParam, std::string instCPIStackFileNameParam)
-    : instPowerFileName(instPowerFileNameParam), instTemperatureFileName(instTemperatureFileNameParam), instCPIStackFileName(instCPIStackFileNameParam) {
+    : outputDir(output_dir), instPowerFileName(instPowerFileNameParam), instTemperatureFileName(instTemperatureFileNameParam), instCPIStackFileName(instCPIStackFileNameParam) {
 
 	//gkothar1: fix log file path names
 	std::string temp = instPowerFileName;
@@ -207,4 +208,42 @@ void PerformanceCounters::notifyFreqsOfCores(std::vector<int> newFrequencies) {
  */
 double PerformanceCounters::getIPSOfCore(int coreId) const {
 	return 1e6 * getFreqOfCore(coreId) / getCPIOfCore(coreId);
+}
+
+int PerformanceCounters::getLastBeat(int appId) const {
+	std::string target = std::to_string(appId) + ".hb.log";
+	std::ifstream appIdHbLogfile(target);
+	if (!appIdHbLogfile.is_open()) {
+		std::cerr << "[PerformanceCounters] Could not open hb logfile " << target << endl;
+		return -1;
+	}
+
+	std::string header;
+	std::getline(appIdHbLogfile, header);
+
+	std::string line;
+	std::string footer;
+	while (std::getline(appIdHbLogfile, line)) {
+		footer = line;
+	}
+
+	if (footer == "") {
+		return 0; // No heartbeat data logged yet.
+	}
+
+	std::istringstream issHeader(header);
+	std::istringstream issFooter(footer);
+	std::string token;
+	while (std::getline(issHeader, token, '\t')) {
+		std::string value;
+		std::getline(issFooter, value, '\t');
+
+		if (token == "Timestamp") {
+			return std::stoi(value);
+		}
+	}
+
+	std::cerr << "[PerformanceCounters] Could not find timestamp column in hb file " << target << endl;
+
+  return -1;
 }

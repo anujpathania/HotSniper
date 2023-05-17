@@ -25,9 +25,13 @@ public:
     double getIPSOfCore(int coreId) const;
 
     void notifyFreqsOfCores(std::vector<int> frequencies);
+
+    int getLastBeat(int appId) const;
+
 private:
     std::vector<int> frequencies;
 
+    std::string outputDir;
     std::string instPowerFileName;
     std::string instTemperatureFileName;
     std::string instCPIStackFileName;
