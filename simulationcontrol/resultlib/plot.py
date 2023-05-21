@@ -32,15 +32,39 @@ def set_color_palette(num_colors):
         pal = list(interleave(sns.color_palette("hls", num_colors), 1))
         sns.set_palette(pal)
 
-def get_column_data(filepath, col_number):
+def get_column_data(filepath, col_number, header_row):
     col_data = []
     with open(filepath, "r") as f:
-        next(f)  # Skip column header line
+        if header_row:
+            next(f)  # Skip column header row
+
         for line in f:
             columns = line.split()
             col_data.append(columns[col_number])
 
     return col_data
+
+
+def get_interval_diffs(data):
+    if not isinstance(data, list):
+        raise TypeError("data must be a list of integers")
+
+    diffs = []
+    prev_element = None
+
+    for cur_element in data:
+        if not isinstance(cur_element, int):
+            raise TypeError("found cur_element of list that is not of integer type")
+
+        if prev_element is None:
+            prev_element = cur_element
+            continue
+
+        diffs.append(cur_element - prev_element)
+        prev_element = cur_element
+
+    return diffs
+
 
 def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=None, yMax=None, smooth=None, force_recreate=False):
     filename = os.path.join(find_run(run), '{}.png'.format(name))
@@ -149,7 +173,7 @@ def plot_hb_trace(run, force_recreate=False):
         if os.path.exists(plot_file) and not force_recreate:
             continue
 
-        timestamps = get_column_data("%s/%s" % (final_results_path, logfile), 2) # Second col are timestamps
+        timestamps = get_column_data("%s/%s" % (final_results_path, logfile), 2, True) # Second col are timestamps
         timestamps = [int(x) for x in timestamps]
 
         plt.figure(figsize=(60,10))
@@ -167,6 +191,43 @@ def plot_hb_trace(run, force_recreate=False):
 
         ax = plt.gca()
         ax.xaxis.set_major_locator(MaxNLocator(200))
+        ax.ticklabel_format(useOffset=False, style="plain")
+
+        plt.savefig(plot_file, bbox_inches="tight")
+        plt.close()
+
+
+def plot_hb_histogram(run, force_recreate=False):
+    final_results_path = find_run(run)
+
+    pattern = r"^\d+\.hb.log$"
+    for logfile in os.listdir(final_results_path):
+        if not re.match(pattern, logfile):
+            continue
+
+        plot_file = os.path.join(final_results_path, '{}.png'.format(logfile.strip(".log")))
+        if os.path.exists(plot_file) and not force_recreate:
+            continue
+
+        timestamps = get_column_data("%s/%s" % (final_results_path, logfile), 2, True)
+        timestamps = [int(x) for x in timestamps]
+        interval_diffs = get_interval_diffs(timestamps)
+
+        # Freedman-Diaconis rule
+        q1, q3 = np.percentile(interval_diffs, [25, 75])
+        iqr = q3 - q1
+        n = len(interval_diffs)
+        bin_size = 2 * iqr / (n ** (1 / 3))
+
+        plt.figure(figsize=(60,10))
+        plt.hist(interval_diffs, bins=int(bin_size), color="blue", edgecolor="black")
+        plt.title('Heartbeat interval difference histogram for app id {} - {}'.format(logfile.strip(".hb.log"), run))
+        plt.xlabel("Values")
+        plt.ylabel("Interval difference")
+        plt.xticks(rotation=45, ha="right")
+
+        ax = plt.gca()
+        ax.xaxis.set_major_locator(MaxNLocator(bin_size))
         ax.ticklabel_format(useOffset=False, style="plain")
 
         plt.savefig(plot_file, bbox_inches="tight")
