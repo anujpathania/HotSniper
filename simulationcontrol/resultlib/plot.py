@@ -191,7 +191,7 @@ def plot_hb_trace(run, force_recreate=False):
 
         ax = plt.gca()
         ax.xaxis.set_major_locator(MaxNLocator(200))
-        ax.ticklabel_format(useOffset=False, style="plain")
+        ax.ticklabel_format(useOffset=False, style="scientific")
 
         plt.savefig(plot_file, bbox_inches="tight")
         plt.close()
@@ -205,7 +205,7 @@ def plot_hb_histogram(run, force_recreate=False):
         if not re.match(pattern, logfile):
             continue
 
-        plot_file = os.path.join(final_results_path, '{}.png'.format(logfile.strip(".log")))
+        plot_file = os.path.join(final_results_path, '{}.histogram.png'.format(logfile.strip(".log")))
         if os.path.exists(plot_file) and not force_recreate:
             continue
 
@@ -228,7 +228,7 @@ def plot_hb_histogram(run, force_recreate=False):
 
         ax = plt.gca()
         ax.xaxis.set_major_locator(MaxNLocator(bin_size))
-        ax.ticklabel_format(useOffset=False, style="plain")
+        ax.ticklabel_format(useOffset=False, style="scientific")
 
         plt.savefig(plot_file, bbox_inches="tight")
         plt.close()
@@ -250,6 +250,7 @@ def create_plots(run, force_recreate=False):
     plot_trace(run, 'ipssmooth', 'Smoothed IPS', 'Smoothed IPS', lambda: get_ips_traces(run), active_cores, yMin=0, yMax=8e9, smooth=10, force_recreate=force_recreate)
     plot_cpi_stack_trace(run, active_cores, force_recreate=force_recreate)
     plot_hb_trace(run, force_recreate)
+    plot_hb_histogram(run, force_recreate)
 
 if __name__ == '__main__':
     for run in sorted(get_runs())[::-1]:

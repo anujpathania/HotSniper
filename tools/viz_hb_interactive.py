@@ -50,7 +50,7 @@ def plot(data, grid_density=100):
 
     ax = plt.gca()  # get current axis
     ax.xaxis.set_major_locator(MaxNLocator(grid_density))
-    ax.ticklabel_format(useOffset=False, style="plain")
+    ax.ticklabel_format(useOffset=False, style="scientific")
 
     plt.show()
 
@@ -76,7 +76,7 @@ def plot_interval_diff(data, grid_density=None):
 
     ax = plt.gca()
     ax.xaxis.set_major_locator(MaxNLocator(grid_density if grid_density else bin_count))
-    ax.ticklabel_format(useOffset=False, style="plain")
+    ax.ticklabel_format(useOffset=False, style="scientific")
 
     plt.show()
 
