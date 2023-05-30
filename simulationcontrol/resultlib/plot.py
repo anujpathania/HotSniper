@@ -218,6 +218,8 @@ def plot_hb_histogram(run, force_recreate=False):
         iqr = q3 - q1
         n = len(interval_diffs)
         bin_size = 2 * iqr / (n ** (1 / 3))
+        bin_count = int(np.ceil((max(interval_diffs) - min(interval_diffs)) / bin_size))
+        bin_count = bin_count if bin_count < n else n
 
         plt.figure(figsize=(60,10))
         plt.hist(interval_diffs, bins=int(bin_size), color="blue", edgecolor="black")
@@ -227,7 +229,7 @@ def plot_hb_histogram(run, force_recreate=False):
         plt.xticks(rotation=45, ha="right")
 
         ax = plt.gca()
-        ax.xaxis.set_major_locator(MaxNLocator(bin_size))
+        ax.xaxis.set_major_locator(MaxNLocator(bin_count))
         ax.ticklabel_format(useOffset=False, style="scientific")
 
         plt.savefig(plot_file, bbox_inches="tight")
