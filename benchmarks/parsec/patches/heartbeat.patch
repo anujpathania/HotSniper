@@ -1,5 +1,5 @@
---- ./parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-05-30 09:56:21.974202513 +0200
-+++ ./parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-05-16 16:57:53.369196193 +0200
+--- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-06-01 12:29:38.235634875 +0200
++++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-05-16 16:57:53.369196193 +0200
 @@ -11,6 +11,7 @@
  #include <stdlib.h>
  #include <math.h>
@@ -112,8 +112,8 @@
      return 0;
  }
  
---- ./parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-05-30 09:56:21.984202301 +0200
-+++ ./parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-05-16 17:05:25.442856119 +0200
+--- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-06-01 12:29:38.244634693 +0200
++++ parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-05-16 17:05:25.442856119 +0200
 @@ -65,8 +65,74 @@
  #include "TrackingModel.h"
  #include "system.h"
@@ -263,8 +263,8 @@
  #if defined(ENABLE_PARSEC_HOOKS)
          __parsec_bench_end();
  #endif
---- ./parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-05-30 09:56:21.995202067 +0200
-+++ ./parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-05-18 10:55:15.561375887 +0200
+--- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-06-01 12:29:38.254634490 +0200
++++ parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-05-18 10:55:15.561375887 +0200
 @@ -13,10 +13,63 @@
  
  #include "parsec_barrier.hpp"
@@ -368,8 +368,8 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
---- ./parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-05-30 09:56:22.005201855 +0200
-+++ ./parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-05-18 12:00:02.464588929 +0200
+--- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-06-01 12:29:38.262634328 +0200
++++ parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-05-18 12:00:02.464588929 +0200
 @@ -33,6 +33,16 @@
  #include <hooks.h>
  #endif
@@ -472,8 +472,8 @@
  	//***********************************************************
  
  #ifdef ENABLE_PARSEC_HOOKS
---- ./parsec-2.1/pkgs/apps/x264/src/x264.c	2023-05-30 09:56:22.015201643 +0200
-+++ ./parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-05-16 17:02:12.041858258 +0200
+--- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-06-01 12:29:38.272634126 +0200
++++ parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-05-16 17:02:12.041858258 +0200
 @@ -47,6 +47,16 @@
  #include <hooks.h>
  #endif
@@ -594,8 +594,8 @@
          /* update status line (up to 1000 times per input file) */
          if( opt->b_progress && i_frame % i_update_interval == 0 )
          {
---- ./parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-05-30 09:56:22.025201431 +0200
-+++ ./parsec-2.1/pkgs/kernels/canneal/src/annealer_thread-patched.cpp	2023-05-17 15:30:21.634371142 +0200
+--- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-06-01 12:29:38.280633964 +0200
++++ parsec-2.1/pkgs/kernels/canneal/src/annealer_thread-patched.cpp	2023-05-17 15:30:21.634371142 +0200
 @@ -40,6 +40,10 @@
  #include <fstream>
  #include "rng.h"
@@ -619,8 +619,8 @@
  		}
  		temp_steps_completed++;
  #ifdef ENABLE_THREADS
---- ./parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-05-30 09:56:22.035201219 +0200
-+++ ./parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-05-17 15:25:39.976224267 +0200
+--- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-06-01 12:29:38.290633762 +0200
++++ parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-05-17 15:25:39.976224267 +0200
 @@ -33,6 +33,7 @@
  #include <stdlib.h>
  #include <unistd.h>
@@ -723,8 +723,8 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
---- ./parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-05-30 09:56:22.045201007 +0200
-+++ ./parsec-2.1/pkgs/kernels/dedup/src/encoder-patched.c	2023-05-17 10:33:06.184331223 +0200
+--- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-06-01 12:29:38.299633579 +0200
++++ parsec-2.1/pkgs/kernels/dedup/src/encoder-patched.c	2023-05-17 10:33:06.184331223 +0200
 @@ -23,6 +23,10 @@
  
  #define INITIAL_SIZE 4096
@@ -747,8 +747,8 @@
      item = sub_ChunkProcess(chunk);
  
      if (item->type == TYPE_COMPRESS) {
---- ./parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-05-30 09:56:22.054200816 +0200
-+++ ./parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-05-17 14:12:11.360822674 +0200
+--- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-06-01 12:29:38.307633417 +0200
++++ parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-05-17 14:12:11.360822674 +0200
 @@ -15,8 +15,64 @@
  #include <hooks.h>
  #endif
