@@ -269,7 +269,7 @@ def multi_program():
     # tasks can be set to arrive at the same time.
 
     input_set = 'simsmall'
-    base_configuration = ['4GHz', "nothermal"] # nothermal because chip floorplan doesn't match 4-core config
+    base_configuration = ['4.0GHz', "nothermal"] # nothermal because chip floorplan doesn't match 4-core config
     benchmark_set = (
         'parsec-blackscholes',
         'parsec-blackscholes',

@@ -1,4 +1,4 @@
---- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-06-01 12:29:38.235634875 +0200
+--- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-06-04 21:02:05.340856007 +0200
 +++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-05-16 16:57:53.369196193 +0200
 @@ -11,6 +11,7 @@
  #include <stdlib.h>
@@ -112,7 +112,7 @@
      return 0;
  }
  
---- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-06-01 12:29:38.244634693 +0200
+--- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-06-04 21:02:05.351855773 +0200
 +++ parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-05-16 17:05:25.442856119 +0200
 @@ -65,8 +65,74 @@
  #include "TrackingModel.h"
@@ -263,7 +263,7 @@
  #if defined(ENABLE_PARSEC_HOOKS)
          __parsec_bench_end();
  #endif
---- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-06-01 12:29:38.254634490 +0200
+--- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-06-04 21:02:05.363855517 +0200
 +++ parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-05-18 10:55:15.561375887 +0200
 @@ -13,10 +13,63 @@
  
@@ -368,7 +368,7 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
---- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-06-01 12:29:38.262634328 +0200
+--- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-06-04 21:02:05.373855304 +0200
 +++ parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-05-18 12:00:02.464588929 +0200
 @@ -33,6 +33,16 @@
  #include <hooks.h>
@@ -472,7 +472,7 @@
  	//***********************************************************
  
  #ifdef ENABLE_PARSEC_HOOKS
---- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-06-01 12:29:38.272634126 +0200
+--- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-06-04 21:02:05.383855091 +0200
 +++ parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-05-16 17:02:12.041858258 +0200
 @@ -47,6 +47,16 @@
  #include <hooks.h>
@@ -594,7 +594,7 @@
          /* update status line (up to 1000 times per input file) */
          if( opt->b_progress && i_frame % i_update_interval == 0 )
          {
---- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-06-01 12:29:38.280633964 +0200
+--- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-06-04 21:02:05.395854836 +0200
 +++ parsec-2.1/pkgs/kernels/canneal/src/annealer_thread-patched.cpp	2023-05-17 15:30:21.634371142 +0200
 @@ -40,6 +40,10 @@
  #include <fstream>
@@ -619,7 +619,7 @@
  		}
  		temp_steps_completed++;
  #ifdef ENABLE_THREADS
---- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-06-01 12:29:38.290633762 +0200
+--- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-06-04 21:02:05.406854602 +0200
 +++ parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-05-17 15:25:39.976224267 +0200
 @@ -33,6 +33,7 @@
  #include <stdlib.h>
@@ -723,7 +723,7 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
---- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-06-01 12:29:38.299633579 +0200
+--- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-06-04 21:02:05.416854389 +0200
 +++ parsec-2.1/pkgs/kernels/dedup/src/encoder-patched.c	2023-05-17 10:33:06.184331223 +0200
 @@ -23,6 +23,10 @@
  
@@ -747,7 +747,7 @@
      item = sub_ChunkProcess(chunk);
  
      if (item->type == TYPE_COMPRESS) {
---- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-06-01 12:29:38.307633417 +0200
+--- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-06-04 21:02:05.426854176 +0200
 +++ parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-05-17 14:12:11.360822674 +0200
 @@ -15,8 +15,64 @@
  #include <hooks.h>
@@ -843,3 +843,107 @@
 -}
 \ No newline at end of file
 +}
+--- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2023-06-04 21:02:05.436853963 +0200
++++ parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster-patched.cpp	2023-06-04 20:56:30.106135699 +0200
+@@ -36,6 +36,15 @@
+ #include <hooks.h>
+ #endif
+ 
++#include <heartbeats/heartbeat-types.h>
++#include <heartbeats/heartbeat.h>
++
++#define PREFIX "STREAMCLUSTER"
++
++heartbeat_t *heart;
++int enable_heartbeats;
++
++
+ using namespace std;
+ 
+ #define MAXNAMESIZE 1024 // max filename length
+@@ -86,6 +95,49 @@
+ float dist(Point p1, Point p2, int dim);
+ 
+ 
++static inline void hb_init() {
++  float min_heartrate;
++  float max_heartrate;
++  int window_size;
++  char logfile[512];
++  memset(logfile, 0, sizeof(logfile));
++
++  if (getenv(PREFIX "_MIN_HEART_RATE") == NULL) {
++    min_heartrate = 0.0;
++  } else {
++    min_heartrate = atof(getenv(PREFIX "_MIN_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_MAX_HEART_RATE") == NULL) {
++    max_heartrate = 100.0;
++  } else {
++    max_heartrate = atof(getenv(PREFIX "_MAX_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_WINDOW_SIZE") == NULL) {
++    window_size = 30;
++  } else {
++    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
++  }
++  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
++    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++  }
++
++  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
++         window_size, (logfile[0] == '\0') ? NULL : logfile);
++  heart =
++      heartbeat_init(window_size, 1, (logfile[0] == '\0') ? NULL : logfile,
++                     min_heartrate, max_heartrate);
++  if (heart == NULL) {
++    fprintf(stderr, "Failed to init heartbeat.\n");
++    exit(1);
++  }
++  printf("heartbeat init'd\n");
++}
++
++static inline void hb_finish() {
++  heartbeat_finish(heart);
++  printf("heartbeat finished\n");
++}
++
+ #ifdef TBB_VERSION
+ struct HizReduction {
+ private:
+@@ -1894,6 +1946,10 @@
+       exit(1);
+     }
+ 
++    if (enable_heartbeats == 1) {
++      heartbeat(heart, 0);
++    }
++
+     points.num = numRead;
+     for( int i = 0; i < points.num; i++ ) {
+       points.p[i].weight = 1.0;
+@@ -2022,6 +2078,12 @@
+     stream = new FileStream(infilename);
+   }
+ 
++  if (getenv("ENABLE_HEARTBEATS") != NULL) {
++    enable_heartbeats = 1;
++    hb_init();
++  } else {
++    enable_heartbeats = 0;
++  }
+ 
+ #ifdef ENABLE_PARSEC_HOOKS
+   __parsec_roi_begin();
+@@ -2038,6 +2100,10 @@
+ #ifdef ENABLE_PARSEC_HOOKS
+   __parsec_bench_end();
+ #endif
+-  
++
++  if (enable_heartbeats == 1) {
++    hb_finish();
++  }
++
+   return 0;
+ }
