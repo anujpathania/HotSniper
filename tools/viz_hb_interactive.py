@@ -36,7 +36,7 @@ def get_interval_diffs(data):
     return diffs
 
 
-def plot(data, grid_density=100):
+def plot(data, work_start_indicator, grid_density=100):
     plt.figure(figsize=(10, 3))
     plt.xscale("linear")
     plt.autoscale(True, "x", True)
@@ -46,7 +46,11 @@ def plot(data, grid_density=100):
     plt.xticks(rotation=45, ha="right")
     plt.yticks([0, 1])
 
-    plt.vlines(data, ymin=0, ymax=1, linewidth=1)
+    if work_start_indicator:
+        plt.vlines(data[0], ymin=0, ymax=1, linewidth=1, colors="red")
+        plt.vlines(data[1:], ymin=0, ymax=1, linewidth=1, colors="blue")
+    else:
+        plt.vlines(data, ymin=0, ymax=1, linewidth=1, colors="blue")
 
     ax = plt.gca()  # get current axis
     ax.xaxis.set_major_locator(MaxNLocator(grid_density))
@@ -55,7 +59,7 @@ def plot(data, grid_density=100):
     plt.show()
 
 
-def plot_interval_diff(data, grid_density=None):
+def plot_interval_diff(data, work_start_indicator, grid_density=None):
     interval_diffs = get_interval_diffs(data)
 
     # Freedman-Diaconis rule
@@ -68,7 +72,7 @@ def plot_interval_diff(data, grid_density=None):
 
     # Plot it!
     plt.figure(figsize=(10, 5))
-    plt.hist(interval_diffs, bins=bin_count, color="blue", edgecolor="black")
+    plt.hist(interval_diffs[1:] if work_start_indicator else interval_diffs, bins=bin_count, color="blue", edgecolor="black")
     plt.title("Interval difference histogram")
     plt.xlabel("Interval difference (ns)")
     plt.ylabel("Frequency")
@@ -110,13 +114,16 @@ def main():
     )
     args = parser.parse_args()
 
+    tags = get_column_data(args.filepath, 1)
+    work_start_indicator = True if len(tags) > 0 and int(tags[0]) == -1 else False
+
     timestamps = get_column_data(args.filepath, 2)
     timestamps = [int(x) for x in timestamps]
 
     if args.plot_type == "impulse":
-        plot(timestamps, args.grid_density)
+        plot(timestamps, work_start_indicator, args.grid_density)
     elif args.plot_type == "interval-difference":
-        plot_interval_diff(timestamps, args.grid_density)
+        plot_interval_diff(timestamps, work_start_indicator, args.grid_density)
     else:
         print("provided plot type not supported")
         exit(1)

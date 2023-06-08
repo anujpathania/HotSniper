@@ -173,6 +173,9 @@ def plot_hb_trace(run, force_recreate=False):
         if os.path.exists(plot_file) and not force_recreate:
             continue
 
+        tags = get_column_data("%s/%s" % (final_results_path, logfile), 1, True)
+        work_start_indicator = True if len(tags) > 0 and int(tags[0]) == -1 else False
+
         timestamps = get_column_data("%s/%s" % (final_results_path, logfile), 2, True) # Second col are timestamps
         timestamps = [int(x) for x in timestamps]
 
@@ -187,7 +190,11 @@ def plot_hb_trace(run, force_recreate=False):
         plt.xticks(rotation=45, ha="right")
         plt.yticks([0, 1])
 
-        plt.vlines(timestamps, ymin=0, ymax=1, linewidth=1)
+        if work_start_indicator:
+            plt.vlines(timestamps[0], ymin=0, ymax=1, linewidth=1, colors="red")
+            plt.vlines(timestamps[1:], ymin=0, ymax=1, linewidth=1, colors="blue")
+        else:
+            plt.vlines(timestamps, ymin=0, ymax=1, linewidth=1, colors="blue")
 
         ax = plt.gca()
         ax.xaxis.set_major_locator(MaxNLocator(200))
@@ -209,6 +216,9 @@ def plot_hb_histogram(run, force_recreate=False):
         if os.path.exists(plot_file) and not force_recreate:
             continue
 
+        tags = get_column_data("%s/%s" % (final_results_path, logfile), 1, True)
+        work_start_indicator = True if len(tags) > 0 and int(tags[0]) == -1 else False
+
         timestamps = get_column_data("%s/%s" % (final_results_path, logfile), 2, True)
         timestamps = [int(x) for x in timestamps]
         interval_diffs = get_interval_diffs(timestamps)
@@ -222,7 +232,13 @@ def plot_hb_histogram(run, force_recreate=False):
         bin_count = bin_count if bin_count < n else n
 
         plt.figure(figsize=(60,10))
+<<<<<<< Updated upstream
         plt.hist(interval_diffs, bins=bin_count, color="blue", edgecolor="black")
+=======
+
+        plt.hist(interval_diffs[1:] if work_start_indicator else interval_diffs, bins=bin_count, color="blue", edgecolor="black")
+
+>>>>>>> Stashed changes
         plt.title('Heartbeat interval difference histogram for app id {} - {}'.format(logfile.strip(".hb.log"), run))
         plt.xlabel("Values")
         plt.ylabel("Interval difference")

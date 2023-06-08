@@ -1,5 +1,10 @@
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-06-04 21:02:05.340856007 +0200
 +++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-05-16 16:57:53.369196193 +0200
+=======
+--- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-06-06 21:45:55.142870115 +0200
++++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-06-06 21:41:36.004581179 +0200
+>>>>>>> Stashed changes
 @@ -11,6 +11,7 @@
  #include <stdlib.h>
  #include <math.h>
@@ -8,24 +13,22 @@
  
  #ifdef ENABLE_PARSEC_HOOKS
  #include <hooks.h>
-@@ -43,6 +44,16 @@
+@@ -43,6 +44,14 @@
  
  #define NUM_RUNS 100
  
-+#include <heartbeats/heart_rate_monitor.h>
 +#include <heartbeats/heartbeat-types.h>
 +#include <heartbeats/heartbeat.h>
 +
 +#define PREFIX "BLACKSCHOLES"
 +
 +heartbeat_t *heart;
-+heart_rate_monitor_t hrm;
 +int enable_heartbeats;
 +
  typedef struct OptionData_ {
          fptype s;          // spot price
          fptype strike;     // strike price
-@@ -69,6 +80,49 @@
+@@ -69,6 +78,49 @@
  int numError = 0;
  int nThreads;
  
@@ -75,7 +78,7 @@
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ///////////////////////////////////////////////////////////////////////////////
-@@ -231,6 +285,11 @@
+@@ -231,6 +283,11 @@
      int end = start + (numOptions / nThreads);
  
      for (j=0; j<NUM_RUNS; j++) {
@@ -87,7 +90,7 @@
  #ifdef ENABLE_OPENMP
  #pragma omp parallel for private(i, price, priceDelta)
          for (i=0; i<numOptions; i++) {
-@@ -268,6 +327,13 @@
+@@ -268,6 +325,13 @@
      int * buffer2;
      int rv;
  
@@ -101,7 +104,19 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -438,6 +504,10 @@
+@@ -365,6 +429,11 @@
+ #ifdef ENABLE_PARSEC_HOOKS
+     __parsec_roi_begin();
+ #endif
++
++    if (enable_heartbeats == 1) {
++      heartbeat(heart, -1); // Beat indicating work start
++    }
++
+ #ifdef ENABLE_THREADS
+     int tids[nThreads];
+     for(i=0; i<nThreads; i++) {
+@@ -438,6 +507,10 @@
      __parsec_bench_end();
  #endif
  
@@ -112,20 +127,24 @@
      return 0;
  }
  
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-06-04 21:02:05.351855773 +0200
 +++ parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-05-16 17:05:25.442856119 +0200
 @@ -65,8 +65,74 @@
+=======
+--- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-06-06 21:45:55.152869899 +0200
++++ parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-06-06 21:41:44.107387068 +0200
+@@ -65,8 +65,72 @@
+>>>>>>> Stashed changes
  #include "TrackingModel.h"
  #include "system.h"
  
-+#include <heartbeats/heart_rate_monitor.h>
 +#include <heartbeats/heartbeat-types.h>
 +#include <heartbeats/heartbeat.h>
 +
 +#define PREFIX "BODYTRACK"
 +
 +heartbeat_t *heart;
-+heart_rate_monitor_t hrm;
 +int enable_heartbeats;
 +
  using namespace std;
@@ -189,9 +208,15 @@
  //templated conversion from string
  template<class T>
  bool num(const string s, T &n)
-@@ -189,7 +255,13 @@
+@@ -188,8 +252,19 @@
+ #if defined(ENABLE_PARSEC_HOOKS)
          __parsec_roi_begin();
  #endif
++
++	if (enable_heartbeats == 1) {
++		heartbeat(heart, -1); // Beat indicating work start
++	}
++
  	for(int i = 0; i < frames; i++)														//process each set of frames
 -	{	cout << "Processing frame " << i << endl;
 +	{
@@ -204,7 +229,7 @@
  		if(!pf.Update((float)i))														//Run particle filter step
  		{	cout << "Error loading observation data" << endl;
  			return 0;
-@@ -250,7 +322,13 @@
+@@ -250,7 +325,13 @@
          __parsec_roi_begin();
  #endif
  	for(int i = 0; i < frames; i++)														//process each set of frames
@@ -219,7 +244,7 @@
  		if(!pf.Update((float)i))														//Run particle filter step
  		{	cout << "Error loading observation data" << endl;
  			workers.JoinAll();
-@@ -347,7 +425,13 @@
+@@ -347,7 +428,13 @@
          __parsec_roi_begin();
  #endif
  	for(int i = 0; i < frames; i++)														//process each set of frames
@@ -234,7 +259,7 @@
  		if(!pf.Update((float)i))														//Run particle filter step
  		{	cout << "Error loading observation data" << endl;
  			return 0;
-@@ -370,6 +454,16 @@
+@@ -370,6 +457,16 @@
  	bool OutputBMP;
  	int cameras, frames, particles, layers, threads, threadModel;								//process command line parameters to get path, cameras, and frames
  
@@ -251,7 +276,7 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -448,6 +542,11 @@
+@@ -448,6 +545,11 @@
  			break;
  	}
  
@@ -263,20 +288,24 @@
  #if defined(ENABLE_PARSEC_HOOKS)
          __parsec_bench_end();
  #endif
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-06-04 21:02:05.363855517 +0200
 +++ parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-05-18 10:55:15.561375887 +0200
 @@ -13,10 +13,63 @@
+=======
+--- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-06-06 21:45:55.161869705 +0200
++++ parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-06-06 21:41:59.842010131 +0200
+@@ -13,10 +13,61 @@
+>>>>>>> Stashed changes
  
  #include "parsec_barrier.hpp"
  
-+#include <heartbeats/heart_rate_monitor.h>
 +#include <heartbeats/heartbeat-types.h>
 +#include <heartbeats/heartbeat.h>
 +
 +#define PREFIX "FLUIDANIMATE"
 +
 +heartbeat_t *heart;
-+heart_rate_monitor_t hrm;
 +int enable_heartbeats;
 +
  #ifdef ENABLE_PARSEC_HOOKS
@@ -329,7 +358,7 @@
  static inline int isLittleEndian() {
    union {
      uint16_t word;
-@@ -805,8 +858,12 @@
+@@ -805,8 +856,12 @@
  {
  	thread_args *targs = (thread_args *)args;
  
@@ -343,7 +372,7 @@
  
  	return NULL;
  }
-@@ -845,6 +902,13 @@
+@@ -845,12 +900,24 @@
  		return -1;
  	}
  
@@ -357,7 +386,18 @@
  	InitSim(argv[3], threadnum);
  
  	thread_args targs[threadnum];
-@@ -869,6 +933,10 @@
+ #ifdef ENABLE_PARSEC_HOOKS
+ 	__parsec_roi_begin();
+ #endif
++
++	if (enable_heartbeats == 1) {
++		heartbeat(heart, -1); // Beat indicating work start
++	}
++
+ 	for(int i = 0; i < threadnum; ++i) {
+ 		targs[i].tid = i;
+ 		targs[i].frames = framenum;
+@@ -869,6 +936,10 @@
  
  	CleanUpSim();
  
@@ -368,26 +408,30 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-06-04 21:02:05.373855304 +0200
 +++ parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-05-18 12:00:02.464588929 +0200
 @@ -33,6 +33,16 @@
+=======
+--- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-06-06 21:45:55.172869468 +0200
++++ parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-06-06 21:41:53.552160810 +0200
+@@ -33,6 +33,14 @@
+>>>>>>> Stashed changes
  #include <hooks.h>
  #endif
  
-+#include <heartbeats/heart_rate_monitor.h>
 +#include <heartbeats/heartbeat-types.h>
 +#include <heartbeats/heartbeat.h>
 +
 +#define PREFIX "SWAPTIONS"
 +
 +heartbeat_t *heart;
-+heart_rate_monitor_t hrm;
 +int enable_heartbeats;
 +
  int NUM_TRIALS = DEFAULT_NUM_TRIALS;
  int nThreads = 1;
  int nSwaptions = 1;
-@@ -46,6 +56,48 @@
+@@ -46,6 +54,48 @@
  FTYPE *dSumSquareSimSwaptionPrice_global_ptr;
  int chunksize;
  
@@ -436,7 +480,7 @@
  
  #ifdef TBB_VERSION
  struct Worker {
-@@ -87,6 +139,10 @@
+@@ -87,6 +137,10 @@
      end = nSwaptions;
  
    for(int i=beg; i < end; i++) {
@@ -447,7 +491,7 @@
       int iSuccess = HJM_Swaption_Blocking(pdSwaptionPrice,  swaptions[i].dStrike, 
                                         swaptions[i].dCompounding, swaptions[i].dMaturity, 
                                         swaptions[i].dTenor, swaptions[i].dPaymentInterval,
-@@ -181,6 +237,13 @@
+@@ -181,6 +235,13 @@
  	}
  #endif //ENABLE_THREADS
  
@@ -461,7 +505,18 @@
          // initialize input dataset
  	factors = dmatrix(0, iFactors-1, 0, iN-2);
  	//the three rows store vol data for the three factors
-@@ -302,6 +365,10 @@
+@@ -255,6 +316,10 @@
+ 	__parsec_roi_begin();
+ #endif
+ 
++  if (enable_heartbeats == 1) {
++    heartbeat(heart, -1); // Beat indicating work start
++  }
++
+ #ifdef ENABLE_THREADS
+ 
+ #ifdef TBB_VERSION
+@@ -302,6 +367,10 @@
          free(swaptions);
  #endif // TBB_VERSION
  
@@ -472,26 +527,30 @@
  	//***********************************************************
  
  #ifdef ENABLE_PARSEC_HOOKS
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-06-04 21:02:05.383855091 +0200
 +++ parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-05-16 17:02:12.041858258 +0200
 @@ -47,6 +47,16 @@
+=======
+--- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-06-06 21:45:55.181869274 +0200
++++ parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-06-06 21:45:08.441876512 +0200
+@@ -47,6 +47,14 @@
+>>>>>>> Stashed changes
  #include <hooks.h>
  #endif
  
-+#include <heartbeats/heart_rate_monitor.h>
 +#include <heartbeats/heartbeat-types.h>
 +#include <heartbeats/heartbeat.h>
 +
 +#define PREFIX "X264"
 +
 +heartbeat_t *heart;
-+heart_rate_monitor_t hrm;
 +int enable_heartbeats;
 +
  uint8_t *mux_buffer = NULL;
  int mux_buffer_size = 0;
  
-@@ -85,6 +95,61 @@
+@@ -85,6 +93,61 @@
  static int  Parse( int argc, char **argv, x264_param_t *param, cli_opt_t *opt );
  static int  Encode( x264_param_t *param, cli_opt_t *opt );
  
@@ -505,7 +564,7 @@
 +
 +    if (getenv(PREFIX "_MIN_HEART_RATE") == NULL)
 +    {
-+        min_heartrate = 0.0;
++        min_heartrate = 30.0;
 +    }
 +    else
 +    {
@@ -553,7 +612,7 @@
  
  /****************************************************************************
   * main:
-@@ -95,6 +160,16 @@
+@@ -95,6 +158,16 @@
      cli_opt_t opt;
      int ret;
  
@@ -570,7 +629,7 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -138,6 +213,11 @@
+@@ -138,6 +211,11 @@
      __parsec_bench_end();
  #endif
  
@@ -582,7 +641,19 @@
      return ret;
  }
  
-@@ -873,6 +953,11 @@
+@@ -851,6 +929,11 @@
+ #ifdef ENABLE_PARSEC_HOOKS
+     __parsec_roi_begin();
+ #endif
++    
++    if (enable_heartbeats == 1)
++    {
++        heartbeat(heart, -1); // Beat indicating work start
++    }
+ 
+     /* Encode frames */
+     for( i_frame = 0, i_file = 0; b_ctrl_c == 0 && (i_frame < i_frame_total || i_frame_total == 0); )
+@@ -873,6 +956,11 @@
  
          i_frame++;
  
@@ -594,8 +665,13 @@
          /* update status line (up to 1000 times per input file) */
          if( opt->b_progress && i_frame % i_update_interval == 0 )
          {
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-06-04 21:02:05.395854836 +0200
 +++ parsec-2.1/pkgs/kernels/canneal/src/annealer_thread-patched.cpp	2023-05-17 15:30:21.634371142 +0200
+=======
+--- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-06-06 21:45:55.191869059 +0200
++++ parsec-2.1/pkgs/kernels/canneal/src/annealer_thread-patched.cpp	2023-06-06 21:22:00.844889509 +0200
+>>>>>>> Stashed changes
 @@ -40,6 +40,10 @@
  #include <fstream>
  #include "rng.h"
@@ -607,20 +683,24 @@
  using std::cout;
  using std::endl;
  
-@@ -84,6 +88,11 @@
+@@ -84,6 +88,10 @@
  			} else if (is_good_move == move_decision_rejected){
  				//no need to do anything for a rejected move
  			}
 +
-+			// TODO - Beat that heart!
 +			if (enable_heartbeats == 1 && temp_steps_completed % 1875 == 0) {
 +      	heartbeat(heart, temp_steps_completed);
 +			}
  		}
  		temp_steps_completed++;
  #ifdef ENABLE_THREADS
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-06-04 21:02:05.406854602 +0200
 +++ parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-05-17 15:25:39.976224267 +0200
+=======
+--- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-06-06 21:45:55.200868865 +0200
++++ parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-06-06 21:45:27.212472009 +0200
+>>>>>>> Stashed changes
 @@ -33,6 +33,7 @@
  #include <stdlib.h>
  #include <unistd.h>
@@ -629,18 +709,16 @@
  
  #ifdef ENABLE_THREADS
  #include <pthread.h>
-@@ -47,12 +48,67 @@
+@@ -47,12 +48,65 @@
  #include "netlist.h"
  #include "rng.h"
  
-+#include <heartbeats/heart_rate_monitor.h>
 +#include <heartbeats/heartbeat-types.h>
 +#include <heartbeats/heartbeat.h>
 +
 +#define PREFIX "CANNEAL"
 +
 +heartbeat_t *heart;
-+heart_rate_monitor_t hrm;
 +int enable_heartbeats;
 +
  using namespace std;
@@ -697,7 +775,7 @@
  int main (int argc, char * const argv[]) {
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
-@@ -102,6 +158,13 @@
+@@ -102,12 +156,24 @@
          }
  
  	//now that we've read in the commandline, run the program
@@ -711,7 +789,18 @@
  	netlist my_netlist(filename);
  	
  	annealer_thread a_thread(&my_netlist,num_threads,swaps_per_temp,start_temp,number_temp_steps);
-@@ -127,6 +190,11 @@
+ 	
+ #ifdef ENABLE_PARSEC_HOOKS
+ 	__parsec_roi_begin();
++
++  if (enable_heartbeats == 1) {
++    heartbeat(heart, -1); // Beat indicating work start
++  }
++
+ #endif
+ #ifdef ENABLE_THREADS
+ 	std::vector<pthread_t> threads(num_threads);
+@@ -127,6 +193,11 @@
  	
  	cout << "Final routing is: " << my_netlist.total_routing_cost() << endl;
  
@@ -723,8 +812,13 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-06-04 21:02:05.416854389 +0200
 +++ parsec-2.1/pkgs/kernels/dedup/src/encoder-patched.c	2023-05-17 10:33:06.184331223 +0200
+=======
+--- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-06-06 21:45:55.209868671 +0200
++++ parsec-2.1/pkgs/kernels/dedup/src/encoder-patched.c	2023-06-06 21:25:48.946050572 +0200
+>>>>>>> Stashed changes
 @@ -23,6 +23,10 @@
  
  #define INITIAL_SIZE 4096
@@ -747,20 +841,35 @@
      item = sub_ChunkProcess(chunk);
  
      if (item->type == TYPE_COMPRESS) {
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-06-04 21:02:05.426854176 +0200
 +++ parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-05-17 14:12:11.360822674 +0200
 @@ -15,8 +15,64 @@
+=======
+@@ -1161,6 +1169,10 @@
+     pthread_create(&threads_process, NULL, DataProcess, &data_process_args);
+   }
+ 
++  if (enable_heartbeats == 1) {
++    heartbeat(heart, -1); // Beat indicating work start
++  }
++
+   int i;
+ 
+   //Create 3 thread pools for the intermediate pipeline stages
+--- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-06-06 21:45:55.218868477 +0200
++++ parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-06-06 21:45:48.646010121 +0200
+@@ -15,8 +15,62 @@
+>>>>>>> Stashed changes
  #include <hooks.h>
  #endif
  
-+#include <heartbeats/heart_rate_monitor.h>
 +#include <heartbeats/heartbeat-types.h>
 +#include <heartbeats/heartbeat.h>
 +
 +#define PREFIX "DEDUP"
 +
 +heartbeat_t *heart;
-+heart_rate_monitor_t hrm;
 +int enable_heartbeats;
 +
  config * conf;
@@ -814,7 +923,7 @@
  static int
  keys_equal_fn ( void *key1, void *key2 ){
    return (memcmp(((CacheKey*)key1)->sha1name, ((CacheKey*)key2)->sha1name, SHA1_LEN) == 0);
-@@ -127,15 +183,26 @@
+@@ -127,15 +181,26 @@
      exit(1);
    }
  
@@ -843,8 +952,13 @@
 -}
 \ No newline at end of file
 +}
+<<<<<<< Updated upstream
 --- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2023-06-04 21:02:05.436853963 +0200
 +++ parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster-patched.cpp	2023-06-04 20:56:30.106135699 +0200
+=======
+--- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2023-06-06 21:45:55.228868261 +0200
++++ parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster-patched.cpp	2023-06-06 21:39:14.665967076 +0200
+>>>>>>> Stashed changes
 @@ -36,6 +36,15 @@
  #include <hooks.h>
  #endif
@@ -911,7 +1025,22 @@
  #ifdef TBB_VERSION
  struct HizReduction {
  private:
+<<<<<<< Updated upstream
 @@ -1894,6 +1946,10 @@
+=======
+@@ -1882,6 +1934,10 @@
+     centers.p[i].weight = 1.0;
+   }
+ 
++  if (enable_heartbeats == 1) {
++    heartbeat(heart, -1); // Beat indicating work start
++  }
++
+   long IDoffset = 0;
+   long kfinal;
+   while(1) {
+@@ -1894,6 +1950,10 @@
+>>>>>>> Stashed changes
        exit(1);
      }
  
@@ -922,7 +1051,11 @@
      points.num = numRead;
      for( int i = 0; i < points.num; i++ ) {
        points.p[i].weight = 1.0;
+<<<<<<< Updated upstream
 @@ -2022,6 +2078,12 @@
+=======
+@@ -2022,6 +2082,12 @@
+>>>>>>> Stashed changes
      stream = new FileStream(infilename);
    }
  
@@ -935,7 +1068,11 @@
  
  #ifdef ENABLE_PARSEC_HOOKS
    __parsec_roi_begin();
+<<<<<<< Updated upstream
 @@ -2038,6 +2100,10 @@
+=======
+@@ -2038,6 +2104,10 @@
+>>>>>>> Stashed changes
  #ifdef ENABLE_PARSEC_HOOKS
    __parsec_bench_end();
  #endif
