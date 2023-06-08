@@ -1,10 +1,5 @@
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-06-04 21:02:05.340856007 +0200
-+++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-05-16 16:57:53.369196193 +0200
-=======
---- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-06-06 21:45:55.142870115 +0200
+--- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-06-08 22:45:45.284794376 +0200
 +++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-06-06 21:41:36.004581179 +0200
->>>>>>> Stashed changes
 @@ -11,6 +11,7 @@
  #include <stdlib.h>
  #include <math.h>
@@ -127,15 +122,9 @@
      return 0;
  }
  
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-06-04 21:02:05.351855773 +0200
-+++ parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-05-16 17:05:25.442856119 +0200
-@@ -65,8 +65,74 @@
-=======
---- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-06-06 21:45:55.152869899 +0200
+--- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-06-08 22:45:45.295794237 +0200
 +++ parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-06-06 21:41:44.107387068 +0200
 @@ -65,8 +65,72 @@
->>>>>>> Stashed changes
  #include "TrackingModel.h"
  #include "system.h"
  
@@ -288,15 +277,9 @@
  #if defined(ENABLE_PARSEC_HOOKS)
          __parsec_bench_end();
  #endif
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-06-04 21:02:05.363855517 +0200
-+++ parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-05-18 10:55:15.561375887 +0200
-@@ -13,10 +13,63 @@
-=======
---- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-06-06 21:45:55.161869705 +0200
+--- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-06-08 22:45:45.306794098 +0200
 +++ parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-06-06 21:41:59.842010131 +0200
 @@ -13,10 +13,61 @@
->>>>>>> Stashed changes
  
  #include "parsec_barrier.hpp"
  
@@ -408,15 +391,9 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-06-04 21:02:05.373855304 +0200
-+++ parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-05-18 12:00:02.464588929 +0200
-@@ -33,6 +33,16 @@
-=======
---- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-06-06 21:45:55.172869468 +0200
+--- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-06-08 22:45:45.317793959 +0200
 +++ parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-06-06 21:41:53.552160810 +0200
 @@ -33,6 +33,14 @@
->>>>>>> Stashed changes
  #include <hooks.h>
  #endif
  
@@ -527,15 +504,9 @@
  	//***********************************************************
  
  #ifdef ENABLE_PARSEC_HOOKS
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-06-04 21:02:05.383855091 +0200
-+++ parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-05-16 17:02:12.041858258 +0200
-@@ -47,6 +47,16 @@
-=======
---- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-06-06 21:45:55.181869274 +0200
+--- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-06-08 22:45:45.327793833 +0200
 +++ parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-06-06 21:45:08.441876512 +0200
 @@ -47,6 +47,14 @@
->>>>>>> Stashed changes
  #include <hooks.h>
  #endif
  
@@ -665,13 +636,8 @@
          /* update status line (up to 1000 times per input file) */
          if( opt->b_progress && i_frame % i_update_interval == 0 )
          {
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-06-04 21:02:05.395854836 +0200
-+++ parsec-2.1/pkgs/kernels/canneal/src/annealer_thread-patched.cpp	2023-05-17 15:30:21.634371142 +0200
-=======
---- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-06-06 21:45:55.191869059 +0200
+--- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-06-08 22:45:45.337793706 +0200
 +++ parsec-2.1/pkgs/kernels/canneal/src/annealer_thread-patched.cpp	2023-06-06 21:22:00.844889509 +0200
->>>>>>> Stashed changes
 @@ -40,6 +40,10 @@
  #include <fstream>
  #include "rng.h"
@@ -694,13 +660,8 @@
  		}
  		temp_steps_completed++;
  #ifdef ENABLE_THREADS
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-06-04 21:02:05.406854602 +0200
-+++ parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-05-17 15:25:39.976224267 +0200
-=======
---- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-06-06 21:45:55.200868865 +0200
+--- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-06-08 22:45:45.346793592 +0200
 +++ parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-06-06 21:45:27.212472009 +0200
->>>>>>> Stashed changes
 @@ -33,6 +33,7 @@
  #include <stdlib.h>
  #include <unistd.h>
@@ -812,13 +773,8 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-06-04 21:02:05.416854389 +0200
-+++ parsec-2.1/pkgs/kernels/dedup/src/encoder-patched.c	2023-05-17 10:33:06.184331223 +0200
-=======
---- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-06-06 21:45:55.209868671 +0200
+--- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-06-08 22:45:45.357793453 +0200
 +++ parsec-2.1/pkgs/kernels/dedup/src/encoder-patched.c	2023-06-06 21:25:48.946050572 +0200
->>>>>>> Stashed changes
 @@ -23,6 +23,10 @@
  
  #define INITIAL_SIZE 4096
@@ -841,11 +797,6 @@
      item = sub_ChunkProcess(chunk);
  
      if (item->type == TYPE_COMPRESS) {
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-06-04 21:02:05.426854176 +0200
-+++ parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-05-17 14:12:11.360822674 +0200
-@@ -15,8 +15,64 @@
-=======
 @@ -1161,6 +1169,10 @@
      pthread_create(&threads_process, NULL, DataProcess, &data_process_args);
    }
@@ -857,10 +808,9 @@
    int i;
  
    //Create 3 thread pools for the intermediate pipeline stages
---- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-06-06 21:45:55.218868477 +0200
+--- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-06-08 22:45:45.367793327 +0200
 +++ parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-06-06 21:45:48.646010121 +0200
 @@ -15,8 +15,62 @@
->>>>>>> Stashed changes
  #include <hooks.h>
  #endif
  
@@ -952,13 +902,8 @@
 -}
 \ No newline at end of file
 +}
-<<<<<<< Updated upstream
---- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2023-06-04 21:02:05.436853963 +0200
-+++ parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster-patched.cpp	2023-06-04 20:56:30.106135699 +0200
-=======
---- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2023-06-06 21:45:55.228868261 +0200
+--- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2023-06-08 22:45:45.377793200 +0200
 +++ parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster-patched.cpp	2023-06-06 21:39:14.665967076 +0200
->>>>>>> Stashed changes
 @@ -36,6 +36,15 @@
  #include <hooks.h>
  #endif
@@ -1025,9 +970,6 @@
  #ifdef TBB_VERSION
  struct HizReduction {
  private:
-<<<<<<< Updated upstream
-@@ -1894,6 +1946,10 @@
-=======
 @@ -1882,6 +1934,10 @@
      centers.p[i].weight = 1.0;
    }
@@ -1040,7 +982,6 @@
    long kfinal;
    while(1) {
 @@ -1894,6 +1950,10 @@
->>>>>>> Stashed changes
        exit(1);
      }
  
@@ -1051,11 +992,7 @@
      points.num = numRead;
      for( int i = 0; i < points.num; i++ ) {
        points.p[i].weight = 1.0;
-<<<<<<< Updated upstream
-@@ -2022,6 +2078,12 @@
-=======
 @@ -2022,6 +2082,12 @@
->>>>>>> Stashed changes
      stream = new FileStream(infilename);
    }
  
@@ -1068,11 +1005,7 @@
  
  #ifdef ENABLE_PARSEC_HOOKS
    __parsec_roi_begin();
-<<<<<<< Updated upstream
-@@ -2038,6 +2100,10 @@
-=======
 @@ -2038,6 +2104,10 @@
->>>>>>> Stashed changes
  #ifdef ENABLE_PARSEC_HOOKS
    __parsec_bench_end();
  #endif

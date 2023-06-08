@@ -7,7 +7,7 @@
 ####################
 # Parse options.
 ####################
-apply = 0
+apply=0
 
 function display_help() {
     echo "Usage: ./create_patch.sh [OPTIONS]"
@@ -22,7 +22,7 @@ if [[ "$1" == "--help" ]]; then
     display_help
     exit 0
 elif [[ "$1" == "--apply" ]]; then
-    apply = 1
+    apply=1
 fi
 
 ####################
@@ -76,7 +76,7 @@ done
 ####################
 # Apply the patch
 ####################
-if [[ apply == 1 ]]; then
+if [[ $apply -eq 1 ]]; then
     echo "Applying generated patch file"
     patch -p1 -dparsec-2.1 < patches/heartbeat.patch
 fi
