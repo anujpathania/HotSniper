@@ -232,13 +232,9 @@ def plot_hb_histogram(run, force_recreate=False):
         bin_count = bin_count if bin_count < n else n
 
         plt.figure(figsize=(60,10))
-<<<<<<< Updated upstream
-        plt.hist(interval_diffs, bins=bin_count, color="blue", edgecolor="black")
-=======
 
         plt.hist(interval_diffs[1:] if work_start_indicator else interval_diffs, bins=bin_count, color="blue", edgecolor="black")
 
->>>>>>> Stashed changes
         plt.title('Heartbeat interval difference histogram for app id {} - {}'.format(logfile.strip(".hb.log"), run))
         plt.xlabel("Values")
         plt.ylabel("Interval difference")
