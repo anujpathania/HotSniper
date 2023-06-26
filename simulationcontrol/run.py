@@ -89,7 +89,7 @@ def run(base_configuration, benchmark, ignore_error=False):
                 benchmark=benchmark,
                 periodic=periodicPower)
     console_output = ''
-    print(args)
+    # print(args)
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
     p = subprocess.Popen([run_sniper] + args.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
     with p.stdout:

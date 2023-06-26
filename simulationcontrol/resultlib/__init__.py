@@ -32,6 +32,17 @@ def find_run(run):
             return candidate
     raise Exception('could not find run')
 
+# Locate filename in resultdir and return the full path.
+def get_file(run, filename):
+    for base_dir in RESULT_DIRS:
+        full_filename = os.path.join(base_dir, run, filename)
+        if os.path.exists(full_filename):
+            return full_filename
+
+        gzip_filename = '{}.gz'.format(full_filename)
+        if os.path.exists(gzip_filename):
+            return gzip_filename
+    raise Exception('file does not exist')
 
 def _open_file(run, filename):
     for base_dir in RESULT_DIRS:

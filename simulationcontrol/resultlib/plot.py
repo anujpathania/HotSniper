@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from resultlib import *
 import seaborn as sns
+from resultlib import periodic_plot
 
 
 def smoothen(data, k):
@@ -130,6 +131,22 @@ def plot_cpi_stack_trace(run, active_cores, force_recreate=False):
 def create_plots(run, force_recreate=False):
     print('creating plots for {}'.format(run))
     active_cores = get_active_cores(run)
+
+    # SP: Create subcore and core level plots
+    # For thermals
+    full_name = get_file(run, 'PeriodicThermal.log')
+    periodic_plot.plot_periodic_log(full_name, core_level=False, no_display=True)
+    periodic_plot.plot_periodic_log(full_name, core_level=True, no_display=True)
+
+    # For power
+    full_name = get_file(run, 'PeriodicPower.log')
+    periodic_plot.plot_periodic_log(full_name, core_level=False, no_display=True)
+    periodic_plot.plot_periodic_log(full_name, core_level=True, no_display=True)
+
+    # For R-values
+    full_name = get_file(run, 'PeriodicRvalue.log')
+    periodic_plot.plot_periodic_log(full_name, core_level=False, no_display=True)
+    periodic_plot.plot_periodic_log(full_name, core_level=True, no_display=True)
 
     plot_trace(run, 'frequency', 'Frequency', 'Frequency (GHz)', lambda: get_freq_traces(run), active_cores, yMin=0, yMax=4.1e9, force_recreate=force_recreate)
     plot_trace(run, 'temperature', 'Temperature', 'Temperature (C)', lambda: get_temperature_traces(run), active_cores, yMin=45, yMax=100, force_recreate=force_recreate)
