@@ -236,7 +236,6 @@ def example():
             #for parallelism in (max_parallelism,):
             for parallelism in (2,):
                 # you can also use try_run instead
-                print("SP:{}".format(parallelism))
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
 
