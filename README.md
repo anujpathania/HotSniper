@@ -80,6 +80,7 @@ cd benchmarks
 export BENCHMARKS_ROOT=$(pwd)
 #compiling the benchmarks
 make
+cd ..
 ```
 
 
