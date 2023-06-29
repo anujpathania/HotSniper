@@ -60,7 +60,6 @@ cd ..
 The [HotSpot] simulator is shipped with HotSniper7. All you need to do is to compile it:
 ```sh
 cd hotspot
-sudo apt install gcc
 make
 cd ..
 ```
