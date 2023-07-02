@@ -19,7 +19,6 @@ class SchedulerOpen : public SchedulerPinnedBase {
 
 	public:
 		SchedulerOpen (ThreadManager *thread_manager); //This function is the constructor for Open System Scheduler.
-		~SchedulerOpen (); // This is the destructor
 		virtual void periodic(SubsecondTime time);
 		virtual void threadSetInitialAffinity(thread_id_t thread_id);
 		virtual bool threadSetAffinity(thread_id_t calling_thread_id, thread_id_t thread_id, size_t cpusetsize, const cpu_set_t *mask);
@@ -74,11 +73,6 @@ class SchedulerOpen : public SchedulerPinnedBase {
 
 		int setAffinity (thread_id_t thread_id);
 		bool schedule (int taskID, bool isInitialCall, SubsecondTime time);
-		
-		bool hb_enabled;
-		int hb_timefile_fd;	
-		char hb_timefile_name[100];
-		std::ofstream hb_timefile;
 };
 
 #endif // __SCHEDULER_OPEN_H
