@@ -150,7 +150,7 @@ def create_plots(run, force_recreate=False):
     # For thermals
     full_name = get_file(run, 'PeriodicThermal.log')
     periodic_plot.plot_periodic_log(full_name, core_level=False, no_display=True)
-    periodic_plot.plot_periodic_log(full_name, core_level=True, no_display=True)
+    periodic_plot.plot_periodic_log(full_name, core_level=True, aggr_max=True, no_display=True)
 
     # For power
     full_name = get_file(run, 'PeriodicPower.log')

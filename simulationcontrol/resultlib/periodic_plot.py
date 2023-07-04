@@ -44,7 +44,7 @@ def get_core_aggregate(df, core_level=False, aggr_max=False):
             if aggr_max:
                 core_df[core] = df.filter(regex='{}-*'.format(core)).max(axis=1)
             else:
-                core_df[core] = df.filter(regex='{}-*'.format(core)).mean(axis=1)
+                core_df[core] = df.filter(regex='{}-*'.format(core)).sum(axis=1)
         return [("-Cores", core_df)]
 
     # Subcomponents, return list with df for every core with subcomp data.
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     argparser.add_argument("--core-level", default=False,
             action='store_true', help="Plot at core level")
     argparser.add_argument("--max", default=False,
-            action='store_true', help="Use the maximum instead of mean to aggregate subcomponents values")
+            action='store_true', help="Use the maximum instead of sum to aggregate subcomponents values")
     args = argparser.parse_args()
 
     plot_periodic_log(args.filename, args.core_level, args.no_display, args.max)
