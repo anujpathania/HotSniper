@@ -54,21 +54,23 @@ def get_core_aggregate(df, core_level=False, aggr_max=False):
     return dfs
 
 # Read data from file, aggregate subcomponents if needed and plot values.
-def plot_periodic_log(filename, core_level=False, no_display=False, aggr_max=False):
+def plot_periodic_log(filename, core_level=False, no_display=False,
+        aggr_max=False, x_label='Time (ms)', y_label='Metric'):
     df_all = pd.read_csv(filename, delim_whitespace=True)
     dfs = get_core_aggregate(df_all, core_level, aggr_max)
 
     filename, _ = os.path.splitext(filename) # remove .gz, confuses suffix
     for (plot_name, df) in dfs:
-        do_plot(df, filename, plot_name, no_display)
+        do_plot(df, filename, plot_name, no_display, x_label, y_label)
 
 # Plot dataframe 'fd' to display and write plot to file in pdf, png and eps.
-def do_plot(df, filename, plot_name='', no_display=False):
+def do_plot(df, filename, plot_name='', no_display=False,
+        x_label='Time (ms)', y_label='Metric'):
     fig, axs = plt.subplots(figsize=(12,12))
     df.plot(ax=axs)
     fp = Path(filename)
-    axs.set_ylabel('Metric')  # TODO: Could extract metric from filename?
-    axs.set_xlabel('Time')  # TODO: don't know time unit here
+    axs.set_xlabel(x_label)
+    axs.set_ylabel(y_label)
     axs.set_title(fp.stem + plot_name)
 
     # Create plot files in multiple formats.

@@ -146,22 +146,31 @@ def create_plots(run, force_recreate=False):
     print('creating plots for {}'.format(run))
     active_cores = get_active_cores(run)
 
-    # SP: Create subcore and core level plots
+    # Create subcore and core level plots
+    # TODO: we assume a logging epoch of 1 ms, better to read
+    # this from log file.
+
     # For thermals
     full_name = get_file(run, 'PeriodicThermal.log')
-    periodic_plot.plot_periodic_log(full_name, core_level=False, no_display=True)
-    periodic_plot.plot_periodic_log(full_name, core_level=True, aggr_max=True, no_display=True)
+    periodic_plot.plot_periodic_log(full_name, core_level=False,
+            no_display=True, y_label='Temperature (C)')
+    periodic_plot.plot_periodic_log(full_name, core_level=True,
+            aggr_max=True, no_display=True, y_label='Temperature (C)' )
 
     # For power
     full_name = get_file(run, 'PeriodicPower.log')
-    periodic_plot.plot_periodic_log(full_name, core_level=False, no_display=True)
-    periodic_plot.plot_periodic_log(full_name, core_level=True, no_display=True)
+    periodic_plot.plot_periodic_log(full_name, core_level=False,
+            no_display=True, y_label='Power (W)')
+    periodic_plot.plot_periodic_log(full_name, core_level=True,
+            no_display=True, y_label='Power (W)')
 
     # For R-values
     if get_config_val_bool(run, 'reliability/enabled'):
         full_name = get_file(run, 'PeriodicRvalue.log')
-        periodic_plot.plot_periodic_log(full_name, core_level=False, no_display=True)
-        periodic_plot.plot_periodic_log(full_name, core_level=True, no_display=True)
+        periodic_plot.plot_periodic_log(full_name, core_level=False,
+                no_display=True, y_label='R-value')
+        periodic_plot.plot_periodic_log(full_name, core_level=True,
+                no_display=True, y_label='R-value')
 
     # Test reading config file item
     result = int(get_config_val(run, 'perf_model/cache/levels'))
