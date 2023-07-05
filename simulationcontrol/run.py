@@ -78,7 +78,9 @@ def run(base_configuration, benchmark, ignore_error=False):
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
 
+    # NOTE: This determines the logging interval! (see issue in forked repo)
     periodicPower = 1000000
+    #periodicPower = 250000
     if 'mediumDVFS' in base_configuration:
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
@@ -89,7 +91,9 @@ def run(base_configuration, benchmark, ignore_error=False):
                 benchmark=benchmark,
                 periodic=periodicPower)
     console_output = ''
-    # print(args)
+    # SP: To disable run, comment from here
+    print(args)
+
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
     p = subprocess.Popen([run_sniper] + args.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
     with p.stdout:
@@ -98,6 +102,7 @@ def run(base_configuration, benchmark, ignore_error=False):
             console_output += linestr
             print(linestr, end='')
     p.wait()
+    # to here
 
     try:
         cpistack = subprocess.check_output(['python', os.path.join(SNIPER_BASE, 'tools/cpistack.py')], cwd=BENCHMARKS)
@@ -111,6 +116,7 @@ def run(base_configuration, benchmark, ignore_error=False):
 
     save_output(base_configuration, benchmark, console_output, cpistack, started, ended)
 
+    # SP: to disable run, comment next two lines
     if p.returncode != 0:
         raise Exception('return code != 0')
 
