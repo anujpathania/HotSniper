@@ -155,7 +155,7 @@ def create_plots(run, force_recreate=False):
     periodic_plot.plot_periodic_log(full_name, core_level=False,
             no_display=True, y_label='Temperature (C)')
     periodic_plot.plot_periodic_log(full_name, core_level=True,
-            aggr_max=True, no_display=True, y_label='Temperature (C)' )
+            atype='max', no_display=True, y_label='Temperature (C)' )
 
     # For power
     full_name = get_file(run, 'PeriodicPower.log')
@@ -170,11 +170,11 @@ def create_plots(run, force_recreate=False):
         periodic_plot.plot_periodic_log(full_name, core_level=False,
                 no_display=True, y_label='R-value')
         periodic_plot.plot_periodic_log(full_name, core_level=True,
-                no_display=True, y_label='R-value')
+                atype='min', no_display=True, y_label='R-value')
 
-    # Test reading config file item
-    result = int(get_config_val(run, 'perf_model/cache/levels'))
-    print("SP: {}".format(result))
+    # Test reading config file item (TODO: remove)
+    #result = int(get_config_val(run, 'perf_model/cache/levels'))
+    #print("SP: {}".format(result))
 
     plot_trace(run, 'frequency', 'Frequency', 'Frequency (GHz)', lambda: get_freq_traces(run), active_cores, yMin=0, yMax=4.1e9, force_recreate=force_recreate)
     plot_trace(run, 'temperature', 'Temperature', 'Temperature (C)', lambda: get_temperature_traces(run), active_cores, yMin=45, yMax=100, force_recreate=force_recreate)
