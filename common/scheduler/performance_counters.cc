@@ -66,8 +66,33 @@ double PerformanceCounters::getPowerOfComponent (string component) const {
  * Return the latest total power consumption of the given core. Requires "tp" (total power) to be tracked in base.cfg. Return -1 if power is not tracked.
  */
 double PerformanceCounters::getPowerOfCore(int coreId) const {
-    string component = "Core" + std::to_string(coreId) + "-TP";
-    return getPowerOfComponent(component);
+    string prefix = "C_" + std::to_string(coreId) + "_";
+    double core_power = 0.0;
+
+    ifstream powerLogFile(instPowerFileName);
+    string header;
+    string footer;
+
+    if (powerLogFile.good()) {
+        getline(powerLogFile, header);
+        getline(powerLogFile, footer);
+    }
+
+    std::istringstream issHeader(header);
+    std::istringstream issFooter(footer);
+    std::string token;
+
+
+    // Sum all components that start with prefix
+    while(getline(issHeader, token, '\t')) {
+        std::string value;
+        getline(issFooter, value, '\t');
+        if (token.find(prefix) == 0) {
+            core_power += stod (value);
+        }
+    }
+
+    return core_power;
 }
 
 
@@ -132,8 +157,33 @@ double PerformanceCounters::getTemperatureOfComponent (string component) const {
  * Return the latest temperature of the given core. Requires "tp" (total power) to be tracked in base.cfg. Return -1 if power is not tracked.
  */
 double PerformanceCounters::getTemperatureOfCore(int coreId) const {
-    string component = "Core" + std::to_string(coreId) + "-TP";
-    return getTemperatureOfComponent(component);
+    string prefix = "C_" + std::to_string(coreId) + "_";
+    double core_temperature = 0.0;
+
+    ifstream temperatureLogFile(instTemperatureFileName);
+    string header;
+    string footer;
+
+    if (temperatureLogFile.good()) {
+        getline(temperatureLogFile, header);
+        getline(temperatureLogFile, footer);
+    }
+
+    std::istringstream issHeader(header);
+    std::istringstream issFooter(footer);
+    std::string token;
+
+
+    // Sum all components that start with prefix
+    while(getline(issHeader, token, '\t')) {
+        std::string value;
+        getline(issFooter, value, '\t');
+        if (token.find(prefix) == 0) {
+            core_temperature = std::max(core_temperature, stod (value));
+        }
+    }
+
+    return core_temperature;
 }
 
 /**
