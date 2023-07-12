@@ -172,12 +172,6 @@ def log_vdd(results):
     size_nm = int(results['config']['power/technology_node'])
     if size_nm >= 22:
         scale = 1.0
-    elif size_nm == 14:
-        scale = 0.89
-    elif size_nm == 10:
-        scale = 0.81
-    elif size_nm == 8:
-        scale = 0.74
     else:
         raise Exception(
             'do not know how to scale vdd to {} nm'.format(size_nm))
@@ -424,12 +418,6 @@ def scale_power(suffix, power, size_nm):
     if suffix == 'Runtime Dynamic':
         if size_nm >= 22:
             return power
-        elif size_nm == 14:
-            return 0.89**2 * 0.64 * power
-        elif size_nm == 10:
-            return 0.81**2 * 0.39 * power
-        elif size_nm == 8:
-            return 0.74**2 * 0.24 * power
         else:
             raise Exception(
                 'do not know how to scale power to {} nm'.format(size_nm))
@@ -700,10 +688,10 @@ def edit_XML(statsobj, stats, cfg):
 
     ncores = int(cfg['general/total_cores'])
     technology_node = int(sniper_config.get_config_default(
-        cfg, 'power/technology_node', 45))
+        cfg, 'power/technology_node', 22))
     if technology_node < 22:
-        # McPAT does not support smaller technology nodes. We will do the scaling from 22nm to the target technology node manually (scale_power).
-        technology_node = 22
+        raise Exception(
+            'We do not support technology nodes smaller than 22 nm')
 
     l3_cacheSharedCores = long(sniper_config.get_config_default(
         cfg, 'perf_model/l3_cache/shared_cores', 0))
