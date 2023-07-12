@@ -63,32 +63,28 @@ vector<double> getValues(string filename, string prefix) {
     return v;
 }
 
+/** Return the value of a component in the instantanious `logfile`.
+ * Return -1 if the component is not found and throw an exception if
+ * the component is found multiple times.
+ */
+double getValue(string logfile, string component) {
+    vector<double> values = getValues(logfile, component);
+
+    if (values.size() < 1) {
+        return -1;
+    } else if (values.size() > 1) {
+        throw std::runtime_error{"ERROR: Duplicate components found in " + \
+            logfile};
+    }
+
+    return values[0];
+}
+
 /** getPowerOfComponent
     Returns the latest power consumption of a component being tracked using base.cfg. Return -1 if power value not found.
 */
 double PerformanceCounters::getPowerOfComponent (string component) const {
-    ifstream powerLogFile(instPowerFileName);
-    string header;
-    string footer;
-
-    if (powerLogFile.good()) {
-        getline(powerLogFile, header);
-        getline(powerLogFile, footer);
-    }
-
-    std::istringstream issHeader(header);
-    std::istringstream issFooter(footer);
-    std::string token;
-
-    while(getline(issHeader, token, '\t')) {
-        std::string value;
-        getline(issFooter, value, '\t');
-        if (token == component) {
-            return stod (value);
-        }
-    }
-
-    return -1;
+    return getValue(instPowerFileName, component);
 }
 
 /** getPowerOfCore
@@ -140,29 +136,7 @@ double PerformanceCounters::getPeakTemperature () const {
     Returns the latest temperature of a component being tracked using base.cfg. Return -1 if power value not found.
 */
 double PerformanceCounters::getTemperatureOfComponent (string component) const {
-    ifstream temperatureLogFile(instTemperatureFileName);
-    string header;
-    string footer;
-
-    if (temperatureLogFile.good()) {
-        getline(temperatureLogFile, header);
-        getline(temperatureLogFile, footer);
-    }
-
-    std::istringstream issHeader(header);
-    std::istringstream issFooter(footer);
-    std::string token;
-
-    while(getline(issHeader, token, '\t')) {
-        std::string value;
-        getline(issFooter, value, '\t');
-
-        if (token == component) {
-            return stod(value);
-        }
-    }
-
-    return -1;
+    return getValue(instTemperatureFileName, component);
 }
 
 /** getTemperatureOfCore
@@ -269,29 +243,7 @@ double PerformanceCounters::getIPSOfCore(int coreId) const {
     Return -1 if rvalue value not found.
 */
 double PerformanceCounters::getRvalueOfComponent (std::string component) const {
-    ifstream rvalueLogFile(instRvalueFileName);
-    string header;
-    string footer;
-
-    if (rvalueLogFile.good()) {
-        getline(rvalueLogFile, header);
-        getline(rvalueLogFile, footer);
-    }
-
-    std::istringstream issHeader(header);
-    std::istringstream issFooter(footer);
-    std::string token;
-
-    while(getline(issHeader, token, '\t')) {
-        std::string value;
-        getline(issFooter, value, '\t');
-
-        if (token == component) {
-            return stod(value);
-        }
-    }
-
-    return -1;
+    return getValue(instRvalueFileName, component);
 }
 
 /** getRvalueOfCore
