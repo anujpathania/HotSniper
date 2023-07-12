@@ -63,7 +63,9 @@ double PerformanceCounters::getPowerOfComponent (string component) const {
 }
 
 /** getPowerOfCore
- * Return the latest total power consumption of the given core. Requires "tp" (total power) to be tracked in base.cfg. Return -1 if power is not tracked.
+ * Return the current power usage of the Core 'coreId'.
+ * We don't track core power usage so we calculate it by summing the power
+ * usage of all the subcomponents of the core.
  */
 double PerformanceCounters::getPowerOfCore(int coreId) const {
     string prefix = "C_" + std::to_string(coreId) + "_";
@@ -82,19 +84,16 @@ double PerformanceCounters::getPowerOfCore(int coreId) const {
     std::istringstream issFooter(footer);
     std::string token;
 
-
-    // Sum all components that start with prefix
     while(getline(issHeader, token, '\t')) {
         std::string value;
         getline(issFooter, value, '\t');
         if (token.find(prefix) == 0) {
-            core_power += stod (value);
+            core_power += stod(value);
         }
     }
 
     return core_power;
 }
-
 
 /** getPeakTemperature
     Returns the latest peak temperature of any component
@@ -146,7 +145,7 @@ double PerformanceCounters::getTemperatureOfComponent (string component) const {
         getline(issFooter, value, '\t');
 
         if (token == component) {
-            return stod (value);
+            return stod(value);
         }
     }
 
@@ -154,7 +153,9 @@ double PerformanceCounters::getTemperatureOfComponent (string component) const {
 }
 
 /** getTemperatureOfCore
- * Return the latest temperature of the given core. Requires "tp" (total power) to be tracked in base.cfg. Return -1 if power is not tracked.
+ * Return the latest temperature of the given core.
+ * We don't track the temperature at core level so we calculate it by
+ * taking the maximum of all the subcomponents of the core.
  */
 double PerformanceCounters::getTemperatureOfCore(int coreId) const {
     string prefix = "C_" + std::to_string(coreId) + "_";
@@ -173,13 +174,11 @@ double PerformanceCounters::getTemperatureOfCore(int coreId) const {
     std::istringstream issFooter(footer);
     std::string token;
 
-
-    // Sum all components that start with prefix
     while(getline(issHeader, token, '\t')) {
         std::string value;
         getline(issFooter, value, '\t');
         if (token.find(prefix) == 0) {
-            core_temperature = std::max(core_temperature, stod (value));
+            core_temperature = std::max(core_temperature, stod(value));
         }
     }
 
@@ -300,10 +299,33 @@ double PerformanceCounters::getRvalueOfComponent (std::string component) const {
 
 /** getRvalueOfCore
  * Return the latest reliability value of the given core.
- * Requires "tp" (total power) to be tracked in base.cfg.
- * Return -1 if power is not tracked.
+ * The reliability value of the core is the minimum of the reliability
+ * values of its subcomponents.
  */
 double PerformanceCounters::getRvalueOfCore (int coreId) const {
-    string component = "Core" + std::to_string(coreId) + "-TP";
-    return getRvalueOfComponent(component);
+    string prefix = "C_" + std::to_string(coreId) + "_";
+    double core_rvalue = 1.0;
+
+    ifstream rvalueLogFile(instRvalueFileName);
+    string header;
+    string footer;
+
+    if (rvalueLogFile.good()) {
+        getline(rvalueLogFile, header);
+        getline(rvalueLogFile, footer);
+    }
+
+    std::istringstream issHeader(header);
+    std::istringstream issFooter(footer);
+    std::string token;
+
+    while(getline(issHeader, token, '\t')) {
+        std::string value;
+        getline(issFooter, value, '\t');
+        if (token.find(prefix) == 0) {
+            core_rvalue = std::min(core_rvalue, stod(value));
+        }
+    }
+
+    return core_rvalue;
 }
