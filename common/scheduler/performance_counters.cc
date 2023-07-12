@@ -105,30 +105,18 @@ double PerformanceCounters::getPowerOfCore(int coreId) const {
 }
 
 /** getPeakTemperature
-    Returns the latest peak temperature of any component
+ * Returns the latest peak temperature of any component or -1 if no
+ * temperature value is found.
 */
 double PerformanceCounters::getPeakTemperature () const {
-    ifstream temperatureLogFile(instTemperatureFileName);
-    string header;
-    string footer;
+    // The pattern 'C_' will match all components in the logfile.
+    vector<double> temperatures = getValues(instTemperatureFileName, "C_");
 
-    if (temperatureLogFile.good()) {
-        getline(temperatureLogFile, header);
-        getline(temperatureLogFile, footer);
+    if (temperatures.size() == 0) {
+        return -1;
     }
 
-    std::istringstream issFooter(footer);
-
-    double maxTemp = -1;
-    std::string value;
-    while(getline(issFooter, value, '\t')) {
-        double t = stod (value);
-        if (t > maxTemp) {
-            maxTemp = t;
-        }
-    }
-
-    return maxTemp;
+    return *std::max_element(temperatures.begin(), temperatures.end());
 }
 
 
