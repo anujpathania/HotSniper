@@ -2,6 +2,8 @@
 
 #include <fstream>
 #include <sstream>
+#include <algorithm>
+#include <numeric>
 
 using namespace std;
 
@@ -34,6 +36,33 @@ PerformanceCounters::PerformanceCounters(const char* output_dir,
         instRvalueFileNameParam;
 }
 
+/** Return a vector of all the values that match the prefix pattern. */
+vector<double> getValues(string filename, string prefix) {
+    ifstream LogFile(filename);
+    string header;
+    string footer;
+    vector<double> v;
+
+    if (LogFile.good()) {
+        getline(LogFile, header);
+        getline(LogFile, footer);
+    }
+
+    std::istringstream issHeader(header);
+    std::istringstream issFooter(footer);
+    std::string token;
+
+    while(getline(issHeader, token, '\t')) {
+        std::string value;
+        getline(issFooter, value, '\t');
+        if (token.find(prefix) == 0) {
+            v.push_back(stod(value));
+        }
+    }
+
+    return v;
+}
+
 /** getPowerOfComponent
     Returns the latest power consumption of a component being tracked using base.cfg. Return -1 if power value not found.
 */
@@ -63,36 +92,20 @@ double PerformanceCounters::getPowerOfComponent (string component) const {
 }
 
 /** getPowerOfCore
- * Return the current power usage of the Core 'coreId'.
+ * Return the current power usage of the Core 'coreId' or -1 if no value
+ * was found.
  * We don't track core power usage so we calculate it by summing the power
  * usage of all the subcomponents of the core.
  */
 double PerformanceCounters::getPowerOfCore(int coreId) const {
     string prefix = "C_" + std::to_string(coreId) + "_";
-    double core_power = 0.0;
+    vector<double> power_values = getValues(instPowerFileName, prefix);
 
-    ifstream powerLogFile(instPowerFileName);
-    string header;
-    string footer;
-
-    if (powerLogFile.good()) {
-        getline(powerLogFile, header);
-        getline(powerLogFile, footer);
+    if (power_values.size() == 0) {
+        return -1;
     }
 
-    std::istringstream issHeader(header);
-    std::istringstream issFooter(footer);
-    std::string token;
-
-    while(getline(issHeader, token, '\t')) {
-        std::string value;
-        getline(issFooter, value, '\t');
-        if (token.find(prefix) == 0) {
-            core_power += stod(value);
-        }
-    }
-
-    return core_power;
+    return std::accumulate(power_values.begin(), power_values.end(), 0.0);
 }
 
 /** getPeakTemperature
@@ -153,36 +166,20 @@ double PerformanceCounters::getTemperatureOfComponent (string component) const {
 }
 
 /** getTemperatureOfCore
- * Return the latest temperature of the given core.
+ * Return the latest temperature of the given core or -1 if no value was
+ * found.
  * We don't track the temperature at core level so we calculate it by
  * taking the maximum of all the subcomponents of the core.
  */
 double PerformanceCounters::getTemperatureOfCore(int coreId) const {
     string prefix = "C_" + std::to_string(coreId) + "_";
-    double core_temperature = 0.0;
+    vector<double> temperatures = getValues(instTemperatureFileName, prefix);
 
-    ifstream temperatureLogFile(instTemperatureFileName);
-    string header;
-    string footer;
-
-    if (temperatureLogFile.good()) {
-        getline(temperatureLogFile, header);
-        getline(temperatureLogFile, footer);
+    if (temperatures.size() == 0) {
+        return -1;
     }
 
-    std::istringstream issHeader(header);
-    std::istringstream issFooter(footer);
-    std::string token;
-
-    while(getline(issHeader, token, '\t')) {
-        std::string value;
-        getline(issFooter, value, '\t');
-        if (token.find(prefix) == 0) {
-            core_temperature = std::max(core_temperature, stod(value));
-        }
-    }
-
-    return core_temperature;
+    return *std::max_element(temperatures.begin(), temperatures.end());
 }
 
 /**
@@ -298,34 +295,18 @@ double PerformanceCounters::getRvalueOfComponent (std::string component) const {
 }
 
 /** getRvalueOfCore
- * Return the latest reliability value of the given core.
+ * Return the latest reliability value of the given core or -1 if no value
+ * was found.
  * The reliability value of the core is the minimum of the reliability
  * values of its subcomponents.
  */
 double PerformanceCounters::getRvalueOfCore (int coreId) const {
     string prefix = "C_" + std::to_string(coreId) + "_";
-    double core_rvalue = 1.0;
+    vector<double> r_values = getValues(instRvalueFileName, prefix);
 
-    ifstream rvalueLogFile(instRvalueFileName);
-    string header;
-    string footer;
-
-    if (rvalueLogFile.good()) {
-        getline(rvalueLogFile, header);
-        getline(rvalueLogFile, footer);
+    if (r_values.size() == 0) {
+        return -1;
     }
 
-    std::istringstream issHeader(header);
-    std::istringstream issFooter(footer);
-    std::string token;
-
-    while(getline(issHeader, token, '\t')) {
-        std::string value;
-        getline(issFooter, value, '\t');
-        if (token.find(prefix) == 0) {
-            core_rvalue = std::min(core_rvalue, stod(value));
-        }
-    }
-
-    return core_rvalue;
+    return *std::min_element(r_values.begin(), r_values.end());
 }
