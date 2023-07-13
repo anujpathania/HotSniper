@@ -1,0 +1,8 @@
+bin
+lib
+output
+scratch
+obj
+doc/html
+doc/latex
+*~

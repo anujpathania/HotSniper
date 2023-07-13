@@ -1,5 +1,5 @@
---- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-04-25 11:10:30.688157676 +0000
-+++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-04-25 10:30:23.888329654 +0000
+--- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-07-13 10:34:09.037315639 +0200
++++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-07-13 10:05:24.197342334 +0200
 @@ -11,6 +11,7 @@
  #include <stdlib.h>
  #include <math.h>
@@ -8,24 +8,22 @@
  
  #ifdef ENABLE_PARSEC_HOOKS
  #include <hooks.h>
-@@ -43,6 +44,16 @@
+@@ -43,6 +44,14 @@
  
  #define NUM_RUNS 100
  
-+#include <heartbeats/heart_rate_monitor.h>
 +#include <heartbeats/heartbeat-types.h>
 +#include <heartbeats/heartbeat.h>
 +
 +#define PREFIX "BLACKSCHOLES"
 +
 +heartbeat_t *heart;
-+heart_rate_monitor_t hrm;
 +int enable_heartbeats;
 +
  typedef struct OptionData_ {
          fptype s;          // spot price
          fptype strike;     // strike price
-@@ -69,6 +80,49 @@
+@@ -69,6 +78,49 @@
  int numError = 0;
  int nThreads;
  
@@ -58,7 +56,7 @@
 +  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
 +         window_size, (logfile[0] == '\0') ? NULL : logfile);
 +  heart =
-+      heartbeat_init(window_size, 100, (logfile[0] == '\0') ? NULL : logfile,
++      heartbeat_init(window_size, 1, (logfile[0] == '\0') ? NULL : logfile,
 +                     min_heartrate, max_heartrate);
 +  if (heart == NULL) {
 +    fprintf(stderr, "Failed to init heartbeat.\n");
@@ -75,19 +73,19 @@
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ///////////////////////////////////////////////////////////////////////////////
-@@ -231,6 +285,11 @@
+@@ -231,6 +283,11 @@
      int end = start + (numOptions / nThreads);
  
      for (j=0; j<NUM_RUNS; j++) {
 +
 +    if (enable_heartbeats == 1) {
-+      heartbeat(heart, j);  // TODO - This is different from PARSEC-3.0 impl.
++      heartbeat(heart, j);
 +    }
 +
  #ifdef ENABLE_OPENMP
  #pragma omp parallel for private(i, price, priceDelta)
          for (i=0; i<numOptions; i++) {
-@@ -268,6 +327,13 @@
+@@ -268,6 +325,13 @@
      int * buffer2;
      int rv;
  
@@ -101,7 +99,19 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -438,6 +504,10 @@
+@@ -365,6 +429,11 @@
+ #ifdef ENABLE_PARSEC_HOOKS
+     __parsec_roi_begin();
+ #endif
++
++    if (enable_heartbeats == 1) {
++      heartbeat(heart, -1); // Beat indicating work start
++    }
++
+ #ifdef ENABLE_THREADS
+     int tids[nThreads];
+     for(i=0; i<nThreads; i++) {
+@@ -438,6 +507,10 @@
      __parsec_bench_end();
  #endif
  
@@ -112,3 +122,898 @@
      return 0;
  }
  
+--- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-07-13 10:34:09.045315475 +0200
++++ parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-06-06 21:41:44.107387068 +0200
+@@ -65,8 +65,72 @@
+ #include "TrackingModel.h"
+ #include "system.h"
+ 
++#include <heartbeats/heartbeat-types.h>
++#include <heartbeats/heartbeat.h>
++
++#define PREFIX "BODYTRACK"
++
++heartbeat_t *heart;
++int enable_heartbeats;
++
+ using namespace std;
+ 
++static inline void hb_init()
++{
++	float min_heartrate;
++	float max_heartrate;
++	int window_size;
++	char logfile[512];
++	memset(logfile, 0, sizeof(logfile));
++
++	if (getenv(PREFIX "_MIN_HEART_RATE") == NULL)
++	{
++		min_heartrate = 0.0;
++	}
++	else
++	{
++		min_heartrate = atof(getenv(PREFIX "_MIN_HEART_RATE"));
++	}
++	if (getenv(PREFIX "_MAX_HEART_RATE") == NULL)
++	{
++		max_heartrate = 100.0;
++	}
++	else
++	{
++		max_heartrate = atof(getenv(PREFIX "_MAX_HEART_RATE"));
++	}
++	if (getenv(PREFIX "_WINDOW_SIZE") == NULL)
++	{
++		window_size = 30;
++	}
++	else
++	{
++		window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
++	}
++	if (getenv(PREFIX "_HB_LOGFILE") != NULL)
++	{
++		strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++	}
++
++	printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
++				 window_size, (logfile[0] == '\0') ? NULL : logfile);
++	heart =
++			heartbeat_init(window_size, 1, (logfile[0] == '\0') ? NULL : logfile,
++										 min_heartrate, max_heartrate);
++	if (heart == NULL)
++	{
++		fprintf(stderr, "Failed to init heartbeat.\n");
++		exit(1);
++	}
++	printf("heartbeat init'd\n");
++}
++
++static inline void hb_finish()
++{
++	heartbeat_finish(heart);
++	printf("heartbeat finished\n");
++}
++
+ //templated conversion from string
+ template<class T>
+ bool num(const string s, T &n)
+@@ -188,8 +252,19 @@
+ #if defined(ENABLE_PARSEC_HOOKS)
+         __parsec_roi_begin();
+ #endif
++
++	if (enable_heartbeats == 1) {
++		heartbeat(heart, -1); // Beat indicating work start
++	}
++
+ 	for(int i = 0; i < frames; i++)														//process each set of frames
+-	{	cout << "Processing frame " << i << endl;
++	{
++		if (enable_heartbeats == 1)
++		{
++			heartbeat(heart, i);
++		}
++
++		cout << "Processing frame " << i << endl;
+ 		if(!pf.Update((float)i))														//Run particle filter step
+ 		{	cout << "Error loading observation data" << endl;
+ 			return 0;
+@@ -250,7 +325,13 @@
+         __parsec_roi_begin();
+ #endif
+ 	for(int i = 0; i < frames; i++)														//process each set of frames
+-	{	cout << "Processing frame " << i << endl;
++	{	
++		if (enable_heartbeats == 1)
++		{
++			heartbeat(heart, i);
++		}
++
++		cout << "Processing frame " << i << endl;
+ 		if(!pf.Update((float)i))														//Run particle filter step
+ 		{	cout << "Error loading observation data" << endl;
+ 			workers.JoinAll();
+@@ -347,7 +428,13 @@
+         __parsec_roi_begin();
+ #endif
+ 	for(int i = 0; i < frames; i++)														//process each set of frames
+-	{	cout << "Processing frame " << i << endl;
++	{	
++		if (enable_heartbeats == 1)
++		{
++			heartbeat(heart, i);
++		}
++
++		cout << "Processing frame " << i << endl;
+ 		if(!pf.Update((float)i))														//Run particle filter step
+ 		{	cout << "Error loading observation data" << endl;
+ 			return 0;
+@@ -370,6 +457,16 @@
+ 	bool OutputBMP;
+ 	int cameras, frames, particles, layers, threads, threadModel;								//process command line parameters to get path, cameras, and frames
+ 
++	if (getenv("ENABLE_HEARTBEATS") != NULL)
++	{
++		enable_heartbeats = 1;
++		hb_init();
++	}
++	else
++	{
++		enable_heartbeats = 0;
++	}
++
+ #ifdef PARSEC_VERSION
+ #define __PARSEC_STRING(x) #x
+ #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
+@@ -448,6 +545,11 @@
+ 			break;
+ 	}
+ 
++	if (enable_heartbeats == 1)
++	{
++			hb_finish();
++	}
++
+ #if defined(ENABLE_PARSEC_HOOKS)
+         __parsec_bench_end();
+ #endif
+--- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-07-13 10:34:09.052315333 +0200
++++ parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-06-06 21:41:59.842010131 +0200
+@@ -13,10 +13,61 @@
+ 
+ #include "parsec_barrier.hpp"
+ 
++#include <heartbeats/heartbeat-types.h>
++#include <heartbeats/heartbeat.h>
++
++#define PREFIX "FLUIDANIMATE"
++
++heartbeat_t *heart;
++int enable_heartbeats;
++
+ #ifdef ENABLE_PARSEC_HOOKS
+ #include <hooks.h>
+ #endif
+ 
++static inline void hb_init() {
++  float min_heartrate;
++  float max_heartrate;
++  int window_size;
++  char logfile[512];
++  memset(logfile, 0, sizeof(logfile));
++
++  if (getenv(PREFIX "_MIN_HEART_RATE") == NULL) {
++    min_heartrate = 0.0;
++  } else {
++    min_heartrate = atof(getenv(PREFIX "_MIN_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_MAX_HEART_RATE") == NULL) {
++    max_heartrate = 100.0;
++  } else {
++    max_heartrate = atof(getenv(PREFIX "_MAX_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_WINDOW_SIZE") == NULL) {
++    window_size = 30;
++  } else {
++    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
++  }
++  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
++    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++  }
++
++  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
++         window_size, (logfile[0] == '\0') ? NULL : logfile);
++  heart =
++      heartbeat_init(window_size, 1, (logfile[0] == '\0') ? NULL : logfile,
++                     min_heartrate, max_heartrate);
++  if (heart == NULL) {
++    fprintf(stderr, "Failed to init heartbeat.\n");
++    exit(1);
++  }
++  printf("heartbeat init'd\n");
++}
++
++static inline void hb_finish() {
++  heartbeat_finish(heart);
++  printf("heartbeat finished\n");
++}
++
+ static inline int isLittleEndian() {
+   union {
+     uint16_t word;
+@@ -805,8 +856,12 @@
+ {
+ 	thread_args *targs = (thread_args *)args;
+ 
+-	for(int i = 0; i < targs->frames; ++i)
++	for(int i = 0; i < targs->frames; ++i) {
++		if (enable_heartbeats == 1) {
++			heartbeat(heart, i);
++    }
+ 		AdvanceFrameMT(targs->tid);
++	}
+ 
+ 	return NULL;
+ }
+@@ -845,12 +900,24 @@
+ 		return -1;
+ 	}
+ 
++	if (getenv("ENABLE_HEARTBEATS") != NULL) {
++		enable_heartbeats = 1;
++		hb_init();
++	} else {
++		enable_heartbeats = 0;
++	}
++
+ 	InitSim(argv[3], threadnum);
+ 
+ 	thread_args targs[threadnum];
+ #ifdef ENABLE_PARSEC_HOOKS
+ 	__parsec_roi_begin();
+ #endif
++
++	if (enable_heartbeats == 1) {
++		heartbeat(heart, -1); // Beat indicating work start
++	}
++
+ 	for(int i = 0; i < threadnum; ++i) {
+ 		targs[i].tid = i;
+ 		targs[i].frames = framenum;
+@@ -869,6 +936,10 @@
+ 
+ 	CleanUpSim();
+ 
++	if (enable_heartbeats == 1) {
++		hb_finish();
++	}
++
+ #ifdef ENABLE_PARSEC_HOOKS
+ 	__parsec_bench_end();
+ #endif
+--- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-07-13 10:34:09.061315149 +0200
++++ parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-06-06 21:41:53.552160810 +0200
+@@ -33,6 +33,14 @@
+ #include <hooks.h>
+ #endif
+ 
++#include <heartbeats/heartbeat-types.h>
++#include <heartbeats/heartbeat.h>
++
++#define PREFIX "SWAPTIONS"
++
++heartbeat_t *heart;
++int enable_heartbeats;
++
+ int NUM_TRIALS = DEFAULT_NUM_TRIALS;
+ int nThreads = 1;
+ int nSwaptions = 1;
+@@ -46,6 +54,48 @@
+ FTYPE *dSumSquareSimSwaptionPrice_global_ptr;
+ int chunksize;
+ 
++static inline void hb_init() {
++  float min_heartrate;
++  float max_heartrate;
++  int window_size;
++  char logfile[512];
++  memset(logfile, 0, sizeof(logfile));
++
++  if (getenv(PREFIX "_MIN_HEART_RATE") == NULL) {
++    min_heartrate = 0.0;
++  } else {
++    min_heartrate = atof(getenv(PREFIX "_MIN_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_MAX_HEART_RATE") == NULL) {
++    max_heartrate = 100.0;
++  } else {
++    max_heartrate = atof(getenv(PREFIX "_MAX_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_WINDOW_SIZE") == NULL) {
++    window_size = 30;
++  } else {
++    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
++  }
++  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
++    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++  }
++
++  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
++         window_size, (logfile[0] == '\0') ? NULL : logfile);
++  heart =
++      heartbeat_init(window_size, 1, (logfile[0] == '\0') ? NULL : logfile,
++                     min_heartrate, max_heartrate);
++  if (heart == NULL) {
++    fprintf(stderr, "Failed to init heartbeat.\n");
++    exit(1);
++  }
++  printf("heartbeat init'd\n");
++}
++
++static inline void hb_finish() {
++  heartbeat_finish(heart);
++  printf("heartbeat finished\n");
++}
+ 
+ #ifdef TBB_VERSION
+ struct Worker {
+@@ -87,6 +137,10 @@
+     end = nSwaptions;
+ 
+   for(int i=beg; i < end; i++) {
++     if (enable_heartbeats == 1) {
++       heartbeat(heart, i);
++     }
++
+      int iSuccess = HJM_Swaption_Blocking(pdSwaptionPrice,  swaptions[i].dStrike, 
+                                        swaptions[i].dCompounding, swaptions[i].dMaturity, 
+                                        swaptions[i].dTenor, swaptions[i].dPaymentInterval,
+@@ -181,6 +235,13 @@
+ 	}
+ #endif //ENABLE_THREADS
+ 
++  if (getenv("ENABLE_HEARTBEATS") != NULL) {
++    enable_heartbeats = 1;
++    hb_init();
++  } else {
++    enable_heartbeats = 0;
++  }
++
+         // initialize input dataset
+ 	factors = dmatrix(0, iFactors-1, 0, iN-2);
+ 	//the three rows store vol data for the three factors
+@@ -255,6 +316,10 @@
+ 	__parsec_roi_begin();
+ #endif
+ 
++  if (enable_heartbeats == 1) {
++    heartbeat(heart, -1); // Beat indicating work start
++  }
++
+ #ifdef ENABLE_THREADS
+ 
+ #ifdef TBB_VERSION
+@@ -302,6 +367,10 @@
+         free(swaptions);
+ #endif // TBB_VERSION
+ 
++  if (enable_heartbeats == 1) {
++    hb_finish();
++  }
++
+ 	//***********************************************************
+ 
+ #ifdef ENABLE_PARSEC_HOOKS
+--- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-07-13 10:34:09.068315007 +0200
++++ parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-06-06 21:45:08.441876512 +0200
+@@ -47,6 +47,14 @@
+ #include <hooks.h>
+ #endif
+ 
++#include <heartbeats/heartbeat-types.h>
++#include <heartbeats/heartbeat.h>
++
++#define PREFIX "X264"
++
++heartbeat_t *heart;
++int enable_heartbeats;
++
+ uint8_t *mux_buffer = NULL;
+ int mux_buffer_size = 0;
+ 
+@@ -85,6 +93,61 @@
+ static int  Parse( int argc, char **argv, x264_param_t *param, cli_opt_t *opt );
+ static int  Encode( x264_param_t *param, cli_opt_t *opt );
+ 
++static inline void hb_init()
++{
++    float min_heartrate;
++    float max_heartrate;
++    int window_size;
++    char logfile[512];
++    memset(logfile, 0, sizeof(logfile));
++
++    if (getenv(PREFIX "_MIN_HEART_RATE") == NULL)
++    {
++        min_heartrate = 30.0;
++    }
++    else
++    {
++        min_heartrate = atof(getenv(PREFIX "_MIN_HEART_RATE"));
++    }
++    if (getenv(PREFIX "_MAX_HEART_RATE") == NULL)
++    {
++        max_heartrate = 100.0;
++    }
++    else
++    {
++        max_heartrate = atof(getenv(PREFIX "_MAX_HEART_RATE"));
++    }
++    if (getenv(PREFIX "_WINDOW_SIZE") == NULL)
++    {
++        window_size = 30;
++    }
++    else
++    {
++        window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
++    }
++    if (getenv(PREFIX "_HB_LOGFILE") != NULL)
++    {
++        strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++    }
++
++    printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
++           window_size, (logfile[0] == '\0') ? NULL : logfile);
++    heart =
++        heartbeat_init(window_size, 1, (logfile[0] == '\0') ? NULL : logfile,
++                       min_heartrate, max_heartrate);
++    if (heart == NULL)
++    {
++        fprintf(stderr, "Failed to init heartbeat.\n");
++        exit(1);
++    }
++    printf("heartbeat init'd\n");
++}
++
++static inline void hb_finish()
++{
++    heartbeat_finish(heart);
++    printf("heartbeat finished\n");
++}
+ 
+ /****************************************************************************
+  * main:
+@@ -95,6 +158,16 @@
+     cli_opt_t opt;
+     int ret;
+ 
++    if (getenv("ENABLE_HEARTBEATS") != NULL)
++    {
++        enable_heartbeats = 1;
++        hb_init();
++    }
++    else
++    {
++        enable_heartbeats = 0;
++    }
++
+ #ifdef PARSEC_VERSION
+ #define __PARSEC_STRING(x) #x
+ #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
+@@ -138,6 +211,11 @@
+     __parsec_bench_end();
+ #endif
+ 
++    if (enable_heartbeats == 1)
++    {
++        hb_finish();
++    }
++
+     return ret;
+ }
+ 
+@@ -851,6 +929,11 @@
+ #ifdef ENABLE_PARSEC_HOOKS
+     __parsec_roi_begin();
+ #endif
++    
++    if (enable_heartbeats == 1)
++    {
++        heartbeat(heart, -1); // Beat indicating work start
++    }
+ 
+     /* Encode frames */
+     for( i_frame = 0, i_file = 0; b_ctrl_c == 0 && (i_frame < i_frame_total || i_frame_total == 0); )
+@@ -873,6 +956,11 @@
+ 
+         i_frame++;
+ 
++        if (enable_heartbeats == 1)
++        {
++            heartbeat(heart, i_frame);
++        }
++
+         /* update status line (up to 1000 times per input file) */
+         if( opt->b_progress && i_frame % i_update_interval == 0 )
+         {
+--- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-07-13 10:34:09.076314843 +0200
++++ parsec-2.1/pkgs/kernels/canneal/src/annealer_thread-patched.cpp	2023-06-06 21:22:00.844889509 +0200
+@@ -40,6 +40,10 @@
+ #include <fstream>
+ #include "rng.h"
+ 
++#include <heartbeats/heartbeat.h>
++extern heartbeat_t* heart;
++extern int enable_heartbeats;
++
+ using std::cout;
+ using std::endl;
+ 
+@@ -84,6 +88,10 @@
+ 			} else if (is_good_move == move_decision_rejected){
+ 				//no need to do anything for a rejected move
+ 			}
++
++			if (enable_heartbeats == 1 && temp_steps_completed % 1875 == 0) {
++      	heartbeat(heart, temp_steps_completed);
++			}
+ 		}
+ 		temp_steps_completed++;
+ #ifdef ENABLE_THREADS
+--- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-07-13 10:34:09.084314680 +0200
++++ parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-06-06 21:45:27.212472009 +0200
+@@ -33,6 +33,7 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ #include <vector>
++#include <cstring>
+ 
+ #ifdef ENABLE_THREADS
+ #include <pthread.h>
+@@ -47,12 +48,65 @@
+ #include "netlist.h"
+ #include "rng.h"
+ 
++#include <heartbeats/heartbeat-types.h>
++#include <heartbeats/heartbeat.h>
++
++#define PREFIX "CANNEAL"
++
++heartbeat_t *heart;
++int enable_heartbeats;
++
+ using namespace std;
+ 
+ void* entry_pt(void*);
+ 
+ 
+ 
++static inline void hb_init() {
++  float min_heartrate;
++  float max_heartrate;
++  int window_size;
++  char logfile[512];
++  memset(logfile, 0, sizeof(logfile));
++
++  if (getenv(PREFIX "_MIN_HEART_RATE") == NULL) {
++    min_heartrate = 0.0;
++  } else {
++    min_heartrate = atof(getenv(PREFIX "_MIN_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_MAX_HEART_RATE") == NULL) {
++    max_heartrate = 100.0;
++  } else {
++    max_heartrate = atof(getenv(PREFIX "_MAX_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_WINDOW_SIZE") == NULL) {
++    window_size = 30;
++  } else {
++    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
++  }
++  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
++    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++  }
++
++  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
++         window_size, (logfile[0] == '\0') ? NULL : logfile);
++  heart =
++      heartbeat_init(window_size, 1, (logfile[0] == '\0') ? NULL : logfile,
++                     min_heartrate, max_heartrate);
++  if (heart == NULL) {
++    fprintf(stderr, "Failed to init heartbeat.\n");
++    exit(1);
++  }
++  printf("heartbeat init'd\n");
++}
++
++
++static inline void hb_finish() {
++  heartbeat_finish(heart);
++  printf("heartbeat finished\n");
++}
++
++
+ int main (int argc, char * const argv[]) {
+ #ifdef PARSEC_VERSION
+ #define __PARSEC_STRING(x) #x
+@@ -102,12 +156,24 @@
+         }
+ 
+ 	//now that we've read in the commandline, run the program
++  if (getenv("ENABLE_HEARTBEATS") != NULL) {
++    enable_heartbeats = 1;
++    hb_init();
++  } else {
++    enable_heartbeats = 0;
++  }
++
+ 	netlist my_netlist(filename);
+ 	
+ 	annealer_thread a_thread(&my_netlist,num_threads,swaps_per_temp,start_temp,number_temp_steps);
+ 	
+ #ifdef ENABLE_PARSEC_HOOKS
+ 	__parsec_roi_begin();
++
++  if (enable_heartbeats == 1) {
++    heartbeat(heart, -1); // Beat indicating work start
++  }
++
+ #endif
+ #ifdef ENABLE_THREADS
+ 	std::vector<pthread_t> threads(num_threads);
+@@ -127,6 +193,11 @@
+ 	
+ 	cout << "Final routing is: " << my_netlist.total_routing_cost() << endl;
+ 
++	if (enable_heartbeats == 1) {
++		hb_finish();
++	}
++
++
+ #ifdef ENABLE_PARSEC_HOOKS
+ 	__parsec_bench_end();
+ #endif
+--- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-07-13 10:34:09.089314578 +0200
++++ parsec-2.1/pkgs/kernels/dedup/src/encoder-patched.c	2023-07-13 10:04:54.189952375 +0200
+@@ -23,6 +23,10 @@
+ 
+ #define INITIAL_SIZE 4096
+ 
++#include <heartbeats/heartbeat.h>
++extern heartbeat_t* heart;
++extern int enable_heartbeats;
++
+ extern config * conf;
+ 
+ /*
+@@ -336,6 +340,10 @@
+ 
+     if (chunk.start == NULL) break;
+ 
++    if (enable_heartbeats == 1) {
++      heartbeat(heart, fetch_start);
++    }
++
+     item = sub_ChunkProcess(chunk);
+ 
+     if (item->type == TYPE_COMPRESS) {
+@@ -1161,6 +1169,10 @@
+     pthread_create(&threads_process, NULL, DataProcess, &data_process_args);
+   }
+ 
++  if (enable_heartbeats == 1) {
++    heartbeat(heart, -1); // Beat indicating work start
++  }
++
+   int i;
+ 
+   //Create 3 thread pools for the intermediate pipeline stages
+--- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-07-13 10:34:09.095314456 +0200
++++ parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-06-06 21:45:48.646010121 +0200
+@@ -15,8 +15,62 @@
+ #include <hooks.h>
+ #endif
+ 
++#include <heartbeats/heartbeat-types.h>
++#include <heartbeats/heartbeat.h>
++
++#define PREFIX "DEDUP"
++
++heartbeat_t *heart;
++int enable_heartbeats;
++
+ config * conf;
+ 
++
++static inline void hb_init() {
++  float min_heartrate;
++  float max_heartrate;
++  int window_size;
++  char logfile[512];
++  memset(logfile, 0, sizeof(logfile));
++
++  if (getenv(PREFIX "_MIN_HEART_RATE") == NULL) {
++    min_heartrate = 0.0;
++  } else {
++    min_heartrate = atof(getenv(PREFIX "_MIN_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_MAX_HEART_RATE") == NULL) {
++    max_heartrate = 100.0;
++  } else {
++    max_heartrate = atof(getenv(PREFIX "_MAX_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_WINDOW_SIZE") == NULL) {
++    window_size = 30;
++  } else {
++    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
++  }
++  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
++    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++  }
++
++  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
++         window_size, (logfile[0] == '\0') ? NULL : logfile);
++  heart =
++      heartbeat_init(window_size, 1, (logfile[0] == '\0') ? NULL : logfile,
++                     min_heartrate, max_heartrate);
++  if (heart == NULL) {
++    fprintf(stderr, "Failed to init heartbeat.\n");
++    exit(1);
++  }
++  printf("heartbeat init'd\n");
++}
++
++
++static inline void hb_finish() {
++  heartbeat_finish(heart);
++  printf("heartbeat finished\n");
++}
++
++
+ static int
+ keys_equal_fn ( void *key1, void *key2 ){
+   return (memcmp(((CacheKey*)key1)->sha1name, ((CacheKey*)key2)->sha1name, SHA1_LEN) == 0);
+@@ -127,15 +181,26 @@
+     exit(1);
+   }
+ 
++  if (getenv("ENABLE_HEARTBEATS") != NULL) {
++    enable_heartbeats = 1;
++    hb_init();
++  } else {
++    enable_heartbeats = 0;
++  }
++
+   if (compress) {
+     Encode(conf);
+   } else {
+     Decode(conf);
+   }
+ 
++  if (enable_heartbeats == 1) {
++    hb_finish();
++  }
++
+ #ifdef ENABLE_PARSEC_HOOKS
+   __parsec_bench_end();
+ #endif
+ 
+   return 0;
+-}
+\ No newline at end of file
++}
+--- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2023-07-13 10:34:09.102314313 +0200
++++ parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster-patched.cpp	2023-06-06 21:39:14.665967076 +0200
+@@ -36,6 +36,15 @@
+ #include <hooks.h>
+ #endif
+ 
++#include <heartbeats/heartbeat-types.h>
++#include <heartbeats/heartbeat.h>
++
++#define PREFIX "STREAMCLUSTER"
++
++heartbeat_t *heart;
++int enable_heartbeats;
++
++
+ using namespace std;
+ 
+ #define MAXNAMESIZE 1024 // max filename length
+@@ -86,6 +95,49 @@
+ float dist(Point p1, Point p2, int dim);
+ 
+ 
++static inline void hb_init() {
++  float min_heartrate;
++  float max_heartrate;
++  int window_size;
++  char logfile[512];
++  memset(logfile, 0, sizeof(logfile));
++
++  if (getenv(PREFIX "_MIN_HEART_RATE") == NULL) {
++    min_heartrate = 0.0;
++  } else {
++    min_heartrate = atof(getenv(PREFIX "_MIN_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_MAX_HEART_RATE") == NULL) {
++    max_heartrate = 100.0;
++  } else {
++    max_heartrate = atof(getenv(PREFIX "_MAX_HEART_RATE"));
++  }
++  if (getenv(PREFIX "_WINDOW_SIZE") == NULL) {
++    window_size = 30;
++  } else {
++    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
++  }
++  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
++    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++  }
++
++  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
++         window_size, (logfile[0] == '\0') ? NULL : logfile);
++  heart =
++      heartbeat_init(window_size, 1, (logfile[0] == '\0') ? NULL : logfile,
++                     min_heartrate, max_heartrate);
++  if (heart == NULL) {
++    fprintf(stderr, "Failed to init heartbeat.\n");
++    exit(1);
++  }
++  printf("heartbeat init'd\n");
++}
++
++static inline void hb_finish() {
++  heartbeat_finish(heart);
++  printf("heartbeat finished\n");
++}
++
+ #ifdef TBB_VERSION
+ struct HizReduction {
+ private:
+@@ -1882,6 +1934,10 @@
+     centers.p[i].weight = 1.0;
+   }
+ 
++  if (enable_heartbeats == 1) {
++    heartbeat(heart, -1); // Beat indicating work start
++  }
++
+   long IDoffset = 0;
+   long kfinal;
+   while(1) {
+@@ -1894,6 +1950,10 @@
+       exit(1);
+     }
+ 
++    if (enable_heartbeats == 1) {
++      heartbeat(heart, 0);
++    }
++
+     points.num = numRead;
+     for( int i = 0; i < points.num; i++ ) {
+       points.p[i].weight = 1.0;
+@@ -2022,6 +2082,12 @@
+     stream = new FileStream(infilename);
+   }
+ 
++  if (getenv("ENABLE_HEARTBEATS") != NULL) {
++    enable_heartbeats = 1;
++    hb_init();
++  } else {
++    enable_heartbeats = 0;
++  }
+ 
+ #ifdef ENABLE_PARSEC_HOOKS
+   __parsec_roi_begin();
+@@ -2038,6 +2104,10 @@
+ #ifdef ENABLE_PARSEC_HOOKS
+   __parsec_bench_end();
+ #endif
+-  
++
++  if (enable_heartbeats == 1) {
++    hb_finish();
++  }
++
+   return 0;
+ }

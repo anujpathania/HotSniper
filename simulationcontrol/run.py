@@ -41,14 +41,12 @@ def change_base_configuration(base_configuration):
 def prev_run_cleanup():
     '''Cleanup files potentially left over from aborted previous runs.'''
 
-    hb_results_dir = os.path.join(BENCHMARKS, "parsec/results")
-
     pattern = r"^\d+\.hb.log$" # Heartbeat logs
-    for f in os.listdir(hb_results_dir):
+    for f in os.listdir(BENCHMARKS):
         if not re.match(pattern, f):
             continue
 
-        file_path = os.path.join(hb_results_dir, f)
+        file_path = os.path.join(BENCHMARKS, f)
         if os.path.isfile(file_path):
             os.remove(file_path)
 
@@ -86,10 +84,10 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
             shutil.copyfileobj(f_in, f_out)
 
     pattern = r"^\d+\.hb.log$" # Heartbeat logs
-    for f in os.listdir(os.path.join(BENCHMARKS, "parsec/results")):
+    for f in os.listdir(BENCHMARKS):
         if not re.match(pattern, f):
             continue
-        shutil.move(os.path.join(BENCHMARKS, "parsec/results", f), directory)
+        shutil.copy(os.path.join(BENCHMARKS, f), directory)
 
     create_plots(run)
 
@@ -104,6 +102,7 @@ def run(base_configuration, benchmark, ignore_error=False):
     benchmark_options = []
     if ENABLE_HEARTBEATS == True:
         benchmark_options.append('enable_heartbeats')
+        benchmark_options.append('hb_results_dir=%s' % BENCHMARKS)
     periodicPower = 1000000
     if 'mediumDVFS' in base_configuration:
         periodicPower = 250000
@@ -270,10 +269,10 @@ def multi_program():
     # tasks can be set to arrive at the same time.
 
     input_set = 'simsmall'
-    base_configuration = ['4GHz', "nothermal"] # nothermal because chip floorplan doesn't match 4-core config
+    base_configuration = ['4.0GHz', "nothermal", "maxFreq"] # nothermal because chip floorplan doesn't match 4-core config
     benchmark_set = (
         'parsec-blackscholes',
-        'parsec-blackscholes',
+        'parsec-x264',
     )
 
     if ENABLE_HEARTBEATS == True:
