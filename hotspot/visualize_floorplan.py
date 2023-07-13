@@ -55,11 +55,11 @@ with open(flp_filename, "r") as fp:
 
 
 axs.set_xticks([n for n in np.linspace(0, total_width, 5)])
-axs.set_xticklabels([n*(10**3) for n in np.linspace(0, total_width, 5)])
+axs.set_xticklabels([round(n*(10**3), 3) for n in np.linspace(0, total_width, 5)])
 axs.set_xlabel("Horizontal Position (mm)")
 
 axs.set_yticks([n for n in np.linspace(0, total_length, 5)])
-axs.set_yticklabels([n*(10**3) for n in np.linspace(0, total_length, 5)])
+axs.set_yticklabels([round(n*(10**3), 3) for n in np.linspace(0, total_length, 5)])
 axs.set_ylabel("Vertical Position (mm)")
 
 plt.axis('scaled')
