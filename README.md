@@ -47,6 +47,7 @@ mv pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux pin_kit
 At this stage, the root HotSniper7 directory has a folder named ```pin_kit``` containing the PinPlay-3.2 library and a folder named ```hotspot```containing the HotSpot simulator. Since you now have Docker installed, let's create a ```container``` using the shipped ```Dockerfile```.
 ```sh
 cd docker
+sudo apt install make
 make
 make run
 ```
@@ -79,6 +80,7 @@ cd benchmarks
 export BENCHMARKS_ROOT=$(pwd)
 #compiling the benchmarks
 make
+cd ..
 ```
 
 
