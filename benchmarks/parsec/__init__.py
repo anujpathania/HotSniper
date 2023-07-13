@@ -151,8 +151,11 @@ class Program:
       os.putenv('ENABLE_HEARTBEATS', "true")
       os.system('mkdir -p %s' % hb_enabled_dir)
       os.putenv('HEARTBEAT_ENABLED_DIR', hb_enabled_dir)
-      # TODO - This needs documentation, because when implementing new benchmarks
-      #        the env var set in that bench must be same as what's resolved here 
+
+      # self.program comes from simulationcontrol/run.py::run() its "benchmark"
+      # parameter.
+      # Each PARSEC benchmark program will read its own "*_HB_LOGFILE"
+      # environment variable. I.e. blackscholes reads "BLACKSCHOLES_HB_LOGFILE"
       os.putenv('%s_HB_LOGFILE' % self.program.upper(), hb_results_file)
 
     proc = subprocess.Popen([ '%s/parsec-2.1/bin/parsecmgmt' % HOME,

@@ -1,0 +1,212 @@
+README file for the Application Heartbeats Project (Heartbeats)
+-----------------------------------------------------------------
+
+The contents of this README file are:
+
+  Project Description
+  Getting Started
+  Implementations
+  Directory Organization
+  Documentation for Heartbeats
+  Environment Variables for Heartbeats
+  Shared Memory Implementations
+  Testing Heartbeats
+  Using Power Monitoring
+  Team Members
+
+
+Project Description
+---------------------------------------
+
+The Application Heartbeats framework provides a simple, standardized way for
+applications to monitor their performance and make that information available
+to external observers. The framework allows programmers to express their
+application's goals and the progress that it is making using a simple API.
+This progress can then be observed by either the application itself or an
+external system (such as the OS or another application) so that the application
+or system can be adapted to make sure the goals are met.
+
+The 2.0 version adds support for accuracy and power monitoring. For other
+changes, or if upgrading from a previous release, please see the NEWS file.
+
+Source code available at:
+
+  https://github.com/libheartbeats/heartbeats
+
+Original Heartbeats code, website, and discussion group are at:
+
+  http://code.google.com/p/heartbeats/downloads/list
+  http://groups.csail.mit.edu/carbon/heartbeats/
+  http://groups.google.com/group/heartbeatsapi
+
+
+Getting Started
+---------------------------------------
+
+To build the libraries, run:
+
+$ make
+
+To install the libraries to the local system, run:
+
+$ make install
+
+Headers are installed to /usr/local/include/heartbeats.
+The libraries are installed to /usr/local/lib.
+
+To remove the libraries from the local system, run:
+
+$ make uninstall
+
+
+Implementations
+---------------------------------------
+
+There are three main Heartbeats libraries available to choose from:
+
+  libhb-shared.so
+    Headers: heartbeat.h, heartbeat-types.h
+    Performance monitoring.
+  libhb-acc-shared.so
+    Headers: heartbeat-accuracy.h, heartbeat-accuracy-types.h
+    Performance and accuracy monitoring.
+  libhb-acc-pow-shared.so
+    Headers: heartbeat-accuracy-power.h, heartbeat-accuracy-power-types.h
+    Performance, accuracy, and power monitoring.
+    Uses the hb-energy interface to collect energy readings, which the library
+    converts to power values.
+
+hb-energy implementations:
+
+  libhb-energy-dummy.so
+    A dummy implementation.
+  libhb-energy-msr.so
+    Collects energy readings from an Intel Model-Specific Register (MSR).
+    Requires the "msr" kernel module to be loaded.
+  libhb-energy-odroidxue.so
+    Reads INA-231 power sensors on an ODROID-XU+E development board.
+    Requires the sensors to be enabled.
+  libhb-energy-wattsup.so
+    Reads power from a WattsUp? Pro external power monitor via USB.
+    This library is disabled by default from the build because of its
+    dependency on another library:
+      https://github.com/libwattsup/wattsup
+  libhb-energy.so
+    Contains all implementations, with the hb-energy interface disabled.
+
+For further information, see the Using Power Monitoring section.
+
+
+Directory Organization
+---------------------------------------
+
+/
+|-doc/    -- Documentation
+  |-html  -- Documentation in HTML format
+  |-latex -- Documentation in latex format
+|-inc/    -- Header files
+|-src/    -- Source files
+
+
+Documentation for Heartbeats
+---------------------------------------
+
+The documentation for the Heartbeats framework is created with Doxygen.
+To build the documentation, run:
+
+  doxygen heartbeats_doc
+
+
+Environment Variables for Heartbeats
+---------------------------------------
+
+In the Heartbeats framework, Heartbeat-enabled applications signal
+their presence to the rest of the world by writing a file to a special
+directory.  Currently, this directory is specified by an environment
+variable: HEARTBEAT_ENABLED_DIR.  Before running the tests, users
+should define this variable to point to a directory in which they have
+read and write permissions.
+
+
+Shared Memory Implementations
+---------------------------------------
+
+Heartbeats use shared memory to support inter-process communication.
+However, they do not clean up after themselves - that is the user's
+responsbility.  The following is a simple script to free memory after
+processes complete:
+
+#!/bin/bash
+# Cleanup heartbeats shared memory
+# Connor Imes
+# 2015-01-15
+
+MEMS=`ipcs | grep $USER | awk '{print $2}'`
+for k in $MEMS
+do
+        echo Freeing $k
+        ipcrm -m $k
+done
+
+
+Testing Heartbeats
+---------------------------------------
+
+The latest release of the Heartbeats framework comes with a set of
+available tests that can be used to familiarize yourself with this
+API. You can run one of our two examples, using the following command
+(use it from the root directory of the Heartbeats framework):
+
+  make bench-tp
+
+to use the throughput example, or
+
+  make bench-lat
+
+to use the latency example
+
+
+Using Power Monitoring
+---------------------------------------
+
+The following applies to libhb-acc-pow-shared.
+
+Power/energy readings require hardware resources to provide data to software.
+We therefore introduce the hb-energy interface to allow Heartbeats to access
+this information. Some implementations are included, the most likely of which
+to be used is hb-energy-msr, which polls an Intel Model-Specific Register.
+Of course, users can write their own implementations if they have different
+resources - see the included ones for examples.
+
+If you want to use a single hb-energy implementation (e.g. hb-energy-msr) to
+collect metrics, you can define HB_ENERGY_IMPL in your code in order to use the
+header functions defined in hb-energy.h. Using the interface functions allows
+changing which energy implementation library you use at build time without
+modifying code, only the library you link with. E.g., you can make a call to
+hb_energy_impl_alloc() and pass the pointer returned to
+heartbeat_acc_pow_init() without the code needing to know which implementation
+is active.
+
+If you wish to read energy data from multiple sources, you will need to write
+your own hb-energy implementation that wraps around existing and/or new
+hb-energy implementations which are compiled WITHOUT HB_ENERGY_IMPL, meaning
+you will need to access their functions directly. For example, if you need to
+combine MSR and WattsUp reading, you will implement hb_energy_read_total(), and
+from there make calls to both hb_energy_read_total_msr() and
+hb_energy_read_total_wattsup(). This is easily achieved by linking with
+libhb-energy.so.
+
+
+Team Members
+---------------------------------------
+
+Version 2.x:
+  Connor Imes
+  Henry Hoffmann
+
+Version 1.x:
+  Henry Hoffmann
+  Jonathan Eastep
+  Marco D. Santambrogio
+  Jason E. Miller
+  Anant Agarwal

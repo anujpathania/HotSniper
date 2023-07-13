@@ -17,12 +17,22 @@ function display_help() {
     echo
 }
 
-# Parse command line arguments
 if [[ "$1" == "--help" ]]; then
     display_help
     exit 0
 elif [[ "$1" == "--apply" ]]; then
     apply=1
+fi
+
+####################
+# Check whether script is run from tools directory.
+####################
+base_directory="$(basename "$(pwd)")"
+
+if [[ "$base_directory" != "tools" ]]; then
+  echo "Run this patch script from within its containing directory"
+  display_help
+  exit 1
 fi
 
 ####################

@@ -1,0 +1,23 @@
+Oct 20, 2014
+Released the 2.0 version of the Heartbeats framework.
+- Add implementations for accuracy and power monitoring.
+- Add hb-energy interfaces with implementation examples.
+- Added calculate-idle-power program.
+- Data structures are now an opaque types, but can still be accessed by including -types headers.
+- Added more accessor/utility functions.
+- Libraries are now built as a shared objects
+- Added install/uninstall targets to build
+
+
+Feb 3, 2010
+Released the 1.1 version of the Heartbeats framework
+- Fixed a bug in the makefile to support the shared-memory version of the heartbeats framework
+- Included the possibility to create and delete the documentation using the makefile
+
+
+Feb 2, 2010
+- Released the first version of the Heartbeats framework
+- First version of the documentation created with Doxygen
+- The first release contains two examples on how to use the Heartbeats:
+  lat.c: Latency example
+  tp.c: Throughput example
