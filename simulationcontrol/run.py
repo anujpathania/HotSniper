@@ -269,7 +269,7 @@ def multi_program():
     # tasks can be set to arrive at the same time.
 
     input_set = 'simsmall'
-    base_configuration = ['4.0GHz', "nothermal", "maxFreq"] # nothermal because chip floorplan doesn't match 4-core config
+    base_configuration = ['4.0GHz', "maxFreq"]
     benchmark_set = (
         'parsec-blackscholes',
         'parsec-x264',
@@ -294,9 +294,9 @@ def test_static_power():
 
 
 def main():
-    # example()
+    example()
     #test_static_power()
-    multi_program()
+    # multi_program()
 
 if __name__ == '__main__':
     main()
