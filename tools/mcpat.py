@@ -505,6 +505,8 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
             cfg, "general/output_dir"), "PeriodicThermal.log"), 'a')
 
     # Create the 'Headings' string from this component_list
+    # The order of component_list MUST match the order in which 'Readings'
+    # is constructed below!
     component_list = {
         "FPU", # Floating Point Unit
         "RBB", # Result Broadcast Bus
@@ -533,7 +535,7 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
             for core_num in range(nr_cores)
             for component in component_list]
     if int(cfg['perf_model/cache/levels']) == 3:
-        all_components.append('L3')
+        all_components.insert(0, 'L3') # Need to match order of 'Readings'
     Headings = '\t'.join(all_components)
 
     # gkothar1
@@ -582,6 +584,7 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
                            + getpower(core, 'Renaming Unit')
                            + getpower(core, 'Memory Management Unit')
                            + getpower(core, 'L2'))
+        OtherPower = max(0, OtherPower)  #zero out small negative values
 
         Readings += str(getpower(core, 'Execution Unit/Floating Point Units'))+"\t"
         Readings += str(getpower(core, 'Execution Unit/Results Broadcast Bus'))+"\t"
