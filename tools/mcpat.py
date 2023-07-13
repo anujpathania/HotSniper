@@ -504,36 +504,37 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
         thermalLogFileName = file(os.path.join(sniper_config.get_config(
             cfg, "general/output_dir"), "PeriodicThermal.log"), 'a')
 
-    id = 0
-    Headings = ""
-
-    if sniper_config.get_config_bool(cfg, "periodic_power/l3"):
-        Headings += "L3\t"  # Private L3
-
-    # Enable all subcomponents as standard.
-    for core in power_dat['Core']:
-        Headings += "C_"+str(id)+"_FPU\t" # Floating Point Unit
-        Headings += "C_"+str(id)+"_RBB\t" # Result Broadcast Bus
-        Headings += "C_"+str(id)+"_REN\t" # Renaming Unit
-        Headings += "C_"+str(id)+"_MMU\t" # Memory Management Unit
-        Headings += "C_"+str(id)+"_Other\t" # Memory Management Unit
-        Headings += "C_"+str(id)+"_IW\t" # Instruction Window
-        Headings += "C_"+str(id)+"_FPIW\t" # FP Instruction Window
-        Headings += "C_"+str(id)+"_ROB\t" # Reorder Buffer
-        Headings += "C_"+str(id)+"_IRF\t" # Integer Register Files
-        Headings += "C_"+str(id)+"_FPRF\t" # FP Register Files
-        Headings += "C_"+str(id)+"_CALU\t" # Complex ALU
-        Headings += "C_"+str(id)+"_IALU\t" # Integer ALU
-        Headings += "C_"+str(id)+"_BTB\t" # Branch Target Buffer
-        Headings += "C_"+str(id)+"_BP\t" # Branch Predictor
-        Headings += "C_"+str(id)+"_LQ\t" # Load Queue
-        Headings += "C_"+str(id)+"_SQ\t" # Store Queue
-        Headings += "C_"+str(id)+"_DC\t" # Data Cache
-        Headings += "C_"+str(id)+"_ID\t" # Instruction Decoder
-        Headings += "C_"+str(id)+"_IB\t" # Instruction Buffer
-        Headings += "C_"+str(id)+"_IC\t" # Instruction Cache
-        Headings += "C_"+str(id)+"_L2\t" # Private L2
-        id = id + 1
+    # Create the 'Headings' string from this component_list
+    component_list = {
+        "FPU", # Floating Point Unit
+        "RBB", # Result Broadcast Bus
+        "REN", # Renaming Unit
+        "MMU", # Memory Management Unit
+        "Other", # Total power - (IF + LSU + RU + MMU + L2)
+        "IW", # Instruction Window
+        "FPIW", # FP Instruction Window
+        "ROB", # Reorder Buffer
+        "IRF", # Integer Register Files
+        "FPRF", # FP Register Files
+        "CALU", # Complex ALU
+        "IALU", # Integer ALU
+        "BTB", # Branch Target Buffer
+        "BP", # Branch Predictor
+        "LQ", # Load Queue
+        "SQ", # Store Queue
+        "DC", # Data Cache
+        "ID", # Instruction Decoder
+        "IB", # Instruction Buffer
+        "IC", # Instruction Cache
+        "L2" # Private L2
+    }
+    nr_cores = len(power_dat['Core'])
+    all_components = ["C_{}_".format(core_num) + component
+            for core_num in range(nr_cores)
+            for component in component_list]
+    if int(cfg['perf_model/cache/levels']) == 3:
+        all_components.append('L3')
+    Headings = '\t'.join(all_components)
 
     # gkothar1
     needInitializing = os.stat(
@@ -555,7 +556,7 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
 
     L3Power = sum([getpower(cache) for cache in power_dat.get('L3', [])])
 
-    if sniper_config.get_config_bool(cfg, "periodic_power/l3"):
+    if int(cfg['perf_model/cache/levels']) == 3:
         Readings += str(L3Power)+"\t"  # Private L3
 
     amtCores = len(power_dat['Core'])
