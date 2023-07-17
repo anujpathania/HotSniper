@@ -534,8 +534,9 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
     all_components = ["C_{}_".format(core_num) + component
             for core_num in range(nr_cores)
             for component in component_list]
+
     if int(cfg['perf_model/cache/levels']) == 3:
-        all_components.insert(0, 'L3') # Need to match order of 'Readings'
+        all_components.insert(0, 'L3') # Add to front: to match order of 'Readings'
     Headings = '\t'.join(all_components)
 
     # gkothar1
@@ -554,6 +555,7 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
 
     powerInstantaneousFileName.write(Headings+"\n")
 
+    # The order of the values in 'Reading' MUST match the 'Headings' string created above.
     Readings = ""
 
     L3Power = sum([getpower(cache) for cache in power_dat.get('L3', [])])

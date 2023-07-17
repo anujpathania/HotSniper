@@ -147,24 +147,24 @@ def create_plots(run, force_recreate=False):
     active_cores = get_active_cores(run)
 
     # Create subcore and core level plots
-    # TODO: we assume a logging epoch of 1 ms, better to read
+    # NOTE: we assume a logging epoch of 1 ms, better to read
     # this from log file.
 
-    # For thermals
+    # Thermal plots
     full_name = get_file(run, 'PeriodicThermal.log')
     periodic_plot.plot_periodic_log(full_name, core_level=False,
             no_display=True, y_label='Temperature (C)')
     periodic_plot.plot_periodic_log(full_name, core_level=True,
             atype='max', no_display=True, y_label='Temperature (C)' )
 
-    # For power
+    # Power plots
     full_name = get_file(run, 'PeriodicPower.log')
     periodic_plot.plot_periodic_log(full_name, core_level=False,
             no_display=True, y_label='Power (W)')
     periodic_plot.plot_periodic_log(full_name, core_level=True,
             no_display=True, y_label='Power (W)')
 
-    # For R-values
+    # R-value plots
     if get_config_val_bool(run, 'reliability/enabled'):
         full_name = get_file(run, 'PeriodicRvalue.log')
         periodic_plot.plot_periodic_log(full_name, core_level=False,
@@ -172,15 +172,8 @@ def create_plots(run, force_recreate=False):
         periodic_plot.plot_periodic_log(full_name, core_level=True,
                 atype='min', no_display=True, y_label='R-value')
 
-    # Test reading config file item (TODO: remove)
-    #result = int(get_config_val(run, 'perf_model/cache/levels'))
-    #print("SP: {}".format(result))
-
     plot_trace(run, 'frequency', 'Frequency', 'Frequency (GHz)', lambda: get_freq_traces(run), active_cores, yMin=0, yMax=4.1e9, force_recreate=force_recreate)
-    plot_trace(run, 'temperature', 'Temperature', 'Temperature (C)', lambda: get_temperature_traces(run), active_cores, yMin=45, yMax=100, force_recreate=force_recreate)
-    plot_trace(run, 'rvalues', 'R values', 'Reliability', lambda: get_rvalues_traces(run), active_cores, yMin=0, yMax=1.1, force_recreate=force_recreate, xlabel='time (ms) * acceleration factor')
     plot_trace(run, 'peak_temperature', 'Peak Temperature', 'Temperature (C)', lambda: get_peak_temperature_traces(run), [0], yMin=45, yMax=100, force_recreate=force_recreate)
-    plot_trace(run, 'power', 'Power', 'Power (W)', lambda: get_power_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
     plot_trace(run, 'utilization', 'Utilization', 'Utilization (%)', lambda: get_utilization_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
     plot_trace(run, 'rel_nuca_cpi', 'Rel. NUCA CPI', 'Rel. NUCA CPI', lambda: get_rel_nuca_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
     plot_trace(run, 'cpi', 'CPI', 'CPI', lambda: get_cpi_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
