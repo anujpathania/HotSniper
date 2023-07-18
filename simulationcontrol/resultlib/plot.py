@@ -153,24 +153,24 @@ def create_plots(run, force_recreate=False):
     # Thermal plots
     full_name = get_file(run, 'PeriodicThermal.log')
     periodic_plot.plot_periodic_log(full_name, core_level=False,
-            no_display=True, y_label='Temperature (C)')
+            y_label='Temperature (C)')
     periodic_plot.plot_periodic_log(full_name, core_level=True,
-            atype='max', no_display=True, y_label='Temperature (C)' )
+            atype='max', y_label='Temperature (C)' )
 
     # Power plots
     full_name = get_file(run, 'PeriodicPower.log')
     periodic_plot.plot_periodic_log(full_name, core_level=False,
-            no_display=True, y_label='Power (W)')
+            y_label='Power (W)')
     periodic_plot.plot_periodic_log(full_name, core_level=True,
-            no_display=True, y_label='Power (W)')
+            y_label='Power (W)')
 
     # R-value plots
     if get_config_val_bool(run, 'reliability/enabled'):
         full_name = get_file(run, 'PeriodicRvalue.log')
         periodic_plot.plot_periodic_log(full_name, core_level=False,
-                no_display=True, y_label='R-value')
+                y_label='R-value')
         periodic_plot.plot_periodic_log(full_name, core_level=True,
-                atype='min', no_display=True, y_label='R-value')
+                atype='min', y_label='R-value')
 
     plot_trace(run, 'frequency', 'Frequency', 'Frequency (GHz)', lambda: get_freq_traces(run), active_cores, yMin=0, yMax=4.1e9, force_recreate=force_recreate)
     plot_trace(run, 'peak_temperature', 'Peak Temperature', 'Temperature (C)', lambda: get_peak_temperature_traces(run), [0], yMin=45, yMax=100, force_recreate=force_recreate)

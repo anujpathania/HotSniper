@@ -48,7 +48,7 @@ def get_core_aggregate(df, core_level=False, atype='sum'):
     return dfs
 
 # Read data from file, aggregate subcomponents if needed and plot values.
-def plot_periodic_log(filename, core_level=False, no_display=False,
+def plot_periodic_log(filename, core_level=False, no_display=True,
         atype='sum', x_label='Time (ms)', y_label='Metric'):
     df_all = pd.read_csv(filename, delim_whitespace=True)
     dfs = get_core_aggregate(df_all, core_level, atype)
@@ -58,7 +58,7 @@ def plot_periodic_log(filename, core_level=False, no_display=False,
         do_plot(df, filename, plot_name, no_display, x_label, y_label)
 
 # Plot dataframe 'fd' to display and write plot to file in pdf, png and eps.
-def do_plot(df, filename, plot_name='', no_display=False,
+def do_plot(df, filename, plot_name='', no_display=True,
         x_label='Time (ms)', y_label='Metric'):
     fig, axs = plt.subplots(figsize=(12,12))
     df.plot(ax=axs)
@@ -76,6 +76,7 @@ def do_plot(df, filename, plot_name='', no_display=False,
 
     if no_display == False:
         plt.show()
+    plt.close(fig)
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description="Generic plotting")
