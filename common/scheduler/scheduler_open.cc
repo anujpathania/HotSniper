@@ -310,7 +310,8 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 	} else if (policyName == "fixedPower") {
 		float perCorePowerBudget = Sim()->getCfg()->getFloat("scheduler/open/dvfs/fixed_power/per_core_power_budget");
 		dvfsPolicy = new DVFSFixedPower(performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, perCorePowerBudget);
-	} else if (policyName == "tsp") {
+	} else if (false && policyName == "tsp") {
+        // TSP is not supported on subcomponent simulations.
 		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
 	} //else if (policyName ="XYZ") {... } //Place to instantiate a new DVFS logic. Implementation is put in "policies" package.
 	else {
