@@ -124,7 +124,8 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
   - `inactive_power` must be set to static power consumption at min V/f level
 - [ ] specify floorplan, thermal model and other thermal settings in config
   - `config/base.cfg`: `periodic_thermal`
-  - `tdp` is defined by the floorplan, temperature limits and cooling parameters
+  - `tdp` is defined by the floorplan, temperature limits and cooling parameters.
+- [ ] To get track the wearout of the components enable the reliability modeling in the `reliability` section.
 - [ ] create your scenarios
   - `simulationcontrol/run.py` (e.g., similar to `def example`)
 - [ ] set your output folder for traces
