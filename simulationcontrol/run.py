@@ -91,8 +91,6 @@ def run(base_configuration, benchmark, ignore_error=False):
                 benchmark=benchmark,
                 periodic=periodicPower)
     console_output = ''
-    # SP: To disable run, comment from here
-    print(args)
 
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
     p = subprocess.Popen([run_sniper] + args.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
@@ -102,7 +100,6 @@ def run(base_configuration, benchmark, ignore_error=False):
             console_output += linestr
             print(linestr, end='')
     p.wait()
-    # to here
 
     try:
         cpistack = subprocess.check_output(['python', os.path.join(SNIPER_BASE, 'tools/cpistack.py')], cwd=BENCHMARKS)
@@ -116,7 +113,6 @@ def run(base_configuration, benchmark, ignore_error=False):
 
     save_output(base_configuration, benchmark, console_output, cpistack, started, ended)
 
-    # SP: to disable run, comment next two lines
     if p.returncode != 0:
         raise Exception('return code != 0')
 
@@ -237,10 +233,9 @@ def example():
 
         min_parallelism = get_feasible_parallelisms(benchmark)[0]
         max_parallelism = get_feasible_parallelisms(benchmark)[-1]
-        for freq in (2,):
-            # SP: temporary to run on dual core gainestown
+        for freq in (1, 2):
             #for parallelism in (max_parallelism,):
-            for parallelism in (2,):
+            for parallelism in (3, ):
                 # you can also use try_run instead
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
