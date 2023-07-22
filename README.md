@@ -165,3 +165,5 @@ export PYTHONIOENCODING="UTF-8"
   
   thermallib: https://github.com/ma-rapp/thermallib
 
+  HeartBeats: "Put a link to HeartBeats Framework Here"
+
