@@ -160,8 +160,4 @@ export PYTHONIOENCODING="UTF-8"
   McPat: https://www.hpl.hp.com/research/mcpat/
   
   HotSpot: <http://lava.cs.virginia.edu/HotSpot/>
-  
-  MatEx: http://ces.itec.kit.edu/846.php
-  
-  thermallib: https://github.com/ma-rapp/thermallib
 
