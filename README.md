@@ -1,14 +1,12 @@
 ### Next Release: CoMeT Simulator
 
-CoMeT: CoMeT is next-generation open-source EDA toolchain for integrated core-memory interval thermal simulations of 2D, 2.5, and 3D multi-/many-core processors. CoMeT *subsumes* the code of HotSniper.
+CoMeT: CoMeT is next-generation open-source EDA toolchain for integrated core-memory interval thermal simulations of 2D, 2.5, and 3D multi-/many-core processors. CoMeT (partially) *subsumes* the code of HotSniper.
 
 [Download CoMeT](https://github.com/marg-tools/CoMeT) 
 
 # HotSniper 7
 
 An EDA toolchain for interval thermal simulations of 2D multi-/many-cores in an open system.
-
-Note: If you have a problem, please first browse the closed issues here - https://github.com/anujpathania/HotSniper/issues. If your problem continues to remain unresolved, please feel free to contact us by raising a new issue. Also, please do not forget to close the issue once we have addressed your problem. We prefer not to resolve issues over e-mail.
 
 ## Publication
 
@@ -24,6 +22,11 @@ Details of HotSniper can be found in our ESL 2018 paper, and please consider cit
 
 Please refer to [Hot Sniper User Manual](https://github.com/anujpathania/HotSniper/blob/master/The%20HotSniper%20User%20Manual.pdf) to learn how to write custom scheduling policies that perform thermal-aware Dynamic Voltage Frequency Scaling (DVFS), Task Mapping, and Task Migration.
 
+## Ground Rules
+
+Found a Bug, Report [Here](https://github.com/anujpathania/HotSniper/issues)! Have a Question, Ask [Here](https://github.com/anujpathania/HotSniper/discussions)!
+
+**No Direct Emails.**
 
 ## 1- Requirements
 ### Docker
@@ -44,6 +47,7 @@ mv pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux pin_kit
 At this stage, the root HotSniper7 directory has a folder named ```pin_kit``` containing the PinPlay-3.2 library and a folder named ```hotspot```containing the HotSpot simulator. Since you now have Docker installed, let's create a ```container``` using the shipped ```Dockerfile```.
 ```sh
 cd docker
+sudo apt install make
 make
 make run
 ```
@@ -76,6 +80,7 @@ cd benchmarks
 export BENCHMARKS_ROOT=$(pwd)
 #compiling the benchmarks
 make
+cd ..
 ```
 
 
@@ -132,14 +137,6 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
   - `simulationcontrol/config.py`: `RESULTS_FOLDER`
   - This folder usually is outside of the HotSniper folder because we don't want to commit results (large files) to the simulator repo.
 - [ ] verify all configurations in `sim.cfg` of a finished run
-
-
-## HOWTO
-
-### A- Implement your own mapping / DVFS policy
-These policies are implemented in `common/scheduler/policies`.
-Mapping policies derive from `MappingPolicy`, DVFS policies derive from `DVFSPolicy`.
-After implementing your policy, instantiate it in `SchedulerOpen::initMappingPolicy` / `SchedulerOpen::initDVFSPolicy`.
 
 
 ## Common Errors

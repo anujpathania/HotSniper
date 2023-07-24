@@ -930,7 +930,7 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 		}
 		else if (numberOfTasksWaitingToSchedule () != 0) {
 
-			UInt64 timeJump = 0;
+			SInt64 timeJump = 0;
 
 			UInt64 nextArrivalTime = 0;
 			for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
@@ -946,6 +946,9 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 			}
 
 			timeJump = nextArrivalTime - time.getNS();
+			if (timeJump < 0) {
+                cout << "\n[Scheduler]: Task arrival time in past, moving it forward to the current time with negative arrival time adjustment.\n";
+            }
 			cout << "\n[Scheduler]: Readjusting Arrival Time by " << timeJump << " ns \n"; // This will not effect the result of response time as arrival time of all unscheduled tasks are adjusted relatively.
 
 			for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
