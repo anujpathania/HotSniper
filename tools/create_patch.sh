@@ -1,50 +1,87 @@
 #!/usr/bin/env bash
 
 ###############################################################
-# Script for generating and optionally applying PARSEC patches.
+# Script for generating patches in a standardized way.
 ###############################################################
 
+
 ####################
-# Parse options.
+# Globals
 ####################
-apply=0
+
+search_dir=""
+patch_file=""
+
+####################
+# Helper functions 
+####################
 
 function display_help() {
-    echo "Usage: ./create_patch.sh [OPTIONS]"
+    echo "Usage: ./create_patch.sh [OPTIONS] SEARCH_DIR PATCH_FILE"
+    echo "Description:"
+    echo "  The script recurses into SEARCH_DIR looking for '-stock' and '-patched' infixed files."
+    echo "  A diff between these files is extracted and printed to the PATCH_FILE."
     echo "Options:"
-    echo "  --apply        Apply the generated patch file"
     echo "  --help         Display this help page"
     echo
 }
 
-if [[ "$1" == "--help" ]]; then
+function check_directory() {
+    if [ ! -d "$1" ]; then
+        echo "Provided path '$1' does not exist."
+        display_help
+        exit 1
+    fi
+}
+
+function expand_path() {
+    echo "$(realpath "$1")"
+}
+
+####################
+# Parse options.
+####################
+
+while [[ $# -gt 0 ]]; do
+    key="$1"
+
+    case $key in
+        --help)
+            display_help
+            exit 0
+            ;;
+        *)
+            if [ -z "$search_dir" ]; then
+                search_dir="$(expand_path "$1")"
+                check_directory "$search_dir"
+            elif [ -z "$patch_file" ]; then
+                patch_file="$(expand_path "$1")"
+                check_directory "$(dirname "$1")"
+            else
+                echo "Provided too many arguments"
+                display_help
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+if [ -z "$search_dir" ] || [ -z "$patch_file" ]; then
+    echo "Please provide at least arguments for SEARCH_DIR and PATCH_FILE"
     display_help
-    exit 0
-elif [[ "$1" == "--apply" ]]; then
-    apply=1
+    exit 1
 fi
 
 ####################
-# Check whether script is run from tools directory.
+# Navigate to search directory.
 ####################
-base_directory="$(basename "$(pwd)")"
-
-if [[ "$base_directory" != "tools" ]]; then
-  echo "Run this patch script from within its containing directory"
-  display_help
-  exit 1
-fi
-
-####################
-# Navigate to correct start directory.
-####################
-cd ../benchmarks/parsec
+cd "$search_dir"
 
 ####################
 # Clean target files with stock HotSniper version.
 ####################
 
-# Store the stock file paths in an array
 stockpaths=()
 targetpaths=()
 patchedpaths=()
@@ -73,22 +110,13 @@ done
 # Write diff of patched and cleaned target files
 ####################
 
-rm -f ./patches/heartbeat.patch
+rm -f "$patch_file"
 
 for index in "${!targetpaths[@]}"; do
     targetpath="${targetpaths[$index]#./}"
     patchedpath="${patchedpaths[$index]#./}"
 
-    diff -u "$targetpath" "$patchedpath" >> patches/heartbeat.patch
+    diff -u "$targetpath" "$patchedpath" >> "$patch_file"
 done
-
-
-####################
-# Apply the patch
-####################
-if [[ $apply -eq 1 ]]; then
-    echo "Applying generated patch file"
-    patch -p1 -dparsec-2.1 < patches/heartbeat.patch
-fi
 
 echo "Bye!"
