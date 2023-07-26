@@ -1,0 +1,3 @@
+[submodule "reliability"]
+	path = reliability
+	url = https://github.com/spolstra/hotsniper-reliability.git

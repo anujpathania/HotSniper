@@ -12,6 +12,21 @@ from matplotlib.ticker import MaxNLocator
 import numpy as np
 from resultlib import *
 import seaborn as sns
+import subprocess
+from resultlib import periodic_plot
+
+# Returns the value of 'item' in the 'sim.cfg' file located in the
+# results directory: results/'run'
+# Note: we cannot import sniper_lib.py because it python2 code, so
+# we call sniper_lib.py as an external program.
+def get_config_val(run, item):
+    cfg_file = os.path.join(os.getenv('GRAPHITE_ROOT'), 'results', run)
+    sniper_config_prog = os.path.join(os.getenv('GRAPHITE_ROOT'), 'tools/sniper_lib.py')
+    return subprocess.check_output(["python2", sniper_config_prog, cfg_file, item])
+
+# Return the value of item in results/'run'/sim.cfg as a boolean.
+def get_config_val_bool(run, item):
+    return 'true' in str(get_config_val(run, item)).lower()
 
 
 def smoothen(data, k):
@@ -66,7 +81,7 @@ def get_interval_diffs(data):
     return diffs
 
 
-def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=None, yMax=None, smooth=None, force_recreate=False):
+def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=None, yMax=None, smooth=None, force_recreate=False, xlabel='Time (ms)'):
     filename = os.path.join(find_run(run), '{}.png'.format(name))
 
     if not os.path.exists(filename) or force_recreate:
@@ -119,7 +134,7 @@ def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=Non
 
         plt.title('{} {}'.format(title, run))
         plt.legend()
-        plt.xlabel('Time (ms)')
+        plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.grid()
         plt.grid(which='minor', linestyle=':')
@@ -252,10 +267,34 @@ def create_plots(run, force_recreate=False):
     print('creating plots for {}'.format(run))
     active_cores = get_active_cores(run)
 
+    # Create subcore and core level plots
+    # NOTE: we assume a logging epoch of 1 ms, better to read
+    # this from log file.
+
+    # Thermal plots
+    full_name = get_file(run, 'PeriodicThermal.log')
+    periodic_plot.plot_periodic_log(full_name, core_level=False,
+            y_label='Temperature (C)')
+    periodic_plot.plot_periodic_log(full_name, core_level=True,
+            atype='max', y_label='Temperature (C)' )
+
+    # Power plots
+    full_name = get_file(run, 'PeriodicPower.log')
+    periodic_plot.plot_periodic_log(full_name, core_level=False,
+            y_label='Power (W)')
+    periodic_plot.plot_periodic_log(full_name, core_level=True,
+            y_label='Power (W)')
+
+    # R-value plots
+    if get_config_val_bool(run, 'reliability/enabled'):
+        full_name = get_file(run, 'PeriodicRvalue.log')
+        periodic_plot.plot_periodic_log(full_name, core_level=False,
+                y_label='R-value')
+        periodic_plot.plot_periodic_log(full_name, core_level=True,
+                atype='min', y_label='R-value')
+
     plot_trace(run, 'frequency', 'Frequency', 'Frequency (GHz)', lambda: get_freq_traces(run), active_cores, yMin=0, yMax=4.1e9, force_recreate=force_recreate)
-    plot_trace(run, 'temperature', 'Temperature', 'Temperature (C)', lambda: get_temperature_traces(run), active_cores, yMin=45, yMax=100, force_recreate=force_recreate)
     plot_trace(run, 'peak_temperature', 'Peak Temperature', 'Temperature (C)', lambda: get_peak_temperature_traces(run), [0], yMin=45, yMax=100, force_recreate=force_recreate)
-    plot_trace(run, 'power', 'Power', 'Power (W)', lambda: get_power_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
     plot_trace(run, 'utilization', 'Utilization', 'Utilization (%)', lambda: get_utilization_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
     plot_trace(run, 'rel_nuca_cpi', 'Rel. NUCA CPI', 'Rel. NUCA CPI', lambda: get_rel_nuca_traces(run), active_cores, yMin=0, force_recreate=force_recreate)
     plot_trace(run, 'cpi', 'CPI', 'CPI', lambda: get_cpi_traces(run), active_cores, yMin=0, force_recreate=force_recreate)

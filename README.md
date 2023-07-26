@@ -109,12 +109,10 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
 
 ## Configuration Checklist
 
-- [ ] select technology node
+- [ ] select technology node (22nm or larger)
   - `config/base.cfg`: `power/technology_node`
 - [ ] V/f-levels
   - check `scripts/energystats.py`: `build_dvfs_table` (keep in mind that V/f-levels are specified at 22nm)
-- [ ] power scaling (if technology node < 22nm)
-  - check `tools/mcpat.py`: `scale_power`
 - [ ] select high-level architecture
   - `simulationcontrol/config.py`: `SNIPER_CONFIG` and `NUMBER_CORES`
 - [ ] set architectural parameters
@@ -129,16 +127,10 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
 - [ ] configure static power consumption
   - `config/base.cfg`: `power/*`
   - `inactive_power` must be set to static power consumption at min V/f level
-- [ ] create floorplan (`*.flp`) and corresponding thermal model (`*.bin`)
-  - Option 1: use your own floorplan
-    - use [MatEX] to create the thermal model (`-eigen_out`) from your floorplan
-  - Option 2: use [thermallib] to create a simple regular floorplan (only per-core temperature, no finer granularity) and the corresponding thermal model
-    - core width is `sqrt(core area)` from McPAT area estimations
-    - example: `python3 create_thermal_model.py --amb 45 --crit 80 --core_naming sniper --core_width [core width] model [cores]x[cores]`
-    - NOTE: McPAT area estimations are high, i.e., observed temperatures are too low. Therefore, using a smaller core size should be considered as an option.
 - [ ] specify floorplan, thermal model and other thermal settings in config
   - `config/base.cfg`: `periodic_thermal`
-  - `tdp` is defined by the floorplan, temperature limits and cooling parameters
+  - `tdp` is defined by the floorplan, temperature limits and cooling parameters.
+- [ ] To get track the wearout of the components enable the reliability modeling in the `reliability` section.
 - [ ] create your scenarios
   - `simulationcontrol/run.py` (e.g., similar to `def example`)
 - [ ] set your output folder for traces
@@ -160,10 +152,6 @@ export PYTHONIOENCODING="UTF-8"
   McPat: https://www.hpl.hp.com/research/mcpat/
   
   HotSpot: <http://lava.cs.virginia.edu/HotSpot/>
-  
-  MatEx: http://ces.itec.kit.edu/846.php
-  
-  thermallib: https://github.com/ma-rapp/thermallib
 
   HeartBeats: "Put a link to HeartBeats Framework Here"
 

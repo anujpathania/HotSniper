@@ -14,7 +14,6 @@
 
 #include "policies/dvfsMaxFreq.h"
 #include "policies/dvfsFixedPower.h"
-#include "policies/dvfsTSP.h"
 #include "policies/dvfsTestStaticPower.h"
 #include "policies/mapFirstUnused.h"
 
@@ -150,7 +149,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 
 
 	performanceCounters = new PerformanceCounters(Sim()->getCfg()->getString("general/output_dir").c_str(),
-		"InstantaneousPower.log", "InstantaneousTemperature.log", "InstantaneousCPIStack.log");
+		"InstantaneousPower.log", "InstantaneousTemperature.log", "InstantaneousCPIStack.log", "InstantaneousRvalue.log");
 
 	mappingEpoch = atol (Sim()->getCfg()->getString("scheduler/open/epoch").c_str());
 	queuePolicy = Sim()->getCfg()->getString("scheduler/open/queuePolicy").c_str();
@@ -311,8 +310,7 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
 
 		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
-	} //else if (policyName ="XYZ") {... } //Place to instantiate a new DVFS logic. Implementation is put in "policies" package.
-	else {
+	} else {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
  		exit (1);
 	}
@@ -1300,6 +1298,8 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 
 	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
 		cout << "\n[Scheduler]: DVFS Control Loop invoked at " << formatTime(time) << endl;
+        // SP: Debug: show that rvalues are now accessible to the scheduler
+        // cout << "SP: Core 0 rvalue:" << performanceCounters->getRvalueOfCore(0) << endl;
 
 		executeDVFSPolicy();
 

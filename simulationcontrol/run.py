@@ -79,7 +79,8 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
               'PeriodicThermal.log',
               'PeriodicFrequency.log',
               'PeriodicVdd.log',
-              'PeriodicCPIStack.log',):
+              'PeriodicCPIStack.log',
+              'PeriodicRvalue.log'):
         with open(os.path.join(BENCHMARKS, f), 'rb') as f_in, gzip.open('{}.gz'.format(os.path.join(directory, f)), 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
 
@@ -103,7 +104,10 @@ def run(base_configuration, benchmark, ignore_error=False):
     if ENABLE_HEARTBEATS == True:
         benchmark_options.append('enable_heartbeats')
         benchmark_options.append('hb_results_dir=%s' % BENCHMARKS)
+
+    # NOTE: This determines the logging interval! (see issue in forked repo)
     periodicPower = 1000000
+    #periodicPower = 250000
     if 'mediumDVFS' in base_configuration:
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
@@ -116,7 +120,7 @@ def run(base_configuration, benchmark, ignore_error=False):
                 script=" -s %s" % SCRIPT if SCRIPT else '',
                 benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
     console_output = ''
-    print(args)
+
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
     p = subprocess.Popen([run_sniper] + args.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
     with p.stdout:
@@ -253,12 +257,14 @@ def example():
                       #'splash2-fft',
                       #'splash2-lu.cont',
                       #'splash2-lu.ncont',
-                      #'splash2-radix'
+                      #'splash2-radix',
                       ):
+
         min_parallelism = get_feasible_parallelisms(benchmark)[0]
         max_parallelism = get_feasible_parallelisms(benchmark)[-1]
-        for freq in (1, 4):
-            for parallelism in (max_parallelism,):
+        for freq in (1, 2):
+            #for parallelism in (max_parallelism,):
+            for parallelism in (3, ):
                 # you can also use try_run instead
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 

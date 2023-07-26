@@ -336,3 +336,10 @@ class OutputToLess:
     elif exc_type:
       # Process exception normally
       return False
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        exit(1)
+
+    cfg = get_config(resultsdir=sys.argv[1])
+    print sniper_config.get_config(cfg, sys.argv[2])
