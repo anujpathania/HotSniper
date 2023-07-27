@@ -626,8 +626,11 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
 
         floorplan = os.path.abspath(os.path.join(
             hotspot_dir, sniper_config.get_config(cfg, "periodic_thermal/floorplan")))
+        hotspot_config = os.path.abspath(os.path.join(
+                    hotspot_dir, sniper_config.get_config(cfg,
+                    "periodic_thermal/hotspot_config")))
 
-        hotspot_args = ['-c', os.path.join(hotspot_dir, 'hotspot.config'),
+        hotspot_args = ['-c', hotspot_config,
                         '-f', floorplan,
                         '-sampling_intvl', str(seconds),
                         '-p', os.path.join(sniper_config.get_config(cfg,
