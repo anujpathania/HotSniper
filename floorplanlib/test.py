@@ -88,6 +88,13 @@ def main():
                 '--subcore-template', 'gainestown_core.flp'
             ]
         ),
+        FloorplanTestConfig(
+            name='gainestown_4x4',
+            commandline_args=[
+                '--cores', '4x4', '--corex', '4.31mm', '--corey', '2.08mm',
+                '--subcore-template', 'gainestown_core.flp'
+            ]
+        ),
     ]
 
     EXPECT_TO_FAIL_TESTS = [
