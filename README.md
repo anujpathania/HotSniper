@@ -127,7 +127,7 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
 - [ ] configure static power consumption
   - `config/base.cfg`: `power/*`
   - `inactive_power` must be set to static power consumption at min V/f level
-- [ ] specify the floorplan with the `floorplan` parameter, the corresponding the thermal model with the `hotspot_config` parameter and other thermal settings in config
+- [ ] specify the floorplan with the `floorplan` parameter, the corresponding the thermal model with the `hotspot_config` parameter and other thermal settings in `config`
   - `config/base.cfg`: `periodic_thermal`
   - `tdp` is defined by the floorplan, temperature limits and cooling parameters.
   The `hotspot` directory contains floorplans and corresponding hotspot configurations for a four core, a sixteen core and a sixty-four core gainestown processor.
