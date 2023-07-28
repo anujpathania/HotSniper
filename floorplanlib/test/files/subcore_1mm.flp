@@ -1,0 +1,4 @@
+# Line Format: <unit-name>\t<width>\t<height>\t<left-x>\t<bottom-y>
+ComponentA	0.000500	0.001000	0.000000	0.000000
+ComponentB	0.000500	0.000600	0.000500	0.000000
+ComponentC	0.000500	0.000400	0.000500	0.000600
