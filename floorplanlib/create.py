@@ -325,7 +325,7 @@ class ThermalStack(object):
             s_sink=chip_size + 0.04,
             t_sink=0.0069 if self.has_heatsink else 0.00001,
         )
-        with open(os.path.join(directory, f'{self.name}_hotspot.config'), 'w') as f:
+        with open(os.path.join(directory, f'{self.name}.hotspot_config'), 'w') as f:
             f.write(formatted_content)
 
     def _write_configuration_help(self, directory):
@@ -384,9 +384,10 @@ def main():
             parser.error('subcore-template must be same size as a single core')
 
 #
-    core = ThermalStack('cores')
+    flp_name = os.path.basename(args.out)
+    core = ThermalStack(flp_name)
     for i in range(args.cores[2]):
-        core.add_layer(CoreLayer(cores_2d, args.corex, args.corey, args.core_thickness, name=f'cores_{i+1}', nb_offset=i*cores_per_layer, subcomponent_template=args.subcore_template))
+        core.add_layer(CoreLayer(cores_2d, args.corex, args.corey, args.core_thickness, name=flp_name, nb_offset=i*cores_per_layer, subcomponent_template=args.subcore_template))
     core.write_files(args.out)
 
     with open(os.path.join(args.out, 'commandline.txt'), 'w') as f:
