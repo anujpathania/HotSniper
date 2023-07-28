@@ -82,9 +82,9 @@ def run(test, expect_fail=False):
 def main():
     TESTS = [
         FloorplanTestConfig(
-            name='gainestown_8x8',
+            name='gainestown_2x2',
             commandline_args=[
-                '--cores', '8x8', '--corex', '4.31mm', '--corey', '2.08mm',
+                '--cores', '2x2', '--corex', '4.31mm', '--corey', '2.08mm',
                 '--subcore-template', 'gainestown_core.flp'
             ]
         ),
@@ -92,6 +92,13 @@ def main():
             name='gainestown_4x4',
             commandline_args=[
                 '--cores', '4x4', '--corex', '4.31mm', '--corey', '2.08mm',
+                '--subcore-template', 'gainestown_core.flp'
+            ]
+        ),
+        FloorplanTestConfig(
+            name='gainestown_8x8',
+            commandline_args=[
+                '--cores', '8x8', '--corex', '4.31mm', '--corey', '2.08mm',
                 '--subcore-template', 'gainestown_core.flp'
             ]
         ),
