@@ -132,6 +132,10 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
   - `tdp` is defined by the floorplan, temperature limits and cooling parameters.
   - make sure that the `perf_model/cache/levels` is set to 3 if the floorplan has a L3 cache and it set to 2 if it does not.
   - The `hotspot` directory contains floorplans and corresponding hotspot configurations for a four core, a sixteen core and a sixty-four core gainestown processor.
+- [ ] To create a new floorplan use the `create` script from the `floorplanlib` directory. To create an eight core gainestown floorplan run:
+  - `./create.py --cores 4x4 --subcore-template gainestown_core.flp --out gainestown_4x4`
+  - Copy the generated floorplan `gainestown_4x4.flp` and the hotspot config file `gainestown_4x4.hotspot_config` from the generated `gainestown_4x4` directory to the `hotspot` directory. And then set the configuration parameters `floorplan` and `hotspot_config` in `base.cfg` to point to these new floorplan and hotspot configuration files.
+  - For larger floorplans we recommend changing the `-model_type` to `grid` in the hotspot configuration file to speed the thermals calculation.
 - [ ] To get track the wearout of the components enable the reliability modeling in the `reliability` section.
 - [ ] create your scenarios
   - `simulationcontrol/run.py` (e.g., similar to `def example`)
