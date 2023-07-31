@@ -132,7 +132,7 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
   - `tdp` is defined by the floorplan, temperature limits and cooling parameters.
   - make sure that the `perf_model/cache/levels` is set to 3 if the floorplan has a L3 cache and it set to 2 if it does not.
   - The `hotspot` directory contains floorplans and corresponding hotspot configurations for a four core, a sixteen core and a sixty-four core gainestown processor.
-- [ ] To create a new floorplan use the `create` script from the `floorplanlib` directory. For example to create a sixteen core gainestown floorplan run:
+- [ ] To create a new floorplan use the `create` script from the `floorplanlib` directory. For example to create a sixteen core gainestown floorplan run this command outside the docker environment:
   - `./create.py --cores 4x4 --subcore-template gainestown_core.flp --out gainestown_4x4`
   - Copy the generated floorplan `gainestown_4x4.flp` and the hotspot config file `gainestown_4x4.hotspot_config` from the generated `gainestown_4x4` directory to the `hotspot` directory. And then set the configuration parameters `floorplan` and `hotspot_config` in `base.cfg` to point to these new floorplan and hotspot configuration files.
   - When you change the number of cores you will also need to update the `NUMBER_CORES` as was mentioned above.
