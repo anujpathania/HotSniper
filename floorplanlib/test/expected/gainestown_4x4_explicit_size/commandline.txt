@@ -1,0 +1,2 @@
+# command used to create these files:
+create.py --cores 4x4 --corex 4.31mm --corey 2.08mm --subcore-template gainestown_core.flp --out test/actual/gainestown_4x4_explicit_size

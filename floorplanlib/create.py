@@ -364,8 +364,8 @@ def main():
     required = parser.add_argument_group('required named arguments')
     cores = parser.add_argument_group('cores')
     cores.add_argument("--cores", help="number of cores", type=dimension_extend_to_3d, required=True)
-    cores.add_argument("--corex", help="size of each core (in dimension x)", type=length, required=True)
-    cores.add_argument("--corey", help="size of each core (in dimension y)", type=length, required=True)
+    cores.add_argument("--corex", help="size of each core (in dimension x)", type=length)
+    cores.add_argument("--corey", help="size of each core (in dimension y)", type=length)
     cores.add_argument("--core_thickness", help="thickness of the core silicon layer", type=length, required=False, default='50um')
     cores.add_argument("--subcore-template", help="template for sub-core components", type=floorplan_file, required=False)
     required.add_argument("--out", help="directory in which the floorplan is stored", required=True)
@@ -375,15 +375,15 @@ def main():
     cores_2d = (args.cores[0], args.cores[1])
 
     if args.subcore_template is not None:
-        print("Using subcore-template with width: {}, height: {}".format(
-            args.subcore_template.width,
-            args.subcore_template.height))
         if args.subcore_template.left != Length(0) or args.subcore_template.bottom != Length(0):
             parser.error('subcore-template must be positioned bottom left')
-        if args.subcore_template.width != args.corex or args.subcore_template.height != args.corey:
-            parser.error('subcore-template must be same size as a single core')
 
-#
+        print("Setting corex to {} and corey to {} using subcore-template width and height".format(
+            args.subcore_template.width,
+            args.subcore_template.height))
+        args.corex = args.subcore_template.width
+        args.corey = args.subcore_template.height
+
     flp_name = os.path.basename(args.out)
     core = ThermalStack(flp_name)
     for i in range(args.cores[2]):
