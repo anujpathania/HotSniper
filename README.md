@@ -2,7 +2,7 @@
 
 CoMeT: CoMeT is next-generation open-source EDA toolchain for integrated core-memory interval thermal simulations of 2D, 2.5, and 3D multi-/many-core processors. CoMeT (partially) *subsumes* the code of HotSniper.
 
-[Download CoMeT](https://github.com/marg-tools/CoMeT) 
+[Download CoMeT](https://github.com/marg-tools/CoMeT)
 
 # HotSniper 7
 
@@ -16,7 +16,7 @@ Details of HotSniper can be found in our ESL 2018 paper, and please consider cit
 
 > Pathania, Anuj, and Jörg Henkel. **"HotSniper: Sniper-Based Toolchain for Many-Core Thermal Simulations in Open Systems."** *IEEE Embedded Systems Letters* 11.2 (2018): 54-57.
 
-[IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/8444047) 
+[IEEE Xplore](https://ieeexplore.ieee.org/abstract/document/8444047)
 
 ## The HotSniper User Manual
 
@@ -30,12 +30,12 @@ Found a Bug, Report [Here](https://github.com/anujpathania/HotSniper/issues)! Ha
 
 ## 1- Requirements
 ### Docker
-HotSniper7 compiles and runs inside a Docker container. Therefore, you need to download & install Docker. 
+HotSniper7 compiles and runs inside a Docker container. Therefore, you need to download & install Docker.
 For more info: https://docs.docker.com/engine/install/ubuntu/
 
 After installing Docker, make sure you are able to run it without needing sudo by following instructions here - https://docs.docker.com/engine/install/linux-postinstall/
 
-### PinPlay 
+### PinPlay
 Download and extract Pinplay 3.2 to the root HotSniper7 directory as ```pin_kit```
 ```sh
 wget --user-agent="Mozilla"  https://www.intel.com/content/dam/develop/external/us/en/protected/pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux.tar.gz
@@ -132,6 +132,11 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
   - `tdp` is defined by the floorplan, temperature limits and cooling parameters.
   - make sure that the `perf_model/cache/levels` is set to 3 if the floorplan has a L3 cache and it set to 2 if it does not.
   - The `hotspot` directory contains floorplans and corresponding hotspot configurations for a four core, a sixteen core and a sixty-four core gainestown processor.
+- [ ] To create a new floorplan use the `create` script from the `floorplanlib` directory. For example to create a sixteen core gainestown floorplan run this command outside the docker environment:
+  - `./create.py --cores 4x4 --subcore-template gainestown_core.flp --out gainestown_4x4`
+  - Copy the generated floorplan `gainestown_4x4.flp` and the hotspot config file `gainestown_4x4.hotspot_config` from the generated `gainestown_4x4` directory to the `hotspot` directory. And then set the configuration parameters `floorplan` and `hotspot_config` in `base.cfg` to point to these new floorplan and hotspot configuration files.
+  - When you change the number of cores you will also need to update the `NUMBER_CORES` as was mentioned above.
+  - For larger floorplans we recommend changing the `-model_type` to `grid` in the hotspot configuration file to speed the thermals calculation.
 - [ ] To get track the wearout of the components enable the reliability modeling in the `reliability` section.
 - [ ] create your scenarios
   - `simulationcontrol/run.py` (e.g., similar to `def example`)
@@ -150,8 +155,8 @@ export PYTHONIOENCODING="UTF-8"
 ## Code Acknowledgements
 
   Sniper: <http://snipersim.org>
-  
+
   McPat: https://www.hpl.hp.com/research/mcpat/
-  
+
   HotSpot: <http://lava.cs.virginia.edu/HotSpot/>
 
