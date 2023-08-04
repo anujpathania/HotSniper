@@ -4,7 +4,7 @@ CoMeT: CoMeT is next-generation open-source EDA toolchain for integrated core-me
 
 [Download CoMeT](https://github.com/marg-tools/CoMeT)
 
-# HotSniper 7
+# HotSniper
 
 An EDA toolchain for interval thermal simulations of 2D multi-/many-cores in an open system.
 
@@ -30,41 +30,41 @@ Found a Bug, Report [Here](https://github.com/anujpathania/HotSniper/issues)! Ha
 
 ## 1- Requirements
 ### Docker
-HotSniper7 compiles and runs inside a Docker container. Therefore, you need to download & install Docker.
+HotSniper compiles and runs inside a Docker container. Therefore, you need to download & install Docker.
 For more info: https://docs.docker.com/engine/install/ubuntu/
 
 After installing Docker, make sure you are able to run it without needing sudo by following instructions here - https://docs.docker.com/engine/install/linux-postinstall/
 
 ### PinPlay
-Download and extract Pinplay 3.2 to the root HotSniper7 directory as ```pin_kit```
+Download and extract Pinplay 3.2 to the root HotSniper directory as ```pin_kit```
 ```sh
 wget --user-agent="Mozilla"  https://www.intel.com/content/dam/develop/external/us/en/protected/pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux.tar.gz
 tar xf pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux.tar.gz
 mv pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux pin_kit
 ```
 
-## 2- Compiling HotSniper7
-At this stage, the root HotSniper7 directory has a folder named ```pin_kit``` containing the PinPlay-3.2 library and a folder named ```hotspot```containing the HotSpot simulator. Since you now have Docker installed, let's create a ```container``` using the shipped ```Dockerfile```.
+## 2- Compiling HotSniper
+At this stage, the root HotSniper directory has a folder named ```pin_kit``` containing the PinPlay-3.2 library and a folder named ```hotspot```containing the HotSpot simulator. Since you now have Docker installed, let's create a ```container``` using the shipped ```Dockerfile```.
 ```sh
 cd docker
 sudo apt install make
 make
 make run
 ```
-Now that we are inside our container, we can build HotSniper 7 and its requirements:
+Now that we are inside our container, we can build HotSniper and its requirements:
 ```sh
 cd ..
 ```
 
 ### HotSpot
-The [HotSpot] simulator is shipped with HotSniper7. All you need to do is to compile it:
+The [HotSpot] simulator is shipped with HotSniper. All you need to do is to compile it:
 ```sh
 cd hotspot
 make
 cd ..
 ```
 
-### HotSniper 7
+### HotSniper
 ```sh
 make
 ```
@@ -73,7 +73,7 @@ make
 
 Run inside container:
 ```sh
-#setting $GRAPHITE_ROOT to HotSniper7's root directory
+#setting $GRAPHITE_ROOT to HotSniper's root directory
 export GRAPHITE_ROOT=$(pwd)
 cd benchmarks
 #setting $BENCHMARKS_ROOT to the benchmarks directory
@@ -85,7 +85,7 @@ cd ..
 
 
 ## 4- Running the Simulations
-HotSniper7 is shipped with a ```simulationcontrol``` script that you can use to run batch simulations.
+HotSniper is shipped with a ```simulationcontrol``` script that you can use to run batch simulations.
 Run inside container:
 ```sh
 cd simulationcontrol
