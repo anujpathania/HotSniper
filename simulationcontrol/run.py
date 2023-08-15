@@ -10,7 +10,7 @@ import subprocess
 import traceback
 import sys
 
-from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG
+from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPT, ENABLE_HEARTBEATS
 from resultlib.plot import create_plots
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +36,19 @@ def change_base_configuration(base_configuration):
                     line = '#' + line
             f.write(line)
             f.write('\n')
+
+
+def prev_run_cleanup():
+    '''Cleanup files potentially left over from aborted previous runs.'''
+
+    pattern = r"^\d+\.hb.log$" # Heartbeat logs
+    for f in os.listdir(BENCHMARKS):
+        if not re.match(pattern, f):
+            continue
+
+        file_path = os.path.join(BENCHMARKS, f)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
 
 
 def save_output(base_configuration, benchmark, console_output, cpistack, started, ended):
@@ -70,6 +83,13 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
               'PeriodicRvalue.log'):
         with open(os.path.join(BENCHMARKS, f), 'rb') as f_in, gzip.open('{}.gz'.format(os.path.join(directory, f)), 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
+
+    pattern = r"^\d+\.hb.log$" # Heartbeat logs
+    for f in os.listdir(BENCHMARKS):
+        if not re.match(pattern, f):
+            continue
+        shutil.copy(os.path.join(BENCHMARKS, f), directory)
+
     create_plots(run)
 
 
@@ -78,18 +98,27 @@ def run(base_configuration, benchmark, ignore_error=False):
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
 
+    prev_run_cleanup()
+
+    benchmark_options = []
+    if ENABLE_HEARTBEATS == True:
+        benchmark_options.append('enable_heartbeats')
+        benchmark_options.append('hb_results_dir=%s' % BENCHMARKS)
+
     # NOTE: This determines the logging interval! (see issue in forked repo)
     periodicPower = 1000000
     #periodicPower = 250000
     if 'mediumDVFS' in base_configuration:
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
-        periodicPower = 100000
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}' \
+        periodicPower = 100000    
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
-                periodic=periodicPower)
+                periodic=periodicPower,
+                script=" -s %s" % SCRIPT if SCRIPT else '',
+                benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
     console_output = ''
 
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
@@ -240,6 +269,32 @@ def example():
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
 
+def multi_program():
+    # In this example, two instances of blackscholes will be scheduled.
+    # By setting the scheduler/open/arrivalRate base.cfg parameter to 2, the
+    # tasks can be set to arrive at the same time.
+
+    input_set = 'simsmall'
+    base_configuration = ['4.0GHz', "maxFreq"]
+    benchmark_set = (
+        'parsec-blackscholes',
+        'parsec-x264',
+    )
+
+    if ENABLE_HEARTBEATS == True:
+        base_configuration.append('hb_enabled')
+
+    benchmarks = ''
+    for i, benchmark in enumerate(benchmark_set):
+        min_parallelism = get_feasible_parallelisms(benchmark)[0]
+        if i != 0:
+            benchmarks = benchmarks + ',' + get_instance(benchmark, min_parallelism, input_set)
+        else:
+            benchmarks = benchmarks + get_instance(benchmark, min_parallelism, input_set)
+
+    run(base_configuration, benchmarks)
+
+    
 def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
@@ -247,7 +302,7 @@ def test_static_power():
 def main():
     example()
     #test_static_power()
-
+    # multi_program()
 
 if __name__ == '__main__':
     main()

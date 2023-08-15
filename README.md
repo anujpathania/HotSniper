@@ -160,3 +160,5 @@ export PYTHONIOENCODING="UTF-8"
 
   HotSpot: <http://lava.cs.virginia.edu/HotSpot/>
 
+  HeartBeats: "https://github.com/libheartbeats/heartbeats"
+

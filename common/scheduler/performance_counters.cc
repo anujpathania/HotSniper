@@ -250,3 +250,41 @@ double PerformanceCounters::getRvalueOfCore (int coreId) const {
 
     return *std::min_element(r_values.begin(), r_values.end());
 }
+
+int PerformanceCounters::getLastBeat(int appId) const {
+	std::string target = std::to_string(appId) + ".hb.log";
+	std::ifstream appIdHbLogfile(target);
+	if (!appIdHbLogfile.is_open()) {
+		std::cerr << "[PerformanceCounters] Could not open hb logfile " << target << endl;
+		return -1;
+	}
+
+	std::string header;
+	std::getline(appIdHbLogfile, header);
+
+	std::string line;
+	std::string footer;
+	while (std::getline(appIdHbLogfile, line)) {
+		footer = line;
+	}
+
+	if (footer == "") {
+		return 0; // No heartbeat data logged yet.
+	}
+
+	std::istringstream issHeader(header);
+	std::istringstream issFooter(footer);
+	std::string token;
+	while (std::getline(issHeader, token, '\t')) {
+		std::string value;
+		std::getline(issFooter, value, '\t');
+
+		if (token == "Timestamp") {
+			return std::stoi(value);
+		}
+	}
+
+	std::cerr << "[PerformanceCounters] Could not find timestamp column in hb file " << target << endl;
+
+  return -1;
+}

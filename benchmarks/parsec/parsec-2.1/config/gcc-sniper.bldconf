@@ -4,6 +4,7 @@
 
 source ${PARSECDIR}/config/gcc-hooks.bldconf
 source ${PARSECDIR}/../../tools/hooks/buildconf.sh
+source ${PARSECDIR}/config/gcc-hb.bldconf
 
 CC="${HOOKS_CC}"
 CXX="${HOOKS_CXX}"
@@ -11,3 +12,4 @@ CFLAGS="${CFLAGS} ${HOOKS_CFLAGS} -DENABLE_PARMACS"
 CXXFLAGS="${CXXFLAGS} ${HOOKS_CXXFLAGS}"
 LDFLAGS="${LDFLAGS} ${HOOKS_LDFLAGS}"
 LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${HOOKS_LD_LIBRARY_PATH}"
+LIBS="${LIBS} ${HB_LIBS}"

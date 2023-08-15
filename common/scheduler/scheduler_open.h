@@ -73,7 +73,6 @@ class SchedulerOpen : public SchedulerPinnedBase {
 
 		int setAffinity (thread_id_t thread_id);
 		bool schedule (int taskID, bool isInitialCall, SubsecondTime time);
-		
 };
 
 #endif // __SCHEDULER_OPEN_H

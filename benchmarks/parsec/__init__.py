@@ -36,7 +36,7 @@ def log2(n):
 
 class Program:
 
-  def __init__(self, program, nthreads, inputsize, benchmark_options = []):
+  def __init__(self, program, nthreads, inputsize, benchmark_options = [], app_id = -1):
     if program not in allbenchmarks():
       raise ValueError("Invalid benchmark %s" % program)
     if inputsize not in allinputs():
@@ -48,6 +48,7 @@ class Program:
     self.nthreads = int(nthreads)
     self.nthreads_force = 'force_nthreads' in benchmark_options
     self.inputsize = inputsize
+    self.enable_heartbeats = 'enable_heartbeats' in benchmark_options
     if program in ('freqmine',):
       self.openmp = True
     else:
@@ -59,6 +60,12 @@ class Program:
         else:
           corelist = ','.join(map(str, range(nthreads)))
         os.environ['PARMACS_PINTHREADS'] = corelist
+      elif self.enable_heartbeats and option.startswith("hb_results_dir"):
+        if '=' in option:
+          self.hb_results_dir = option.split('=')[1]
+          if not os.path.isdir(self.hb_results_dir):
+            raise FileNotFoundError("The heartbeat results directory %s does not exist.", self.hb_results_dirs)
+
     # do the tests in self.nthreads, and fail early if we're called with an unsupported (program, nthreads, inputsize) combination
     nthreads = self.get_nthreads()
     # Check other constraints
@@ -70,7 +77,7 @@ class Program:
       # nthreads must be power of two, one master thread will be added
       if nthreads != 1 << log2(nthreads):
         raise ValueError("Benchmark %s: number of threads must be power of two" % self.program)
-
+    self.app_id = app_id
 
 
   def get_nthreads(self):
@@ -132,6 +139,25 @@ class Program:
 
     if self.openmp:
       os.putenv('OMP_NUM_THREADS', str(self.get_nthreads()))
+
+    if self.enable_heartbeats:
+      if self.app_id < 0:
+        print 'heartbeat enabled parsec run requires app_id to be set'
+        sys.exit(-1)
+
+      hb_enabled_dir = '%(rundir)s/heartbeat' % locals()
+      hb_results_file = '%s/%d.hb.log' % (self.hb_results_dir, self.app_id)
+
+      os.putenv('ENABLE_HEARTBEATS', "true")
+      os.system('mkdir -p %s' % hb_enabled_dir)
+      os.putenv('HEARTBEAT_ENABLED_DIR', hb_enabled_dir)
+
+      # self.program comes from simulationcontrol/run.py::run() its "benchmark"
+      # parameter.
+      # Each PARSEC benchmark program will read its own "*_HB_LOGFILE"
+      # environment variable. I.e. blackscholes reads "BLACKSCHOLES_HB_LOGFILE"
+      os.putenv('%s_HB_LOGFILE' % self.program.upper(), hb_results_file)
+
     proc = subprocess.Popen([ '%s/parsec-2.1/bin/parsecmgmt' % HOME,
                          '-a', 'run', '-p', self.program, '-c', PLATFORM, '-i', self.inputsize, '-n', str(self.get_nthreads()),
                          '-s', graphitecmd, '-d', rundir
