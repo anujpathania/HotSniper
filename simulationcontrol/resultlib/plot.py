@@ -238,6 +238,8 @@ def plot_hb_histogram(run, force_recreate=False):
         timestamps = [int(x) for x in timestamps]
         interval_diffs = get_interval_diffs(timestamps)
 
+        int_diff_mean = np.mean(interval_diffs)
+
         # Freedman-Diaconis rule
         q1, q3 = np.percentile(interval_diffs, [25, 75])
         iqr = q3 - q1
@@ -258,6 +260,7 @@ def plot_hb_histogram(run, force_recreate=False):
         ax = plt.gca()
         ax.xaxis.set_major_locator(MaxNLocator(bin_count))
         ax.ticklabel_format(useOffset=False, style="scientific")
+        ax.axvline(int_diff_mean, color='red', linestyle='dashed', linewidth=1, label='Mean')
 
         plt.savefig(plot_file, bbox_inches="tight")
         plt.close()
