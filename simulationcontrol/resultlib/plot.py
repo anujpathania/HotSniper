@@ -253,8 +253,8 @@ def plot_hb_histogram(run, force_recreate=False):
         plt.hist(interval_diffs[1:] if work_start_indicator else interval_diffs, bins=bin_count, color="blue", edgecolor="black")
 
         plt.title('Heartbeat interval difference histogram for app id {} - {}'.format(logfile.strip(".hb.log"), run))
-        plt.xlabel("Values")
-        plt.ylabel("Interval difference")
+        plt.xlabel("Interval difference (ns)")
+        plt.ylabel("Frequency")
         plt.xticks(rotation=45, ha="right")
 
         ax = plt.gca()

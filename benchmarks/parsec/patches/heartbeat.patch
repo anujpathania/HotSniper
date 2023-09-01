@@ -1,5 +1,5 @@
---- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-07-17 21:44:06.575081486 +0200
-+++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-07-13 10:05:24.197342334 +0200
+--- parsec-2.1/pkgs/apps/blackscholes/src/blackscholes.c	2023-08-31 10:23:42.102531746 +0200
++++ parsec-2.1/pkgs/apps/blackscholes/src/blackscholes-patched.c	2023-08-28 18:20:29.871020565 +0200
 @@ -11,6 +11,7 @@
  #include <stdlib.h>
  #include <math.h>
@@ -23,7 +23,7 @@
  typedef struct OptionData_ {
          fptype s;          // spot price
          fptype strike;     // strike price
-@@ -69,6 +78,49 @@
+@@ -69,6 +78,50 @@
  int numError = 0;
  int nThreads;
  
@@ -50,7 +50,8 @@
 +    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
 +  }
 +  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
-+    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++    strncpy(logfile, getenv(PREFIX "_HB_LOGFILE"), sizeof(logfile) - 1);
++    logfile[sizeof(logfile) - 1] = '\0';
 +  }
 +
 +  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
@@ -73,7 +74,7 @@
  ////////////////////////////////////////////////////////////////////////////////
  ////////////////////////////////////////////////////////////////////////////////
  ///////////////////////////////////////////////////////////////////////////////
-@@ -231,6 +283,11 @@
+@@ -231,6 +284,11 @@
      int end = start + (numOptions / nThreads);
  
      for (j=0; j<NUM_RUNS; j++) {
@@ -85,7 +86,7 @@
  #ifdef ENABLE_OPENMP
  #pragma omp parallel for private(i, price, priceDelta)
          for (i=0; i<numOptions; i++) {
-@@ -268,6 +325,13 @@
+@@ -268,6 +326,13 @@
      int * buffer2;
      int rv;
  
@@ -99,7 +100,7 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -365,6 +429,11 @@
+@@ -365,6 +430,11 @@
  #ifdef ENABLE_PARSEC_HOOKS
      __parsec_roi_begin();
  #endif
@@ -111,7 +112,7 @@
  #ifdef ENABLE_THREADS
      int tids[nThreads];
      for(i=0; i<nThreads; i++) {
-@@ -438,6 +507,10 @@
+@@ -438,6 +508,10 @@
      __parsec_bench_end();
  #endif
  
@@ -122,9 +123,9 @@
      return 0;
  }
  
---- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-07-17 21:44:06.582081341 +0200
-+++ parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-06-06 21:41:44.107387068 +0200
-@@ -65,8 +65,72 @@
+--- parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main.cpp	2023-08-31 10:23:42.110531573 +0200
++++ parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/main-patched.cpp	2023-08-31 10:19:00.083636099 +0200
+@@ -65,8 +65,73 @@
  #include "TrackingModel.h"
  #include "system.h"
  
@@ -172,7 +173,8 @@
 +	}
 +	if (getenv(PREFIX "_HB_LOGFILE") != NULL)
 +	{
-+		strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++		strncpy(logfile, getenv(PREFIX "_HB_LOGFILE"), sizeof(logfile) - 1);
++    logfile[sizeof(logfile) - 1] = '\0';
 +	}
 +
 +	printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
@@ -197,7 +199,7 @@
  //templated conversion from string
  template<class T>
  bool num(const string s, T &n)
-@@ -188,8 +252,19 @@
+@@ -188,8 +253,19 @@
  #if defined(ENABLE_PARSEC_HOOKS)
          __parsec_roi_begin();
  #endif
@@ -218,7 +220,7 @@
  		if(!pf.Update((float)i))														//Run particle filter step
  		{	cout << "Error loading observation data" << endl;
  			return 0;
-@@ -250,7 +325,13 @@
+@@ -250,7 +326,13 @@
          __parsec_roi_begin();
  #endif
  	for(int i = 0; i < frames; i++)														//process each set of frames
@@ -233,7 +235,7 @@
  		if(!pf.Update((float)i))														//Run particle filter step
  		{	cout << "Error loading observation data" << endl;
  			workers.JoinAll();
-@@ -347,7 +428,13 @@
+@@ -347,7 +429,13 @@
          __parsec_roi_begin();
  #endif
  	for(int i = 0; i < frames; i++)														//process each set of frames
@@ -248,7 +250,7 @@
  		if(!pf.Update((float)i))														//Run particle filter step
  		{	cout << "Error loading observation data" << endl;
  			return 0;
-@@ -370,6 +457,16 @@
+@@ -370,6 +458,16 @@
  	bool OutputBMP;
  	int cameras, frames, particles, layers, threads, threadModel;								//process command line parameters to get path, cameras, and frames
  
@@ -265,7 +267,7 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -448,6 +545,11 @@
+@@ -448,6 +546,11 @@
  			break;
  	}
  
@@ -277,9 +279,9 @@
  #if defined(ENABLE_PARSEC_HOOKS)
          __parsec_bench_end();
  #endif
---- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-07-17 21:44:06.590081174 +0200
-+++ parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-06-06 21:41:59.842010131 +0200
-@@ -13,10 +13,61 @@
+--- parsec-2.1/pkgs/apps/fluidanimate/src/pthreads.cpp	2023-08-31 10:23:42.118531399 +0200
++++ parsec-2.1/pkgs/apps/fluidanimate/src/pthreads-patched.cpp	2023-08-31 10:23:02.181395846 +0200
+@@ -13,10 +13,62 @@
  
  #include "parsec_barrier.hpp"
  
@@ -318,7 +320,8 @@
 +    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
 +  }
 +  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
-+    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++    strncpy(logfile, getenv(PREFIX "_HB_LOGFILE"), sizeof(logfile) - 1);
++    logfile[sizeof(logfile) - 1] = '\0';
 +  }
 +
 +  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
@@ -341,7 +344,7 @@
  static inline int isLittleEndian() {
    union {
      uint16_t word;
-@@ -805,8 +856,12 @@
+@@ -805,8 +857,12 @@
  {
  	thread_args *targs = (thread_args *)args;
  
@@ -355,7 +358,7 @@
  
  	return NULL;
  }
-@@ -845,12 +900,24 @@
+@@ -845,12 +901,24 @@
  		return -1;
  	}
  
@@ -380,7 +383,7 @@
  	for(int i = 0; i < threadnum; ++i) {
  		targs[i].tid = i;
  		targs[i].frames = framenum;
-@@ -869,6 +936,10 @@
+@@ -869,6 +937,10 @@
  
  	CleanUpSim();
  
@@ -391,8 +394,8 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
---- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-07-17 21:44:06.598081008 +0200
-+++ parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-06-06 21:41:53.552160810 +0200
+--- parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities.cpp	2023-08-31 10:23:42.125531248 +0200
++++ parsec-2.1/pkgs/apps/swaptions/src/HJM_Securities-patched.cpp	2023-08-31 10:18:28.918310679 +0200
 @@ -33,6 +33,14 @@
  #include <hooks.h>
  #endif
@@ -408,7 +411,7 @@
  int NUM_TRIALS = DEFAULT_NUM_TRIALS;
  int nThreads = 1;
  int nSwaptions = 1;
-@@ -46,6 +54,48 @@
+@@ -46,6 +54,49 @@
  FTYPE *dSumSquareSimSwaptionPrice_global_ptr;
  int chunksize;
  
@@ -435,7 +438,8 @@
 +    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
 +  }
 +  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
-+    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++    strncpy(logfile, getenv(PREFIX "_HB_LOGFILE"), sizeof(logfile) - 1);
++    logfile[sizeof(logfile) - 1] = '\0';
 +  }
 +
 +  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
@@ -457,7 +461,7 @@
  
  #ifdef TBB_VERSION
  struct Worker {
-@@ -87,6 +137,10 @@
+@@ -87,6 +138,10 @@
      end = nSwaptions;
  
    for(int i=beg; i < end; i++) {
@@ -468,7 +472,7 @@
       int iSuccess = HJM_Swaption_Blocking(pdSwaptionPrice,  swaptions[i].dStrike, 
                                         swaptions[i].dCompounding, swaptions[i].dMaturity, 
                                         swaptions[i].dTenor, swaptions[i].dPaymentInterval,
-@@ -181,6 +235,13 @@
+@@ -181,6 +236,13 @@
  	}
  #endif //ENABLE_THREADS
  
@@ -482,7 +486,7 @@
          // initialize input dataset
  	factors = dmatrix(0, iFactors-1, 0, iN-2);
  	//the three rows store vol data for the three factors
-@@ -255,6 +316,10 @@
+@@ -255,6 +317,10 @@
  	__parsec_roi_begin();
  #endif
  
@@ -493,7 +497,7 @@
  #ifdef ENABLE_THREADS
  
  #ifdef TBB_VERSION
-@@ -302,6 +367,10 @@
+@@ -302,6 +368,10 @@
          free(swaptions);
  #endif // TBB_VERSION
  
@@ -504,8 +508,8 @@
  	//***********************************************************
  
  #ifdef ENABLE_PARSEC_HOOKS
---- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-07-17 21:44:06.603080904 +0200
-+++ parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-06-06 21:45:08.441876512 +0200
+--- parsec-2.1/pkgs/apps/x264/src/x264.c	2023-08-31 10:23:42.134531053 +0200
++++ parsec-2.1/pkgs/apps/x264/src/x264-patched.c	2023-08-31 10:17:52.436100343 +0200
 @@ -47,6 +47,14 @@
  #include <hooks.h>
  #endif
@@ -521,7 +525,7 @@
  uint8_t *mux_buffer = NULL;
  int mux_buffer_size = 0;
  
-@@ -85,6 +93,61 @@
+@@ -85,6 +93,62 @@
  static int  Parse( int argc, char **argv, x264_param_t *param, cli_opt_t *opt );
  static int  Encode( x264_param_t *param, cli_opt_t *opt );
  
@@ -559,7 +563,8 @@
 +    }
 +    if (getenv(PREFIX "_HB_LOGFILE") != NULL)
 +    {
-+        strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++        strncpy(logfile, getenv(PREFIX "_HB_LOGFILE"), sizeof(logfile) - 1);
++        logfile[sizeof(logfile) - 1] = '\0';
 +    }
 +
 +    printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
@@ -583,7 +588,7 @@
  
  /****************************************************************************
   * main:
-@@ -95,6 +158,16 @@
+@@ -95,6 +159,16 @@
      cli_opt_t opt;
      int ret;
  
@@ -600,7 +605,7 @@
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
  #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
-@@ -138,6 +211,11 @@
+@@ -138,6 +212,11 @@
      __parsec_bench_end();
  #endif
  
@@ -612,7 +617,7 @@
      return ret;
  }
  
-@@ -851,6 +929,11 @@
+@@ -851,6 +930,11 @@
  #ifdef ENABLE_PARSEC_HOOKS
      __parsec_roi_begin();
  #endif
@@ -624,7 +629,7 @@
  
      /* Encode frames */
      for( i_frame = 0, i_file = 0; b_ctrl_c == 0 && (i_frame < i_frame_total || i_frame_total == 0); )
-@@ -873,6 +956,11 @@
+@@ -873,6 +957,11 @@
  
          i_frame++;
  
@@ -636,7 +641,7 @@
          /* update status line (up to 1000 times per input file) */
          if( opt->b_progress && i_frame % i_update_interval == 0 )
          {
---- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-07-17 21:44:06.608080800 +0200
+--- parsec-2.1/pkgs/kernels/canneal/src/annealer_thread.cpp	2023-08-31 10:23:42.140530923 +0200
 +++ parsec-2.1/pkgs/kernels/canneal/src/annealer_thread-patched.cpp	2023-06-06 21:22:00.844889509 +0200
 @@ -40,6 +40,10 @@
  #include <fstream>
@@ -660,8 +665,8 @@
  		}
  		temp_steps_completed++;
  #ifdef ENABLE_THREADS
---- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-07-17 21:44:06.613080696 +0200
-+++ parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-06-06 21:45:27.212472009 +0200
+--- parsec-2.1/pkgs/kernels/canneal/src/main.cpp	2023-08-31 10:23:42.145530815 +0200
++++ parsec-2.1/pkgs/kernels/canneal/src/main-patched.cpp	2023-08-31 10:18:44.031983541 +0200
 @@ -33,6 +33,7 @@
  #include <stdlib.h>
  #include <unistd.h>
@@ -670,7 +675,7 @@
  
  #ifdef ENABLE_THREADS
  #include <pthread.h>
-@@ -47,12 +48,65 @@
+@@ -47,12 +48,66 @@
  #include "netlist.h"
  #include "rng.h"
  
@@ -711,7 +716,8 @@
 +    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
 +  }
 +  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
-+    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++    strncpy(logfile, getenv(PREFIX "_HB_LOGFILE"), sizeof(logfile) - 1);
++    logfile[sizeof(logfile) - 1] = '\0';
 +  }
 +
 +  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
@@ -736,7 +742,7 @@
  int main (int argc, char * const argv[]) {
  #ifdef PARSEC_VERSION
  #define __PARSEC_STRING(x) #x
-@@ -102,12 +156,24 @@
+@@ -102,12 +157,24 @@
          }
  
  	//now that we've read in the commandline, run the program
@@ -761,7 +767,7 @@
  #endif
  #ifdef ENABLE_THREADS
  	std::vector<pthread_t> threads(num_threads);
-@@ -127,6 +193,11 @@
+@@ -127,6 +194,11 @@
  	
  	cout << "Final routing is: " << my_netlist.total_routing_cost() << endl;
  
@@ -773,7 +779,7 @@
  #ifdef ENABLE_PARSEC_HOOKS
  	__parsec_bench_end();
  #endif
---- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-07-17 21:44:06.619080571 +0200
+--- parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2023-08-31 10:23:42.151530685 +0200
 +++ parsec-2.1/pkgs/kernels/dedup/src/encoder-patched.c	2023-07-13 10:04:54.189952375 +0200
 @@ -23,6 +23,10 @@
  
@@ -808,9 +814,9 @@
    int i;
  
    //Create 3 thread pools for the intermediate pipeline stages
---- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-07-17 21:44:06.623080488 +0200
-+++ parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-06-06 21:45:48.646010121 +0200
-@@ -15,8 +15,62 @@
+--- parsec-2.1/pkgs/kernels/dedup/src/dedup.c	2023-08-31 10:23:42.158530534 +0200
++++ parsec-2.1/pkgs/kernels/dedup/src/dedup-patched.c	2023-08-31 10:17:22.417750096 +0200
+@@ -15,8 +15,63 @@
  #include <hooks.h>
  #endif
  
@@ -848,7 +854,8 @@
 +    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
 +  }
 +  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
-+    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++    strncpy(logfile, getenv(PREFIX "_HB_LOGFILE"), sizeof(logfile) - 1);
++    logfile[sizeof(logfile) - 1] = '\0';
 +  }
 +
 +  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
@@ -873,7 +880,7 @@
  static int
  keys_equal_fn ( void *key1, void *key2 ){
    return (memcmp(((CacheKey*)key1)->sha1name, ((CacheKey*)key2)->sha1name, SHA1_LEN) == 0);
-@@ -127,12 +181,23 @@
+@@ -127,12 +182,23 @@
      exit(1);
    }
  
@@ -897,8 +904,8 @@
  #ifdef ENABLE_PARSEC_HOOKS
    __parsec_bench_end();
  #endif
---- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2023-07-17 21:44:06.627080405 +0200
-+++ parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster-patched.cpp	2023-06-06 21:39:14.665967076 +0200
+--- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2023-08-31 10:23:42.165530382 +0200
++++ parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster-patched.cpp	2023-08-31 10:18:16.574577861 +0200
 @@ -36,6 +36,15 @@
  #include <hooks.h>
  #endif
@@ -915,7 +922,7 @@
  using namespace std;
  
  #define MAXNAMESIZE 1024 // max filename length
-@@ -86,6 +95,49 @@
+@@ -86,6 +95,50 @@
  float dist(Point p1, Point p2, int dim);
  
  
@@ -942,7 +949,8 @@
 +    window_size = atoi(getenv(PREFIX "_WINDOW_SIZE"));
 +  }
 +  if (getenv(PREFIX "_HB_LOGFILE") != NULL) {
-+    strcpy(logfile, getenv(PREFIX "_HB_LOGFILE"));
++    strncpy(logfile, getenv(PREFIX "_HB_LOGFILE"), sizeof(logfile) - 1);
++    logfile[sizeof(logfile) - 1] = '\0';
 +  }
 +
 +  printf("init heartbeat with %f %f %d %s\n", min_heartrate, max_heartrate,
@@ -965,7 +973,7 @@
  #ifdef TBB_VERSION
  struct HizReduction {
  private:
-@@ -1882,6 +1934,10 @@
+@@ -1882,6 +1935,10 @@
      centers.p[i].weight = 1.0;
    }
  
@@ -976,7 +984,7 @@
    long IDoffset = 0;
    long kfinal;
    while(1) {
-@@ -1894,6 +1950,10 @@
+@@ -1894,6 +1951,10 @@
        exit(1);
      }
  
@@ -987,7 +995,7 @@
      points.num = numRead;
      for( int i = 0; i < points.num; i++ ) {
        points.p[i].weight = 1.0;
-@@ -2022,6 +2082,12 @@
+@@ -2022,6 +2083,12 @@
      stream = new FileStream(infilename);
    }
  
@@ -1000,7 +1008,7 @@
  
  #ifdef ENABLE_PARSEC_HOOKS
    __parsec_roi_begin();
-@@ -2038,6 +2104,10 @@
+@@ -2038,6 +2105,10 @@
  #ifdef ENABLE_PARSEC_HOOKS
    __parsec_bench_end();
  #endif

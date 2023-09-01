@@ -146,6 +146,16 @@ To do your own (automated) evaluations, see the `simulationcontrol.resultlib` pa
   - This folder usually is outside of the HotSniper folder because we don't want to commit results (large files) to the simulator repo.
 - [ ] verify all configurations in `sim.cfg` of a finished run
 
+## Using Heartbeat Functionality
+HotSniper supports program performance monitoring using the *Heartbeat Framework*. Several PARSEC programs are supported out of the box, which are: blackscholes, bodytrack, canneal, dedup, fluidanimate, streamcluster, swaptions and x264.
+
+Enabling heartbeat functionality:
+- Set `simulationcontrol/config.py::ENABLE_HEARTBEATS` variable to `True`
+- Add the "hb_enabled" string to the `base_configuration` argument of `simulationcontrol/run.py::run()` function call.
+
+> The "simulationcontrol/run.py::run_multi()" function serves as a template for the second step.
+
+With these two parameters set, the simulation will start with Heartbeat functionality enabled, resulting in the collection of heartbeat data files for each program, identified by the program app ids. A simulation running one program will result in the "0.hb.log" file, accompanied with the "0.hb.png" and "0.hb.histogram.png" visualizations.
 
 ## Common Errors
 ```UnicodeEncodeError: 'ascii' codec can't encode character '\xb0' in position 61: ordinal not in range(128)```
