@@ -61,6 +61,7 @@ def plot(data, work_start_indicator, grid_density=100):
 
 def plot_interval_diff(data, work_start_indicator, grid_density=None):
     interval_diffs = get_interval_diffs(data)
+    int_diff_mean = np.mean(interval_diffs)
 
     # Freedman-Diaconis rule
     q1, q3 = np.percentile(interval_diffs, [25, 75])
@@ -81,6 +82,7 @@ def plot_interval_diff(data, work_start_indicator, grid_density=None):
     ax = plt.gca()
     ax.xaxis.set_major_locator(MaxNLocator(grid_density if grid_density else bin_count))
     ax.ticklabel_format(useOffset=False, style="scientific")
+    ax.axvline(int_diff_mean, color='red', linestyle='dashed', linewidth=1, label='Mean')
 
     plt.show()
 

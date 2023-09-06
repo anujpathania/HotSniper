@@ -238,6 +238,8 @@ def plot_hb_histogram(run, force_recreate=False):
         timestamps = [int(x) for x in timestamps]
         interval_diffs = get_interval_diffs(timestamps)
 
+        int_diff_mean = np.mean(interval_diffs)
+
         # Freedman-Diaconis rule
         q1, q3 = np.percentile(interval_diffs, [25, 75])
         iqr = q3 - q1
@@ -251,13 +253,14 @@ def plot_hb_histogram(run, force_recreate=False):
         plt.hist(interval_diffs[1:] if work_start_indicator else interval_diffs, bins=bin_count, color="blue", edgecolor="black")
 
         plt.title('Heartbeat interval difference histogram for app id {} - {}'.format(logfile.strip(".hb.log"), run))
-        plt.xlabel("Values")
-        plt.ylabel("Interval difference")
+        plt.xlabel("Interval difference (ns)")
+        plt.ylabel("Frequency")
         plt.xticks(rotation=45, ha="right")
 
         ax = plt.gca()
         ax.xaxis.set_major_locator(MaxNLocator(bin_count))
         ax.ticklabel_format(useOffset=False, style="scientific")
+        ax.axvline(int_diff_mean, color='red', linestyle='dashed', linewidth=1, label='Mean')
 
         plt.savefig(plot_file, bbox_inches="tight")
         plt.close()
