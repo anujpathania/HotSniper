@@ -1,4 +1,4 @@
-### Next Release: CoMeT Simulator
+### Also See: CoMeT Simulator
 
 CoMeT: CoMeT is next-generation open-source EDA toolchain for integrated core-memory interval thermal simulations of 2D, 2.5, and 3D multi-/many-core processors. CoMeT (partially) *subsumes* the code of HotSniper.
 
