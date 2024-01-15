@@ -1,0 +1,61 @@
+diff -N -u -r parsec-2.1-orig/pkgs/kernels/dedup/src/decoder.c parsec-2.1/pkgs/kernels/dedup/src/decoder.c
+--- parsec-2.1-orig/pkgs/kernels/dedup/src/decoder.c	2009-01-27 17:09:55.000000000 -0800
++++ parsec-2.1/pkgs/kernels/dedup/src/decoder.c	2009-09-01 00:51:12.000000000 -0700
+@@ -185,10 +185,9 @@
+   list_head = NULL;
+ 
+   if (args != NULL) {
+-    fd = open((char *)args, O_CREAT|O_WRONLY|O_TRUNC);
++    fd = open((char *)args, O_CREAT|O_WRONLY|O_TRUNC, ~(S_ISUID | S_ISGID |S_IXGRP | S_IXUSR | S_IXOTH));
+     if (fd < 0) 
+       perror("Reassemble open");
+-    fchmod(fd, ~(S_ISUID | S_ISGID |S_IXGRP | S_IXUSR | S_IXOTH));
+   }
+ 
+   while (1) {
+@@ -255,7 +254,7 @@
+       //get file header
+       head = (send_head *)item->str;
+       if (fd == -1) {
+-        fd = open(head->filename, O_CREAT|O_WRONLY|O_TRUNC);
++        fd = open(head->filename, O_CREAT|O_WRONLY|O_TRUNC, ~(S_ISUID | S_ISGID |S_IXGRP | S_IXUSR | S_IXOTH));
+         if (fd < 0)
+           perror("head_open");
+       }
+diff -N -u -r parsec-2.1-orig/pkgs/kernels/dedup/src/encoder.c parsec-2.1/pkgs/kernels/dedup/src/encoder.c
+--- parsec-2.1-orig/pkgs/kernels/dedup/src/encoder.c	2009-01-27 17:19:20.000000000 -0800
++++ parsec-2.1/pkgs/kernels/dedup/src/encoder.c	2009-09-01 00:51:32.000000000 -0700
+@@ -768,12 +768,11 @@
+   int fd = 0;
+   struct hash_entry * entry; 
+ 
+-  fd = open(conf->outfile, O_CREAT|O_TRUNC|O_WRONLY|O_TRUNC);
++  fd = open(conf->outfile, O_CREAT|O_TRUNC|O_WRONLY|O_TRUNC, S_IRGRP | S_IWUSR | S_IRUSR | S_IROTH);
+   if (fd < 0) {
+     perror("SendBlock open");
+     return NULL;
+   }
+-  fchmod(fd, S_IRGRP | S_IWUSR | S_IRUSR | S_IROTH);
+ 
+   send_buf_item * fetchbuf[ITEM_PER_FETCH];
+   int fetch_count = 0, fetch_start = 0;
+diff -N -u -r parsec-2.1-orig/pkgs/libs/libxml2/src/nanohttp.c parsec-2.1/pkgs/libs/libxml2/src/nanohttp.c
+--- parsec-2.1-orig/pkgs/libs/libxml2/src/nanohttp.c	2007-04-17 05:43:53.000000000 -0700
++++ parsec-2.1/pkgs/libs/libxml2/src/nanohttp.c	2009-09-01 00:52:21.000000000 -0700
+@@ -26,6 +26,7 @@
+ #endif
+ #ifdef HAVE_SYS_TYPES_H
+ #include <sys/types.h>
++#include <sys/stat.h>
+ #endif
+ #ifdef HAVE_SYS_SOCKET_H
+ #include <sys/socket.h>
+@@ -1582,7 +1583,7 @@
+     if (!strcmp(filename, "-")) 
+         fd = 0;
+     else {
+-        fd = open(filename, O_CREAT | O_WRONLY);
++        fd = open(filename, O_CREAT | O_WRONLY, 00644);
+ 	if (fd < 0) {
+ 	    xmlNanoHTTPClose(ctxt);
+ 	    return(-1);
