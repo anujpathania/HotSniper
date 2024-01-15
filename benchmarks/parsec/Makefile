@@ -10,10 +10,8 @@ parsec-2.1/.parsec_source :
 	patch -p0 -dparsec-2.1/pkgs/apps/blackscholes/src < patches/blackscholes.c.patch
 	patch -p1 -dparsec-2.1 < patches/streamcluster_barrier.patch
 
-	# this patch will fail to apply	
+	# updated parsec patches
 	patch -p0 < patches/ferret-deadlock.patch 
-	
-	# updated patch files
 	patch -p0 < patches/blackscholes.tbb.cpp.patch 
 
 	# hotsniper patches
