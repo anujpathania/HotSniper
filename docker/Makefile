@@ -6,6 +6,6 @@ all: $(DOCKER_FILE)
 	docker build -f $(DOCKER_FILE) -t $(DOCKER_IMAGE) ../
 	
 run:
-	docker run --privileged --rm -it -v "${HOME}:${HOME}" --user $(shell id -u):$(shell id -g) -w "${PWD}" $(DOCKER_IMAGE)
+	docker run --privileged --rm -it -p 7000:7000 -v "${HOME}:${HOME}" --user $(shell id -u):$(shell id -g) -w "${PWD}" $(DOCKER_IMAGE)
 
 .PHONY: all

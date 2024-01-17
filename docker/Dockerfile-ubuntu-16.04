@@ -73,6 +73,9 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install --upgrade pip==20.*  # pip 21 is not compatible with Ubuntu 16.04 Python version
 RUN pip3 install matplotlib seaborn diskcache tabulate
 
+RUN useradd -ms /bin/bash pager
+RUN usermod -aG sudo pager
+
 # Install libheartbeats
 WORKDIR /build
 COPY ./heartbeats ./heartbeats
