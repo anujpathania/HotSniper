@@ -90,7 +90,10 @@ private:
 
       // Hook stubs
       static SInt64 hook_pre_stat_write(UInt64 ptr, UInt64)
-      { ((ThreadStatsManager*)ptr)->pre_stat_write(); return 0; }
+      { 
+         ((ThreadStatsManager*)ptr)->pre_stat_write(); 
+         return 0; 
+      }
       static SInt64 hook_thread_create(UInt64 ptr, UInt64 _args)
       {
          HooksManager::ThreadCreate *args = (HooksManager::ThreadCreate *)_args;

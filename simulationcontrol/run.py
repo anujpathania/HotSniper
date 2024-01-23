@@ -10,7 +10,7 @@ import subprocess
 import traceback
 import sys
 
-from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPT, ENABLE_HEARTBEATS, PERF
+from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPTS, ENABLE_HEARTBEATS
 from resultlib.plot import create_plots
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -113,15 +113,17 @@ def run(base_configuration, benchmark, ignore_error=False):
     if 'fastDVFS' in base_configuration:
         periodicPower = 100000 
    
-    # args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -smagic_perforation_rate: -speriodic-power:{periodic}{script}{benchmark_options}' \
-    args = '-n {number_cores} -c {config} --gdb-wait --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script} -smagic_perforation_rate {benchmark_options}' \
+    # args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
                 periodic=periodicPower,
-                script=" -s %s" % SCRIPT if SCRIPT else '',
+                script= ''.join([' -s' + script for script in SCRIPTS]),
                 benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
     console_output = ''
+
+    print(args)
 
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
     p = subprocess.Popen([run_sniper] + args.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)

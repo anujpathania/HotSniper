@@ -25,8 +25,6 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		virtual core_id_t threadCreate(thread_id_t thread_id);
 		virtual void threadExit(thread_id_t thread_id, SubsecondTime time);
 
-		
-
 	private:
 		int coreRows;
 		int coreColumns;
@@ -55,6 +53,10 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		int minFrequency;
 		int maxFrequency;
 		int frequencyStepSize;
+
+		UInt64 perforation_rate;
+		void initPerforationPolicy(String policyName);
+		void executePerforationPolicy();
 
 		MigrationPolicy *migrationPolicy = NULL;
 		long migrationEpoch;
