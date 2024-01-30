@@ -1369,7 +1369,7 @@ void SchedulerOpen::setFrequency(int coreCounter, int frequency)
 
 // TODO: Make it perform on different applications?
 void SchedulerOpen::executePerforationPolicy() {
-	perforation_rate = 42;
+	perforation_rate = 2;
 }
 
 // TODO: Make an actual policy? or have it be a knob to twist.
@@ -1378,7 +1378,7 @@ void SchedulerOpen::initPerforationPolicy(String policyName){
 	registerStatsMetric("scheduler", 0, "perforation_rate", &perforation_rate);
 
 	if(policyName == "normal") {
-		perforation_rate = 0;
+		perforation_rate = 2; // skips 1 in 20 iterations
 	}
 }
 

@@ -243,12 +243,12 @@ def example():
     for benchmark in (
                       'parsec-blackscholes',
                       #'parsec-bodytrack',
-                      #'parsec-canneal',
+                    #   'parsec-canneal',
                       #'parsec-dedup',
                       #'parsec-fluidanimate',
                       #'parsec-streamcluster',
                       #'parsec-swaptions',
-                      #'parsec-x264',
+                    #   'parsec-x264',
                       #'splash2-barnes',
                       #'splash2-fmm',
                       #'splash2-ocean.cont',
@@ -266,9 +266,9 @@ def example():
 
         min_parallelism = get_feasible_parallelisms(benchmark)[0]
         max_parallelism = get_feasible_parallelisms(benchmark)[-1]
-        for freq in (1, ): # SP: only 1ghz
+        for freq in (4, ): # SP: only 4ghz
             #for parallelism in (max_parallelism,):
-            for parallelism in (3, ):
+            for parallelism in (4,):
                 # you can also use try_run instead
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
