@@ -265,6 +265,25 @@ def plot_hb_histogram(run, force_recreate=False):
         plt.savefig(plot_file, bbox_inches="tight")
         plt.close()
 
+def plot_QoS(run, force_recreate=False):
+    final_results_path = find_run(run)
+
+    pattern = r"benchmark_output.log$"
+    for logfile in os.listdir(final_results_path):
+        if not re.match(pattern, logfile):
+            continue
+
+        plot_file = os.path.join(final_results_path, 'QoS_log.png')
+        if os.path.exists(plot_file) and not force_recreate:
+            continue
+        
+        reference =  9.27605e+07
+
+        plt.bar()
+
+        plt.savefig(plot_file, bbox_inches="tight")
+        plt.close()
+
 
 def create_plots(run, force_recreate=False):
     print('creating plots for {}'.format(run))
@@ -307,6 +326,9 @@ def create_plots(run, force_recreate=False):
     plot_cpi_stack_trace(run, active_cores, force_recreate=force_recreate)
     plot_hb_trace(run, force_recreate)
     plot_hb_histogram(run, force_recreate)
+
+    # Make QoS plot for the current run.
+    # plot_QoS(run, force_recreate)
 
 if __name__ == '__main__':
     for run in sorted(get_runs())[::-1]:
