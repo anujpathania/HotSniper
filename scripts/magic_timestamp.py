@@ -5,6 +5,7 @@ import sim
 
 def hook_timestamp(core, a):
     print("[MAGIC] recieved heartbeat at {time}".format(time=sim.stats.time()))
+
     return sim.stats.time()
 
 

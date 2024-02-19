@@ -17,6 +17,7 @@
 #include "policies/dvfsTestStaticPower.h"
 #include "policies/mapFirstUnused.h"
 #include "policies/dvfsOndemand.h"
+#include "policies/coldestCore.h"
 
 #include <iomanip>
 #include <random>
@@ -310,7 +311,14 @@ void SchedulerOpen::initMappingPolicy(String policyName)
 			}
 		}
 		mappingPolicy = new MapFirstUnused(coreRows, coreColumns, preferredCoresOrder);
-	} // else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+	}
+	else if (policyName == "coldestCore")
+	{
+		float criticalTemperature = Sim()->getCfg()->getFloat(
+			"scheduler/open/migration/coldestCore/criticalTemperature");
+		mappingPolicy = new ColdestCore(performanceCounters, coreRows,
+										coreColumns, criticalTemperature);
+	} // else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic.Implementation is put in "policies" package.else
 	else
 	{
 		cout << "\n[Scheduler] [Error]: Unknown Mapping Algorithm" << endl;
@@ -343,25 +351,11 @@ void SchedulerOpen::initDVFSPolicy(String policyName)
 	}
 	else if (policyName == "ondemand")
 	{
-		float upThreshold = Sim()->getCfg()->getFloat(
-			"scheduler/open/dvfs/ondemand/up_threshold");
-		float downThreshold = Sim()->getCfg()->getFloat(
-			"scheduler/open/dvfs/ondemand/down_threshold");
-		float dtmCriticalTemperature = Sim()->getCfg()->getFloat(
-			"scheduler/open/dvfs/ondemand/dtm_cricital_temperature");
-		float dtmRecoveredTemperature = Sim()->getCfg()->getFloat(
-			"scheduler/open/dvfs/ondemand/dtm_recovered_temperature");
-		dvfsPolicy = new DVFSOndemand(
-			performanceCounters,
-			coreRows,
-			coreColumns,
-			minFrequency,
-			maxFrequency,
-			frequencyStepSize,
-			upThreshold,
-			downThreshold,
-			dtmCriticalTemperature,
-			dtmRecoveredTemperature);
+		float upThreshold = Sim()->getCfg()->getFloat("scheduler/open/dvfs/ondemand/up_threshold");
+		float downThreshold = Sim()->getCfg()->getFloat("scheduler/open/dvfs/ondemand/down_threshold");
+		float dtmCriticalTemperature = Sim()->getCfg()->getFloat("scheduler/open/dvfs/ondemand/dtm_cricital_temperature");
+		float dtmRecoveredTemperature = Sim()->getCfg()->getFloat("scheduler/open/dvfs/ondemand/dtm_recovered_temperature");
+		dvfsPolicy = new DVFSOndemand(performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, upThreshold, downThreshold, dtmCriticalTemperature, dtmRecoveredTemperature);
 	}
 	else
 	{
@@ -379,6 +373,13 @@ void SchedulerOpen::initMigrationPolicy(String policyName)
 	if (policyName == "off")
 	{
 		migrationPolicy = NULL;
+	}
+	else if (policyName == "coldestCore")
+	{
+		float criticalTemperature = Sim()->getCfg()->getFloat(
+			"scheduler/open/migration/coldestCore/criticalTemperature");
+		migrationPolicy = new ColdestCore(performanceCounters, coreRows,
+										  coreColumns, criticalTemperature);
 	} // else if (policyName ="XYZ") {... } //Place to instantiate a new migration logic. Implementation is put in "policies" package.
 	else
 	{
@@ -1368,17 +1369,20 @@ void SchedulerOpen::setFrequency(int coreCounter, int frequency)
 }
 
 // TODO: Make it change over time to show the effect.
-void SchedulerOpen::executePerforationPolicy() {
-	perforation_rate = 50;
+void SchedulerOpen::executePerforationPolicy()
+{
+	perforation_rate = 0;
 }
 
 // TODO: Make an actual policy? or have it be a knob to twist.
 // TODO: Application specific rates.
-void SchedulerOpen::initPerforationPolicy(String policyName){
+void SchedulerOpen::initPerforationPolicy(String policyName)
+{
 	registerStatsMetric("scheduler", 0, "perforation_rate", &perforation_rate);
 
-	if(policyName == "normal") {
-		perforation_rate = 50; // skips 70% of iterations
+	if (policyName == "normal")
+	{
+		perforation_rate = 0; // skips 70% of iterations
 	}
 }
 
@@ -1532,7 +1536,7 @@ void SchedulerOpen::periodic(SubsecondTime time)
 		}
 	}
 
-	// TODO: make an Approximate Computing Policy
+	// TODO: extend this to a full policy
 	executePerforationPolicy();
 
 	if (time.getNS() % mappingEpoch == 0)
