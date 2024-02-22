@@ -238,6 +238,8 @@ def plot_hb_histogram(run, force_recreate=False):
         timestamps = [int(x) for x in timestamps]
         interval_diffs = get_interval_diffs(timestamps)
 
+        if(len(interval_diffs) < 2): continue
+
         int_diff_mean = np.mean(interval_diffs)
 
         # Freedman-Diaconis rule
