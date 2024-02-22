@@ -89,6 +89,15 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
         if not re.match(pattern, f):
             continue
         shutil.copy(os.path.join(BENCHMARKS, f), directory)
+    
+    pattern = r"output.*$" # Heartbeat logs
+    for f in os.listdir(BENCHMARKS):
+        if 'output.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'poses.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif '.264' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
 
     create_plots(run)
 
@@ -239,16 +248,46 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
         raise Exception('either parallelism or number_tasks needs to be set')
 
 
+def perforation_rate():
+    if os.getenv('GRAPHITE_ROOT') is "":
+        print("no project root set.")
+        return
+
+    if os.getenv('BENCHMARKS_ROOT') is "":
+        print("no benchmarks root set.")
+        return
+
+
+    for benchmark in (
+                      'parsec-blackscholes',
+                    #   'parsec-bodytrack',
+                      'parsec-canneal', 
+                      'parsec-streamcluster',
+                      'parsec-swaptions',
+                      'parsec-x264',                   
+                    #   'parsec-ferret' # unimplemented
+                      ):
+
+        min_parallelism = get_feasible_parallelisms(benchmark)[0]
+        max_parallelism = get_feasible_parallelisms(benchmark)[-1]
+        for freq in (4, ): # SP: only 4ghz
+            for parallelism in (4,):
+                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='small'))
+
+
 def example():
     for benchmark in (
                     #   'parsec-blackscholes',
-                      'parsec-bodytrack',
+                    #   'parsec-bodytrack',\
                     #   'parsec-canneal',
-                      #'parsec-dedup',
-                      #'parsec-fluidanimate',
                     #   'parsec-streamcluster',
                     #   'parsec-swaptions',
                     #   'parsec-x264',
+                      #'parsec-ferret'
+        
+                      #'parsec-fluidanimate',
+                      #'parsec-dedup',
+                      
                       #'splash2-barnes',
                       #'splash2-fmm',
                       #'splash2-ocean.cont',
@@ -304,8 +343,9 @@ def test_static_power():
 
 
 def main():
-    example()
-    #test_static_power()
+    perforation_rate()
+    # example()
+    # test_static_power()
     # multi_program()
 
 if __name__ == '__main__':
