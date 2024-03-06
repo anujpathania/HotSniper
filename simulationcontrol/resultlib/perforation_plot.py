@@ -8,6 +8,7 @@ import io
 import gzip
 import seaborn as sns
 import cv2
+import math
 
 from pprint import pprint
 from pathlib import PurePath
@@ -157,7 +158,31 @@ def perforation_heart_rate_plot(benchmark:str, data: ExpData, ax: Axes):
     ax.set_ylabel("beats per nanosecond")
     ax.set_xlabel("perforation rate")
 
-# TODO: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaah
+
+def parse_images(video_path: str) -> list:
+    encoded_vid = cv2.VideoCapture(video_path)
+            
+    frames = []
+    succ, img = encoded_vid.read()
+    while succ:
+        frames.append(img) 
+        succ, img = encoded_vid.read()
+
+    return frames
+
+
+# ref: https://www.youtube.com/watch?v=D_KgPI_oHgI
+PIXEL_MAX = 255.0
+def psnr(original, contrast):
+    mse = np.mean((original - contrast) ** 2)
+
+    if mse == 0:
+        return 100
+    
+    psnr = 20* math.log10(PIXEL_MAX/ math.sqrt(mse))
+    return psnr
+
+
 def perforation_qos_loss_plot(benchmark:str, data: ExpData, ax: Axes):
     perforation_noise = []
 
@@ -199,21 +224,18 @@ def perforation_qos_loss_plot(benchmark:str, data: ExpData, ax: Axes):
             output_comparison.append(run_out)
 
     elif benchmark in {'x264'}: # decompose video into frames and then calculate the noise.
-        # make reference.
+        ref_file = data.output_files[0]
+        ref_images = parse_images(ref_file) # maybe this should be the original video?
         
-        for file in data.output_files: 
-            encoded_vid = cv2.VideoCapture(file)
-            
-            succ, img = encoded_vid.read()
-            count = 0
-            while succ:
-                cv2.imwrite(os.path.join(RESULTS_DIR, "image_{}.jpg".format(count)), img)
-                succ, img = encoded_vid.read()
-                count += 1
-            # 
+        for run_file in data.output_files: 
+            run_out = []
+            run_images = parse_images(run_file)
 
+            for ref, run in zip(ref_images, run_images):
+                run_out.append(psnr(ref, run))
 
-        return
+            output_comparison.append(run_out)
+
     else:
         ax.set_title(name + " QoS on simsmall")
         ax.set_ylabel("% noise")
@@ -235,18 +257,22 @@ def perforation_qos_loss_plot(benchmark:str, data: ExpData, ax: Axes):
 
 benchmarks = compile_testdata("_range_medium")
 
-# Create figure and subplots
-fig, axs = plt.subplots(2, 3, figsize=(15, 10))
+n = 0
+for func in (perforation_resp_time_speedup_plot, 
+             perforation_hb_time_speedup_plot, 
+             perforation_heart_rate_plot,           
+             perforation_qos_loss_plot,):
+    
+    fig, axs = plt.subplots(2, 3, figsize=(15, 10))
 
-flat_ax = (axs.flatten())
+    flat_ax = (axs.flatten())
 
-i = 0
-for name, data in benchmarks.items():
-    print(name)
-    perforation_qos_loss_plot(name, data, flat_ax[i])
-    i+=1
+    i = 0
+    for name, data in benchmarks.items():
+        func(name, data, flat_ax[i])
+        i+=1
 
-plt.tight_layout()
-plt.show()
-
-
+    plt.tight_layout()
+    plt.savefig("plot{}.pdf".format(n))
+    plt.clf()
+    n+=1
