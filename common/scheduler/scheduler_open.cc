@@ -1371,7 +1371,7 @@ void SchedulerOpen::setFrequency(int coreCounter, int frequency)
 // TODO: Make it change over time to show the effect.
 void SchedulerOpen::executePerforationPolicy()
 {
-	perforation_rate = 0;
+	perforation_rate = 5;
 }
 
 // TODO: Make an actual policy? or have it be a knob to twist.

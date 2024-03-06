@@ -247,6 +247,9 @@ def plot_hb_histogram(run, force_recreate=False):
         iqr = q3 - q1
         n = len(interval_diffs)
         bin_size = 2 * iqr / (n ** (1 / 3))
+
+        if(bin_size == 0): return
+
         bin_count = int(np.ceil((max(interval_diffs) - min(interval_diffs)) / bin_size))
         bin_count = bin_count if bin_count < n else n
 
@@ -263,25 +266,6 @@ def plot_hb_histogram(run, force_recreate=False):
         ax.xaxis.set_major_locator(MaxNLocator(bin_count))
         ax.ticklabel_format(useOffset=False, style="scientific")
         ax.axvline(int_diff_mean, color='red', linestyle='dashed', linewidth=1, label='Mean')
-
-        plt.savefig(plot_file, bbox_inches="tight")
-        plt.close()
-
-def plot_QoS(run, force_recreate=False):
-    final_results_path = find_run(run)
-
-    pattern = r"benchmark_output.log$"
-    for logfile in os.listdir(final_results_path):
-        if not re.match(pattern, logfile):
-            continue
-
-        plot_file = os.path.join(final_results_path, 'QoS_log.png')
-        if os.path.exists(plot_file) and not force_recreate:
-            continue
-        
-        reference =  9.27605e+07
-
-        plt.bar()
 
         plt.savefig(plot_file, bbox_inches="tight")
         plt.close()

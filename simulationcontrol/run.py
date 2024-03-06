@@ -7,6 +7,7 @@ import random
 import re
 import shutil
 import subprocess
+import time
 import traceback
 import sys
 
@@ -51,11 +52,11 @@ def prev_run_cleanup():
             os.remove(file_path)
 
 
-def save_output(base_configuration, benchmark, console_output, cpistack, started, ended):
+def save_output(base_configuration, benchmark, console_output, cpistack, started, ended, label: str):
     benchmark_text = benchmark
     if len(benchmark_text) > 100:
         benchmark_text = benchmark_text[:100] + '__etc'
-    run = 'results_{}_{}_{}'.format(BATCH_START, '+'.join(base_configuration), benchmark_text)
+    run = 'results_{}_{}_{}_{}'.format(BATCH_START, '+'.join(base_configuration), benchmark_text, label)
     directory = os.path.join(RESULTS_FOLDER, run)
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -90,7 +91,6 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
             continue
         shutil.copy(os.path.join(BENCHMARKS, f), directory)
     
-    pattern = r"output.*$" # Heartbeat logs
     for f in os.listdir(BENCHMARKS):
         if 'output.' in f:
             shutil.copy(os.path.join(BENCHMARKS, f), directory)
@@ -102,8 +102,8 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
     create_plots(run)
 
 
-def run(base_configuration, benchmark, ignore_error=False):
-    print('running {} with configuration {}'.format(benchmark, '+'.join(base_configuration)))
+def run(base_configuration, benchmark, label: str, perforation_rate: int, ignore_error=False):
+    print('running {}: {} with configuration {} and pr {}'.format(label, benchmark, '+'.join(base_configuration), perforation_rate))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
 
@@ -123,11 +123,12 @@ def run(base_configuration, benchmark, ignore_error=False):
         periodicPower = 100000 
    
     # args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic} -smagic_perforation_rate:{pr}{script}{benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
                 periodic=periodicPower,
+                pr=perforation_rate,
                 script= ''.join([' -s' + script for script in SCRIPTS]),
                 benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
     console_output = ''
@@ -153,7 +154,7 @@ def run(base_configuration, benchmark, ignore_error=False):
 
     ended = datetime.datetime.now()
 
-    save_output(base_configuration, benchmark, console_output, cpistack, started, ended)
+    save_output(base_configuration, benchmark, console_output, cpistack, started, ended, label)
 
     if p.returncode != 0:
         raise Exception('return code != 0')
@@ -257,28 +258,38 @@ def perforation_rate():
         print("no benchmarks root set.")
         return
 
+    file = open(HERE + "/run_stats.txt", 'w')
 
-    for benchmark in (
-                      'parsec-blackscholes',
-                    #   'parsec-bodytrack',
-                      'parsec-canneal', 
-                      'parsec-streamcluster',
-                      'parsec-swaptions',
-                      'parsec-x264',                   
-                    #   'parsec-ferret' # unimplemented
-                      ):
+    before = time.monotonic()
 
-        min_parallelism = get_feasible_parallelisms(benchmark)[0]
-        max_parallelism = get_feasible_parallelisms(benchmark)[-1]
-        for freq in (4, ): # SP: only 4ghz
-            for parallelism in (4,):
-                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='small'))
+    for perforation_rate in ( 50, 60, 70, 80, 90):
+        for benchmark in (
+                        'parsec-blackscholes',
+                        # 'parsec-bodytrack',
+                        # 'parsec-canneal', 
+                        # 'parsec-streamcluster',
+                        # 'parsec-swaptions',
+                        # 'parsec-x264',                   
+                        #   'parsec-ferret' # unimplemented
+                        ):
+
+            freq = 4 
+            parallelism = 4
+            run(label=("pr_%d_range_medium" % perforation_rate), perforation_rate=perforation_rate, 
+                base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], 
+                benchmark=get_instance(benchmark, parallelism, input_set='small'))
+    
+    after = time.monotonic()
+
+    print(after- before)
+    file.write("total scrip runtime: {}\n".format(after- before))
+    file.flush()
 
 
 def example():
     for benchmark in (
                     #   'parsec-blackscholes',
-                    #   'parsec-bodytrack',\
+                    #   'parsec-bodytrack',
                     #   'parsec-canneal',
                     #   'parsec-streamcluster',
                     #   'parsec-swaptions',
