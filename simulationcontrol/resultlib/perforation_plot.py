@@ -1,17 +1,18 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
-import numpy as np
-import re
-import os.path
 import io
-import gzip
-import seaborn as sns
+import re
 import cv2
 import math
+import gzip
+import os.path
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from matplotlib.axes import Axes
 
 from pprint import pprint
-from pathlib import PurePath
 
 
 RESULTS_DIR = os.path.join(os.getenv('GRAPHITE_ROOT'), 'results')
@@ -77,13 +78,13 @@ def compile_testdata(label: str):
                 if 'execution.log.gz' in file and benchmark in {'canneal', 'swaptions'}:
                     bench.output_files.append(os.path.join(RESULTS_DIR, dir, file))
 
-                if '.264' in file and benchmark in {'x264'}:
+                if '.264' in file and benchmark in {'x264'}: # actually an mp4 file
                     bench.output_files.append(os.path.join(RESULTS_DIR, dir, file))
 
                 if 'execution.log.gz' in file:
                     bench.log_files.append(os.path.join(RESULTS_DIR, dir, file))
                     
-                if 'hb.log' in file:
+                if 'hb.log' in file: # meaning that this script does not work if count(hb files) > 1.
                     file_df = pd.read_csv(os.path.join(RESULTS_DIR, dir, file), sep='\t')
                     file_df["X"] = idx
 
@@ -179,7 +180,7 @@ def psnr(original, contrast):
     if mse == 0:
         return 100
     
-    psnr = 20* math.log10(PIXEL_MAX/ math.sqrt(mse))
+    psnr = 20 * math.log10(PIXEL_MAX/ math.sqrt(mse))
     return psnr
 
 
@@ -240,7 +241,6 @@ def perforation_qos_loss_plot(benchmark:str, data: ExpData, ax: Axes):
         ax.set_title(name + " QoS on simsmall")
         ax.set_ylabel("% noise")
         ax.set_xlabel("perforation rate")
-        print(benchmark)
         return
     
     reference = output_comparison[0]
@@ -254,7 +254,7 @@ def perforation_qos_loss_plot(benchmark:str, data: ExpData, ax: Axes):
     ax.set_ylabel("% noise")
     ax.set_xlabel("perforation rate")
 
-
+# main
 benchmarks = compile_testdata("_range_medium")
 
 n = 0

@@ -250,41 +250,29 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 
 
 def perforation_rate():
-    if os.getenv('GRAPHITE_ROOT') is "":
-        print("no project root set.")
-        return
-
-    if os.getenv('BENCHMARKS_ROOT') is "":
-        print("no benchmarks root set.")
-        return
-
-    file = open(HERE + "/run_stats.txt", 'w')
-
     before = time.monotonic()
 
-    for perforation_rate in ( 50, 60, 70, 80, 90):
+    for perforation_rate in (0, 10, 20, 30, 40, 50, 60, 70, 80, 90):
         for benchmark in (
                         'parsec-blackscholes',
-                        # 'parsec-bodytrack',
-                        # 'parsec-canneal', 
-                        # 'parsec-streamcluster',
-                        # 'parsec-swaptions',
-                        # 'parsec-x264',                   
+                        'parsec-bodytrack',
+                        'parsec-canneal', 
+                        'parsec-streamcluster',
+                        'parsec-swaptions',
+                        'parsec-x264',                   
                         #   'parsec-ferret' # unimplemented
                         ):
 
             freq = 4 
             parallelism = 4
+            
             run(label=("pr_%d_range_medium" % perforation_rate), perforation_rate=perforation_rate, 
                 base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], 
                 benchmark=get_instance(benchmark, parallelism, input_set='small'))
     
     after = time.monotonic()
-
     print(after- before)
-    file.write("total scrip runtime: {}\n".format(after- before))
-    file.flush()
-
+    
 
 def example():
     for benchmark in (
