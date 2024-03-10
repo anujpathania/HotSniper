@@ -231,10 +231,13 @@ def perforation_qos_loss_plot(benchmark:str, data: ExpData, ax: Axes):
         for run_file in data.output_files: 
             run_out = []
             run_images = parse_images(run_file)
+            
+            run_out.append(os.path.getsize(run_file))
 
             for ref, run in zip(ref_images, run_images):
                 run_out.append(psnr(ref, run))
 
+            print(run_out)
             output_comparison.append(run_out)
 
     else:
@@ -248,7 +251,7 @@ def perforation_qos_loss_plot(benchmark:str, data: ExpData, ax: Axes):
         perforation_noise[index] = 100 * (abs(sum(reference)- sum(output)) / abs(sum(reference)))
 
 
-    print(perforation_noise)
+    # print(perforation_noise)
     sns.lineplot(y=perforation_noise, x=data.idx, ax=ax)
     ax.set_title(name + " QoS on simsmall")
     ax.set_ylabel("% noise")
@@ -260,11 +263,8 @@ benchmarks = compile_testdata("_range_medium")
 n = 0
 for func in (perforation_resp_time_speedup_plot, 
              perforation_hb_time_speedup_plot, 
-             perforation_heart_rate_plot,           
-             perforation_qos_loss_plot,):
-    
+             perforation_heart_rate_plot, perforation_qos_loss_plot,):
     fig, axs = plt.subplots(2, 3, figsize=(15, 10))
-
     flat_ax = (axs.flatten())
 
     i = 0
@@ -273,6 +273,6 @@ for func in (perforation_resp_time_speedup_plot,
         i+=1
 
     plt.tight_layout()
-    plt.savefig("plot{}.pdf".format(n))
+    plt.savefig("perforation_{}.pdf".format(n))
     plt.clf()
     n+=1

@@ -117,7 +117,6 @@ void print_vec(int *vec, int n, int pr)
 //     }
 
 //     FILE* log_file = fopen(file_name, "w");
-
 //     if (log_file == NULL) {
 //       perror("Failed to open QoS log file");
 //       return NULL;

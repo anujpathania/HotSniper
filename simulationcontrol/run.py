@@ -252,14 +252,15 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 def perforation_rate():
     before = time.monotonic()
 
-    for perforation_rate in (0, 10, 20, 30, 40, 50, 60, 70, 80, 90):
+    # , 20, 30, 40, 50, 60, 70, 80, 90
+    for perforation_rate in (0, 10,):
         for benchmark in (
-                        'parsec-blackscholes',
-                        'parsec-bodytrack',
+                        # 'parsec-blackscholes',
+                        # 'parsec-bodytrack',
                         'parsec-canneal', 
-                        'parsec-streamcluster',
-                        'parsec-swaptions',
-                        'parsec-x264',                   
+                        # 'parsec-streamcluster',
+                        # 'parsec-swaptions',
+                        # 'parsec-x264',                   
                         #   'parsec-ferret' # unimplemented
                         ):
 
