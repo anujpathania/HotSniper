@@ -276,3 +276,8 @@ for func in (perforation_resp_time_speedup_plot,
     plt.savefig("perforation_{}.pdf".format(n))
     plt.clf()
     n+=1
+
+
+# Make multi loop perforation rate.
+# Implement multi program in sniper
+# Redo streamcluster

@@ -51,6 +51,9 @@ def prev_run_cleanup():
         if os.path.isfile(file_path):
             os.remove(file_path)
 
+    for f in os.listdir(BENCHMARKS):
+        if ('output.' in f) or ('.264' in f) or ('poses.' in f) :
+            os.remove(os.path.join(BENCHMARKS, f))
 
 def save_output(base_configuration, benchmark, console_output, cpistack, started, ended, label: str):
     benchmark_text = benchmark
