@@ -1,0 +1,11 @@
+--- blackscholes.c	2009-07-28 00:58:12.000000000 +0100
++++ blackscholes.new.c	2010-05-04 12:14:07.416033100 +0100
+@@ -232,7 +232,7 @@
+ 
+     for (j=0; j<NUM_RUNS; j++) {
+ #ifdef ENABLE_OPENMP
+-#pragma omp parallel for
++#pragma omp parallel for private(i, price, priceDelta)
+         for (i=0; i<numOptions; i++) {
+ #else  //ENABLE_OPENMP
+         for (i=start; i<end; i++) {

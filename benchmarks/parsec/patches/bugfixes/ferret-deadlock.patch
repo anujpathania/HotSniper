@@ -1,0 +1,540 @@
+diff -N -u -r parsec-2.1-orig/pkgs/apps/ferret/src/benchmark/ferret-parallel.c parsec-2.1/pkgs/apps/ferret/src/benchmark/ferret-parallel.c
+--- parsec-2.1-orig/pkgs/apps/ferret/src/benchmark/ferret-parallel.c	2009-06-27 04:19:12.000000000 +0100
++++ parsec-2.1/pkgs/apps/ferret/src/benchmark/ferret-parallel.c	2010-03-17 11:40:38.323010007 +0000
+@@ -18,6 +18,9 @@
+ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ */
+ #include <stdio.h>
++#include <stdlib.h>
++#include <assert.h>
++#include <string.h>
+ #include <math.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -57,10 +60,6 @@
+ 
+ char *extra_params = "-L 8 - T 20";
+ 
+-int input_end, output_end;
+-pthread_cond_t done;
+-pthread_mutex_t done_mutex;
+-
+ cass_env_t *env;
+ cass_table_t *table;
+ cass_table_t *query_table;
+@@ -73,10 +72,9 @@
+ 	int width, height;
+ 	char *name;
+ 	unsigned char *HSV, *RGB;
+-	struct load_data *QUEUE_LINK;
+ };
+ 
+-QUEUE_HEAD(struct load_data) q_load_seg;
++struct queue q_load_seg;
+ 
+ struct seg_data
+ {
+@@ -84,41 +82,35 @@
+ 	char *name;
+ 	unsigned char *mask;
+ 	unsigned char *HSV;
+-	struct seg_data *QUEUE_LINK;
+ };
+ 
+-QUEUE_HEAD(struct seg_data) q_seg_extract;
++struct queue q_seg_extract;
+ 
+ struct extract_data
+ {
+ 	cass_dataset_t ds;
+ 	char *name;
+-	struct extract_data *QUEUE_LINK;
+ };
+ 
+-QUEUE_HEAD(struct extract_data) q_extract_vec;
++struct queue q_extract_vec;
+ 
+ struct vec_query_data
+ {
+ 	char *name;
+ 	cass_dataset_t *ds;
+ 	cass_result_t result;
+-	struct vec_query_data *QUEUE_LINK;
+ };
+ 
+-QUEUE_HEAD(struct vec_query_data) q_vec_rank;
++struct queue q_vec_rank;
+ 
+ struct rank_data
+ {
+ 	char *name;
+ 	cass_dataset_t *ds;
+ 	cass_result_t result;
+-	struct rank_data *QUEUE_LINK;
+ };
+ 
+-QUEUE_HEAD(struct rank_data) q_rank_out;
+-
+-
++struct queue q_rank_out;
+ 
+ 
+ /* ------- The Helper Functions ------- */
+@@ -172,8 +164,7 @@
+ 		*/
+ 
+ 	cnt_enqueue++;
+-
+-	queue_enqueue_wait(&q_load_seg, data);
++	enqueue(&q_load_seg, data);
+ 
+ 	return 0;
+ }
+@@ -229,9 +220,8 @@
+ 		scan_dir(dir, path);
+ 	}
+ 
+-	input_end = 1;
++	queue_signal_terminate(&q_load_seg);
+ 	return NULL;
+-
+ }
+ 
+ void *t_seg (void *dummy)
+@@ -239,9 +229,11 @@
+ 	struct seg_data *seg;
+ 	struct load_data *load;
+ 
+-	for (;;)
++	while(1)
+ 	{
+-		queue_dequeue_wait(&q_load_seg, &load);
++		if(dequeue(&q_load_seg, &load) < 0)
++		    break;
++		
+ 		assert(load != NULL);
+ 		seg = (struct seg_data *)calloc(1, sizeof(struct seg_data));
+ 
+@@ -255,8 +247,10 @@
+ 		free(load->RGB);
+ 		free(load);
+ 
+-		queue_enqueue_wait(&q_seg_extract, seg);
+-	}		
++		enqueue(&q_seg_extract, seg);
++	}
++
++	queue_signal_terminate(&q_seg_extract);
+ 	return NULL;
+ 
+ }
+@@ -266,9 +260,11 @@
+ 	struct seg_data *seg;
+ 	struct extract_data *extract;
+ 
+-	for (;;)
++	while (1)
+ 	{
+-		queue_dequeue_wait(&q_seg_extract, &seg);
++		if(dequeue(&q_seg_extract, &seg) < 0)
++		    break;
++		
+ 		assert(seg != NULL);
+ 		extract = (struct extract_data *)calloc(1, sizeof(struct extract_data));
+ 
+@@ -280,8 +276,10 @@
+ 		free(seg->HSV);
+ 		free(seg);
+ 
+-		queue_enqueue_wait(&q_extract_vec, extract);
++		enqueue(&q_extract_vec, extract);
+ 	}
++
++	queue_signal_terminate(&q_extract_vec);
+ 	return NULL;
+ }
+ 
+@@ -290,9 +288,11 @@
+ 	struct extract_data *extract;
+ 	struct vec_query_data *vec;
+ 	cass_query_t query;
+-	for (;;)
++	while(1)
+ 	{
+-		queue_dequeue_wait(&q_extract_vec, &extract);
++		if(dequeue(&q_extract_vec, &extract) < 0)
++		    break;
++		
+ 		assert(extract != NULL);
+ 		vec = (struct vec_query_data *)calloc(1, sizeof(struct vec_query_data));
+ 		vec->name = extract->name;
+@@ -317,8 +317,10 @@
+ 	//	cass_table_query(table, &query, &vec->result);
+ 		cass_table_query(table, &query, &vec->result);
+ 
+-		queue_enqueue_wait(&q_vec_rank, vec);
++		enqueue(&q_vec_rank, vec);
+ 	}
++
++	queue_signal_terminate(&q_vec_rank);
+ 	return NULL;
+ }
+ 
+@@ -328,9 +330,11 @@
+ 	struct rank_data *rank;
+ 	cass_result_t *candidate;
+ 	cass_query_t query;
+-	for (;;)
++	while (1)
+ 	{
+-		queue_dequeue_wait(&q_vec_rank, &vec);
++		if(dequeue(&q_vec_rank, &vec) < 0)
++		    break;
++		
+ 		assert(vec != NULL);
+ 
+ 		rank = (struct rank_data *)calloc(1, sizeof(struct rank_data));
+@@ -361,20 +365,23 @@
+ 		cass_dataset_release(vec->ds);
+ 		free(vec->ds);
+ 		free(vec);
+-		queue_enqueue_wait(&q_rank_out, rank);
++		enqueue(&q_rank_out, rank);
+ 	}
++
++	queue_signal_terminate(&q_rank_out);
+ 	return NULL;
+ }
+ 
+ void *t_out (void *dummy)
+ {
+ 	struct rank_data *rank;
+-	for (;;)
++	while (1)
+ 	{
+-		queue_dequeue_wait(&q_rank_out, &rank);
++		if(dequeue(&q_rank_out, &rank) < 0)
++		    break;
++		
+ 		assert(rank != NULL);
+ 
+-
+ 		fprintf(fout, "%s", rank->name);
+ 
+ 		ARRAY_BEGIN_FOREACH(rank->result.u.list, cass_list_entry_t p)
+@@ -395,14 +402,9 @@
+ 		cnt_dequeue++;
+ 		
+ 		fprintf(stderr, "(%d,%d)\n", cnt_enqueue, cnt_dequeue);
+-		if (input_end && (cnt_enqueue == cnt_dequeue))
+-		{
+-			pthread_mutex_lock(&done_mutex);
+-			output_end = 1;
+-			pthread_cond_signal(&done);
+-			pthread_mutex_unlock(&done_mutex);
+-		}
+ 	}
++
++	assert(cnt_enqueue == cnt_dequeue);
+ 	return NULL;
+ }
+ 
+@@ -493,11 +495,11 @@
+ 	image_init(argv[0]);
+ 
+ 	stimer_tick(&tmr);
+-	QUEUE_INIT_DEPTH(&q_load_seg, DEPTH);
+-	QUEUE_INIT_DEPTH(&q_seg_extract, DEPTH);
+-	QUEUE_INIT_DEPTH(&q_extract_vec, DEPTH);
+-	QUEUE_INIT_DEPTH(&q_vec_rank, DEPTH);
+-	QUEUE_INIT_DEPTH(&q_rank_out, DEPTH);
++	queue_init(&q_load_seg,    DEPTH, NTHREAD_LOAD);
++	queue_init(&q_seg_extract, DEPTH, NTHREAD_SEG);
++	queue_init(&q_extract_vec, DEPTH, NTHREAD_EXTRACT);
++	queue_init(&q_vec_rank,    DEPTH, NTHREAD_VEC);
++	queue_init(&q_rank_out,    DEPTH, NTHREAD_RANK);
+ 
+ 	t_load_desc = (tdesc_t *)calloc(NTHREAD_LOAD, sizeof(tdesc_t));
+ 	t_seg_desc = (tdesc_t *)calloc(NTHREAD_SEG, sizeof(tdesc_t));
+@@ -540,10 +542,6 @@
+ 	t_out_desc[0].arg = NULL;
+ 	for (i = 1; i < NTHREAD_OUT; i++) t_out_desc[i] = t_out_desc[0];
+ 
+-	pthread_cond_init(&done, NULL);
+-	pthread_mutex_init(&done_mutex, NULL);
+-
+-	input_end = output_end = 0;
+ 	cnt_enqueue = cnt_dequeue = 0;
+ 
+ #ifdef ENABLE_PARSEC_HOOKS
+@@ -556,17 +554,12 @@
+ 	p_rank = tpool_create(t_rank_desc, NTHREAD_RANK);
+ 	p_out = tpool_create(t_out_desc, NTHREAD_OUT);
+ 
+-
+-	pthread_mutex_lock(&done_mutex);
+-	if (!output_end) pthread_cond_wait(&done, &done_mutex);
+-	tpool_cancel(p_load);
+-	tpool_cancel(p_seg);
+-	tpool_cancel(p_extract);
+-	tpool_cancel(p_vec);
+-	tpool_cancel(p_rank);
+-	tpool_cancel(p_out);
+-	pthread_mutex_unlock(&done_mutex);
+-	pthread_mutex_destroy(&done_mutex);
++	tpool_join(p_out, NULL);
++	tpool_join(p_rank, NULL);
++	tpool_join(p_vec, NULL);
++	tpool_join(p_extract, NULL);
++	tpool_join(p_seg, NULL);
++	tpool_join(p_load, NULL);
+ 
+ #ifdef ENABLE_PARSEC_HOOKS
+ 	__parsec_roi_end();
+@@ -586,6 +579,12 @@
+ 	free(t_rank_desc);
+ 	free(t_out_desc);
+ 
++	queue_destroy(&q_load_seg);
++	queue_destroy(&q_seg_extract);
++	queue_destroy(&q_extract_vec);
++	queue_destroy(&q_vec_rank);
++	queue_destroy(&q_rank_out);
++
+ 	stimer_tuck(&tmr, "QUERY TIME");
+ 
+ 	ret = cass_env_close(env, 0);
+diff -N -u -r parsec-2.1-orig/pkgs/apps/ferret/src/benchmark/queue.h parsec-2.1/pkgs/apps/ferret/src/benchmark/queue.h
+--- parsec-2.1-orig/pkgs/apps/ferret/src/benchmark/queue.h	2007-10-08 20:35:10.000000000 +0100
++++ parsec-2.1/pkgs/apps/ferret/src/benchmark/queue.h	1970-01-01 01:00:00.000000000 +0100
+@@ -1,132 +0,0 @@
+-#ifndef __QUEUE__
+-#define __QUEUE__
+-
+-#define QUEUE_HEAD(node_t) \
+-	struct { \
+-		int depth; \
+-		int count; \
+-		node_t head; \
+-		node_t *tail; \
+-		pthread_mutex_t mutex; \
+-		pthread_cond_t not_empty; \
+-		pthread_cond_t not_full; \
+-	}
+-
+-#define QUEUE_LINK	__next
+-
+-/* all macros work on pointers */
+-
+-#define QUEUE_INIT(queue)	\
+-	do {			\
+-		memset(queue, 0, sizeof *queue); \
+-		(queue)->tail = &(queue)->head; \
+-		pthread_mutex_init(&(queue)->mutex, NULL); \
+-	} while (0)
+-
+-#define QUEUE_INIT_DEPTH(queue,d)	\
+-	do {			\
+-		QUEUE_INIT(queue);	\
+-		(queue)->depth = d;	\
+-		pthread_cond_init(&(queue)->not_empty, NULL); \
+-		pthread_cond_init(&(queue)->not_full, NULL); \
+-	} while (0)
+-
+-#define queue_destroy(queue)	\
+-	do {			\
+-		while ((queue)->head.__next != NULL) {	\
+-			(queue)->tail = (queue)->head.__next; \
+-			(queue)->head.__next = (queue)->tail->__next; \
+-			free((queue)->tail); \
+-		} \
+-		pthread_mutex_destroy(&(queue)->mutex); \
+-	} while (0)
+-
+-#define queue_enqueue(queue,node) \
+-	do {			\
+-		(node)->__next = NULL; \
+-		(queue)->tail->__next = (node); \
+-		(queue)->tail = (node); \
+-		(queue)->count++; \
+-	} while (0)
+-
+-#define queue_push(queue,node) \
+-	do {			\
+-		(node)->__next = (queue)->__next; \
+-		if ((queue)->tail == &(queue)->head) (queue)->tail = (node); \
+-		(queue)->head.__next = (node); \
+-		(queue)->count++; \
+-	} while (0)
+-
+-#define queue_dequeue(queue, node) \
+-	do {			\
+-		if ((queue)->count <= 0) { *(node) = NULL; break; } \
+-		*(node) = (queue)->head.__next; \
+-		(queue)->head.__next = (*(node))->__next; \
+-		(queue)->count--;	\
+-		if ((queue)->count == 0) (queue)->tail = &(queue)->head; \
+-	} while(0)
+-	
+-
+-#define queue_peek(queue)	((queue)->head.__next)
+-
+-#define queue_lock(queue)	pthread_mutex_lock(&(queue)->mutex)
+-
+-#define queue_unlock(queue)	pthread_mutex_unlock(&(queue)->mutex)
+-
+-#define queue_enqueue_sync(queue,node) \
+-	do {	\
+-		pthread_mutex_lock(&(queue)->mutex); \
+-		queue_enqueue(queue,node);	\
+-		pthread_mutex_unlock(&(queue)->mutex); \
+-	} while(0)
+-
+-#define queue_push_sync(queue,node) \
+-	do {	\
+-		pthread_mutex_lock(&(queue)->mutex); \
+-		queue_push(queue,node);	\
+-		pthread_mutex_unlock(&(queue)->mutex); \
+-	} while(0)
+-
+-#define queue_dequeue_sync(queue, node)	\
+-	do {	\
+-		pthread_mutex_lock(&(queue)->mutex); \
+-		queue_dequeue(queue,node);	\
+-		pthread_mutex_unlock(&(queue)->mutex); \
+-	} while(0)
+-
+-#define queue_rotate(queue, node) \
+-	do {	\
+-		if ((queue)->head.__next != NULL) { \
+-			queue_dequeue(queue,node);	\
+-			queue_enqueue(queue,*(node));	\
+-		} \
+-	} while(0)
+-
+-#define queue_rotate_sync(queue, node) \
+-	do { \
+-		pthread_mutex_lock(&(queue)->mutex); \
+-		queue_rotate(queue,node);	\
+-		pthread_mutex_unlock(&(queue)->mutex); \
+-	} while (0)
+-
+-#define queue_enqueue_wait(queue, node) \
+-	do {\
+-		pthread_mutex_lock(&(queue)->mutex); \
+-		while((queue)->count >= (queue)->depth) pthread_cond_wait(&(queue)->not_full, &(queue)->mutex); \
+-		queue_enqueue(queue,node);	\
+-		if ((queue)->count > 0) pthread_cond_signal(&(queue)->not_empty); \
+-		pthread_mutex_unlock(&(queue)->mutex); \
+-	} while (0)
+-
+-#define queue_dequeue_wait(queue, node) \
+-	do {\
+-		pthread_mutex_lock(&(queue)->mutex); \
+-		while((queue)->count == 0) pthread_cond_wait(&(queue)->not_empty, &(queue)->mutex); \
+-		queue_dequeue(queue,node);	\
+-		if ((queue)->count < (queue)->depth) pthread_cond_signal(&(queue)->not_full); \
+-		pthread_mutex_unlock(&(queue)->mutex); \
+-	} while (0)
+-
+-#endif
+-
+-
+diff -N -u -r parsec-2.1-orig/pkgs/apps/ferret/src/include/queue.h parsec-2.1/pkgs/apps/ferret/src/include/queue.h
+--- parsec-2.1-orig/pkgs/apps/ferret/src/include/queue.h	1970-01-01 01:00:00.000000000 +0100
++++ parsec-2.1/pkgs/apps/ferret/src/include/queue.h	2010-03-17 11:20:23.665013268 +0000
+@@ -0,0 +1,22 @@
++#ifndef QUEUE_H
++#define QUEUE_H
++
++#include <pthread.h>
++
++struct queue {
++  int head, tail;
++  void ** data;
++  int size;
++  int prod_threads;		// no of producing threads
++  int end_count;
++  pthread_mutex_t mutex;
++  pthread_cond_t empty, full;
++};
++
++void queue_signal_terminate(struct queue * que);
++void queue_init(struct queue* que, int size, int prod_threads);
++void queue_destroy(struct queue* que);
++int  dequeue(struct queue* que, void** to_buf);
++void enqueue(struct queue* que, void* from_buf);
++
++#endif //QUEUE
+diff -N -u -r parsec-2.1-orig/pkgs/apps/ferret/src/src/queue.c parsec-2.1/pkgs/apps/ferret/src/src/queue.c
+--- parsec-2.1-orig/pkgs/apps/ferret/src/src/queue.c	1970-01-01 01:00:00.000000000 +0100
++++ parsec-2.1/pkgs/apps/ferret/src/src/queue.c	2010-03-17 11:25:09.602009976 +0000
+@@ -0,0 +1,67 @@
++#include "queue.h"
++
++#include <pthread.h>
++#include <stdlib.h>
++
++void queue_init(struct queue * que, int size, int prod_threads) {
++  pthread_mutex_init(&que->mutex, NULL);
++  pthread_cond_init(&que->empty, NULL);
++  pthread_cond_init(&que->full, NULL);
++  que->head = que->tail = 0;
++  que->data = (void **)malloc(sizeof(void*) * size);
++  que->size = size;
++  que->prod_threads = prod_threads;
++  que->end_count = 0;
++}
++
++void queue_destroy(struct queue* que)
++{
++    pthread_mutex_destroy(&que->mutex);
++    pthread_cond_destroy(&que->empty);
++    pthread_cond_destroy(&que->full);
++    free(que->data);
++    que->data = NULL;
++}
++
++void queue_signal_terminate(struct queue * que) {
++  pthread_mutex_lock(&que->mutex);
++  que->end_count++;
++  pthread_cond_broadcast(&que->empty);
++  pthread_mutex_unlock(&que->mutex);
++}
++
++int dequeue(struct queue * que, void **to_buf) {
++    pthread_mutex_lock(&que->mutex);
++    // chceck if queue is empty?
++    while (que->tail == que->head && (que->end_count) < que->prod_threads) {
++        pthread_cond_wait(&que->empty, &que->mutex);
++    }
++    // check if queue has been terminated?
++    if (que->tail == que->head && (que->end_count) == que->prod_threads) {
++        pthread_cond_broadcast(&que->empty);
++        pthread_mutex_unlock(&que->mutex);
++        return -1;
++    }
++
++    *to_buf = que->data[que->tail];
++    que->tail ++;
++    if (que->tail == que->size)
++	que->tail = 0;
++    pthread_cond_signal(&que->full);
++    pthread_mutex_unlock(&que->mutex);
++    return 0;
++}
++
++void enqueue(struct queue * que, void *from_buf) {
++    pthread_mutex_lock(&que->mutex);
++    while (que->head == (que->tail-1+que->size)%que->size)
++	pthread_cond_wait(&que->full, &que->mutex);
++
++    que->data[que->head] = from_buf;
++    que->head ++;
++    if (que->head == que->size)
++	que->head = 0;
++
++    pthread_cond_signal(&que->empty);
++    pthread_mutex_unlock(&que->mutex);
++}
+
