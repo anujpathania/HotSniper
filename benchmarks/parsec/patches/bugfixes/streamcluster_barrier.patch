@@ -1,0 +1,13 @@
+--- parsec-2.1/pkgs/kernels/streamcluster/src/streamcluster.cpp	2009-07-31 17:47:46.304561368 -0400
++++ parsec-3.0/pkgs/kernels/streamcluster/src/streamcluster.cpp	2010-05-22 15:11:13.785983980 -0400
+@@ -733,6 +733,10 @@
+     *kcenter = 1;
+     costs = (double*)malloc(sizeof(double)*nproc);
+   }
++
++#ifdef ENABLE_THREADS
++  pthread_barrier_wait(barrier);
++#endif
+     
+   if( pid != 0 ) { // we are not the master threads. we wait until a center is opened.
+     while(1) {

@@ -40,7 +40,6 @@ Extract Pinplay 3.2 to the root HotSniper directory as ```pin_kit```
 ```sh
 tar xf pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux.tar.gz
 mv pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux pin_kit
-rm pinplay-drdebug-3.2-pin-3.2-81205-gcc-linux.tar.gz
 ```
 
 

@@ -1,0 +1,193 @@
+--- blackscholes.tbb.cpp	2009-08-11 20:48:20.000000000 +0100
++++ blackscholes.tbb.new.cpp	2010-05-05 10:27:06.720388500 +0100
+@@ -12,7 +12,7 @@
+ 
+ #ifdef TBB_VERSION
+ #include "tbb/blocked_range.h"
+-#include "tbb/parallel_reduce.h"
++#include "tbb/parallel_for.h"
+ #include "tbb/task_scheduler_init.h"
+ #include "tbb/tick_count.h"
+ #else
+@@ -26,11 +26,12 @@
+ #include <string.h>
+ #include <math.h>
+ 
++#define PAD 256
++#define LINESIZE 64
+ 
+ #ifdef TBB_VERSION
+ /* created parallel calls to CNDF procedure */
+ //#define PARALLEL_CNDF
+-int NUM_TASKS;
+ using namespace std;
+ using namespace tbb;
+ #endif
+@@ -89,17 +90,13 @@
+                             fptype time, int otype, float timet );
+ 
+ 
+-
+ #ifdef TBB_VERSION
+ struct mainWork {
+-  fptype price;
+-public: 
+-  mainWork():price(0){}
+-  mainWork(mainWork &w, tbb::split){price = 0;}
+-
+-  void operator()(const tbb::blocked_range<int> &range)  {
+-    fptype local_price=0;
+-    fptype priceDelta;
++  mainWork(){}
++  mainWork(mainWork &w, tbb::split){}
++
++  void operator()(const tbb::blocked_range<int> &range) const {
++    fptype price;
+     int begin = range.begin();
+     int end = range.end();
+     
+@@ -115,17 +112,16 @@
+       fprintf(stderr,"%lf\t",volatility[i]);
+       fprintf(stderr,"%lf\t",otime[i]);
+ #endif
+-      local_price += BlkSchlsEqEuroNoDiv( sptprice[i], strike[i],
+-				   rate[i], volatility[i], otime[i], 
+-				   otype[i], 0);
+-      prices[i] = local_price;
++      price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i], rate[i],
++                                   volatility[i], otime[i], otype[i], 0);
++      prices[i] = price;
+ 
+ #ifdef PRINTINFO
+       fprintf(stderr,"%lf\n",price);
+ #endif      
+ 
+ #ifdef ERR_CHK   
+-      priceDelta = data[i].DGrefval - price;
++      fptype priceDelta = data[i].DGrefval - price;
+       if( fabs(priceDelta) >= 1e-5 ){
+ 	fprintf(stderr,"Error on %d. Computed=%.5f, Ref=%.5f, Delta=%.5f\n",
+ 	       i, price, data[i].DGrefval, priceDelta);
+@@ -133,14 +129,8 @@
+       }
+ #endif
+     }
+-
+-    price +=local_price;
+   }
+ 
+-
+-  void join(mainWork &rhs){price += rhs.getPrice();}
+-  fptype getPrice(){return price;}
+-
+ };
+ 
+ 
+@@ -358,37 +348,24 @@
+ #ifdef TBB_VERSION
+ int bs_thread(void *tid_ptr) {
+     int j;
+-    fptype price;
+-    fptype priceDelta;
+     tbb::affinity_partitioner a;
+ 
++    mainWork doall;
+     for (j=0; j<NUM_RUNS; j++) {
+-      mainWork doall;
+-      tbb::parallel_reduce(tbb::blocked_range<int>(0, numOptions), doall, a);
+-      price = doall.getPrice();
++      tbb::parallel_for(tbb::blocked_range<int>(0, numOptions), doall, a);
+     }
+ 
+-
+     return 0;
+ }
+ #else // !TBB_VERSION
+ 
+-fptype *price;
+ int bs_thread(void *tid_ptr) {
+     int i, j, k;
+-    fptype acc_price;
+-    fptype priceDelta;
+-    int tid = *(int *)tid_ptr;
+-    int start = tid * (numOptions / nThreads);
+-    int end = start + (numOptions / nThreads);
+-
+-    if(tid == (nThreads-1))
+-       end = numOptions;
++    fptype price;
+ 
+     for (j=0; j<NUM_RUNS; j++) {
+-      price[tid*LINESIZE] = 0;
+-        for (i=start; i<end; i++) {
+-            /* Calling main function to calculate option value based on 
++       for (i=0; i<numOptions; i++) {
++         /* Calling main function to calculate option value based on 
+              * Black & Sholes's equation.
+              */
+ #ifdef PRINTINFO
+@@ -399,16 +376,16 @@
+ 	  fprintf(stderr,"%lf\t",otime[i]);
+ #endif
+ 
+-	  price[tid*LINESIZE] += BlkSchlsEqEuroNoDiv( sptprice[i], strike[i],
+-						      rate[i], volatility[i], otime[i], 
+-						      otype[i], 0);
++	  price = BlkSchlsEqEuroNoDiv( sptprice[i], strike[i], rate[i],
++                                 volatility[i], otime[i], otype[i], 0);
++    prices[i] = price;
+ 	  
+ #ifdef PRINTINFO
+ 	  fprintf(stderr,"%lf\n",price[tid*LINESIZE]);
+ #endif
+ 	  
+ #ifdef ERR_CHK   
+-            priceDelta = data[i].DGrefval - price;
++            fptype priceDelta = data[i].DGrefval - price;
+             if( fabs(priceDelta) >= 1e-4 ){
+                 printf("Error on %d. Computed=%.5f, Ref=%.5f, Delta=%.5f\n",
+                        i, price, data[i].DGrefval, priceDelta);
+@@ -417,11 +394,6 @@
+ #endif
+         }
+ 
+-         if(tid==0) {
+-	   acc_price = 0;
+-	   for(i=0;i<nThreads;i++)
+-	     acc_price += price[i*LINESIZE];
+-	 }
+     }
+ 
+     return 0;
+@@ -429,8 +401,6 @@
+ 
+ #endif // TBB_VERSION
+ 
+-
+-
+ int main (int argc, char **argv)
+ {
+     FILE *file;
+@@ -480,12 +450,6 @@
+       nThreads = numOptions;
+     }
+ 
+-#ifdef TBB_VERSION
+-    //Determine work unit size etc.
+-    NUM_TASKS=(4*nThreads);
+-    if(NUM_TASKS > numOptions) NUM_TASKS = numOptions;
+-#endif
+-
+     // alloc spaces for the option data
+     data = (OptionData*)malloc(numOptions*sizeof(OptionData));
+     prices = (fptype*)malloc(numOptions*sizeof(fptype));
+@@ -514,9 +478,6 @@
+     printf("Parallel CNDF active\n");
+ #endif
+ 
+-#define PAD 256
+-#define LINESIZE 64
+-   
+     buffer = (fptype *) malloc(5 * numOptions * sizeof(fptype) + PAD);
+     sptprice = (fptype *) (((unsigned long long)buffer + PAD) & ~(LINESIZE - 1));
+     strike = sptprice + numOptions;
