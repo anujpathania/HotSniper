@@ -20,6 +20,7 @@ class MigrationPolicy {
 public:
     virtual ~MigrationPolicy() {}
     virtual std::vector<migration> migrate(SubsecondTime time, const std::vector<int> &taskIds, const std::vector<bool> &activeCores) = 0;
+    void readValuesFromFile(const std::string& filename, std::vector<int>& X, std::vector<int>& Y,int &firstCore,int &secondCore) ;
 };
 
 #endif

@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 
+// Initialization
 MapFirstUnused::MapFirstUnused(unsigned int coreRows, unsigned int coreColumns, std::vector<int> preferredCoresOrder)
 	: coreRows(coreRows), coreColumns(coreColumns), preferredCoresOrder(preferredCoresOrder) {
 	for (unsigned int i = 0; i < coreRows * coreColumns; i++) {

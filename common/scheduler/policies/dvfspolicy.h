@@ -13,6 +13,8 @@ class DVFSPolicy {
 public:
     virtual ~DVFSPolicy() {}
     virtual std::vector<int> getFrequencies(const std::vector<int> &oldFrequencies, const std::vector<bool> &activeCores) = 0;
+    virtual std::vector<double> getPowerBudget() = 0;
+    virtual void setPowerBudget(const std::vector<double> &budgets) = 0;
 };
 
 #endif

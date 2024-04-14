@@ -14,8 +14,14 @@
 
 #include "policies/dvfsMaxFreq.h"
 #include "policies/dvfsFixedPower.h"
+#include "policies/dvfsTSP.h"
+#include "policies/dvfsTTSP.h"
 #include "policies/dvfsTestStaticPower.h"
 #include "policies/mapFirstUnused.h"
+#include "policies/migrateSimple.h"
+#include "policies/coldestCore.h"
+#include "policies/periodicCore.h"
+#include "policies/taskReassign.h"
 
 #include <iomanip>
 #include <random>
@@ -38,6 +44,8 @@ int arrivalInterval; //Stores the arrival interval of the workload from base.cfg
 
 int numberOfTasks; //Stores the number of tasks in the open workload.
 int numberOfCores; //Stores the number of cores in the system.
+
+int activeCoreSize; // define the activeCoreSize
 
 int coreRequirementTranslation (String compositionString);
 
@@ -135,7 +143,9 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	maxFrequency = (int)(1000 * Sim()->getCfg()->getFloat("scheduler/open/dvfs/max_frequency") + 0.5);
 	frequencyStepSize = (int)(1000 * Sim()->getCfg()->getFloat("scheduler/open/dvfs/frequency_step_size") + 0.5);
 	dvfsEpoch = atol(Sim()->getCfg()->getString("scheduler/open/dvfs/dvfs_epoch").c_str());
+
 	migrationEpoch = atol(Sim()->getCfg()->getString("scheduler/open/migration/epoch").c_str());
+
 
 	m_core_mask.resize(Sim()->getConfig()->getApplicationCores());
 	for (core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); core_id++) {
@@ -147,10 +157,11 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 		upscalingPatience.push_back(maxDVFSPatience);
 	}
 
+	
+	performanceCounters = new PerformanceCounters("InstantaneousPower.log", "InstantaneousTemperature.log", "InstantaneousCPIStack.log");
 
-	performanceCounters = new PerformanceCounters(Sim()->getCfg()->getString("general/output_dir").c_str(),
-		"InstantaneousPower.log", "InstantaneousTemperature.log", "InstantaneousCPIStack.log", "InstantaneousRvalue.log");
-
+	power_budgeting_epoch = atol(Sim()->getCfg()->getString("scheduler/open/dvfs/power_budgeting_epoch").c_str());
+	power_budgeting_time_overhead = atol(Sim()->getCfg()->getString("scheduler/open/dvfs/power_budgeting_time_overhead").c_str());
 	mappingEpoch = atol (Sim()->getCfg()->getString("scheduler/open/epoch").c_str());
 	queuePolicy = Sim()->getCfg()->getString("scheduler/open/queuePolicy").c_str();
 	distribution = Sim()->getCfg()->getString("scheduler/open/distribution").c_str();
@@ -158,12 +169,14 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	arrivalInterval = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalInterval").c_str());
 	numberOfTasks = Sim()->getCfg()->getInt("traceinput/num_apps");
 	numberOfCores = Sim()->getConfig()->getApplicationCores();
+	//numberOfCores = Sim()->getCfg()->getInt("general/total_cores");
 	randomPriority = Sim()->getCfg() ->getBool("scheduler/open/randompriority");
 	
 
 	
 
 	coreRows = (int)sqrt(numberOfCores);
+	//std::cout << "The coreRows is " << coreRows << std::endl; 
 	while ((numberOfCores % coreRows) != 0) {
 		coreRows -= 1;
 	}
@@ -172,6 +185,11 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 		cout<<"\n[Scheduler] [Error]: Invalid system size: " << numberOfCores << ", expected rectangular-shaped system." << endl;
 		exit (1);
 	}
+	double ambientTemperature = Sim()->getCfg()->getFloat("periodic_thermal/ambient_temperature");
+    double maxTemperature = Sim()->getCfg()->getFloat("periodic_thermal/max_temperature");
+    double inactivePower = Sim()->getCfg()->getFloat("periodic_thermal/inactive_power");
+    double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+	thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, Sim()->getCfg()->getString("periodic_thermal/thermal_model"), ambientTemperature, maxTemperature, inactivePower, tdp, power_budgeting_epoch,power_budgeting_time_overhead);
 
 	//Initialize the cores in the system.
 	for (int coreIterator=0; coreIterator < numberOfCores; coreIterator++) {
@@ -259,16 +277,27 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 		cout << "Pushing Task " << taskIterator << " to the waitingTaskQ" << endl;
 	}
 	
+	std::fstream f;
+	f.open ("Periodic_PowerBudget.log",std::ofstream::out);
+	f.clear();
+ 	for (int coreCounter = 0; coreCounter < coreRows * coreColumns; coreCounter++) {
+		if(coreCounter != 0)
+			f<<"	";
+		f<<"core"<<coreCounter;
+	 }
+	f<<endl;
+
 	initMappingPolicy(Sim()->getCfg()->getString("scheduler/open/logic").c_str());
 	initDVFSPolicy(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str());
 	initMigrationPolicy(Sim()->getCfg()->getString("scheduler/open/migration/logic").c_str());
 }
 
+
 /** initMappingPolicy
  * Initialize the mapping policy to the policy with the given name
  */
 void SchedulerOpen::initMappingPolicy(String policyName) {
-	cout << "[Scheduler] [Info]: Initializing mapping policy" << endl;
+	cout << "[Scheduler] [Info]: Initializing mapping policy " << policyName << endl;
 	if (policyName == "first_unused") {
 		vector<int> preferredCoresOrder;
 		for (core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); core_id++) {
@@ -281,6 +310,22 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 		}
 		mappingPolicy = new MapFirstUnused(coreRows, coreColumns, preferredCoresOrder);
 	} //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+	else if (policyName == "coldestCore") {
+		float criticalTemperature = Sim()->getCfg()->getFloat(
+			"scheduler/open/migration/coldestCore/criticalTemperature");
+		mappingPolicy = new ColdestCore(performanceCounters, coreRows, coreColumns, criticalTemperature);
+	}
+	else if (policyName == "periodic") {
+		float criticalTemperature = Sim()->getCfg()->getFloat(
+			"scheduler/open/migration/periodic/criticalTemperature");
+		mappingPolicy = new PeriodicCore(performanceCounters, coreRows, coreColumns, criticalTemperature);
+	}
+	else if(policyName == "ttsp"){
+		float criticalTemperature = Sim()->getCfg()->getFloat(
+			"scheduler/open/migration/periodic/criticalTemperature");
+		mappingPolicy = new TaskReassign(thermalModel,performanceCounters, coreRows, coreColumns, criticalTemperature);
+
+	}
 	else {
 		cout << "\n[Scheduler] [Error]: Unknown Mapping Algorithm" << endl;
  		exit (1);
@@ -301,22 +346,47 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 	} else if (policyName == "fixedPower") {
 		float perCorePowerBudget = Sim()->getCfg()->getFloat("scheduler/open/dvfs/fixed_power/per_core_power_budget");
 		dvfsPolicy = new DVFSFixedPower(performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, perCorePowerBudget);
-	} else {
+	} else if (policyName == "tsp") {
+		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
+		std::vector<double> powers(coreRows * coreColumns, Sim()->getCfg()->getFloat("periodic_thermal/inactive_power"));
+		dvfsPolicy->setPowerBudget(powers);
+	} else if (policyName == "ttsp") {
+		dvfsPolicy = new DVFSTTSP(performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
+		std::vector<double> powers(coreRows * coreColumns, Sim()->getCfg()->getFloat("periodic_thermal/inactive_power"));
+		dvfsPolicy->setPowerBudget(powers);
+	} //else if (policyName ="XYZ") {... } //Place to instantiate a new DVFS logic. Implementation is put in "policies" package.
+	else {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
  		exit (1);
 	}
 }
 
+
 /** initMigrationPolicy
- * Initialize the migration policy to the policy with the given name
+ * Initialize the DVFS policy to the policy with the given name
  */
 void SchedulerOpen::initMigrationPolicy(String policyName) {
 	cout << "[Scheduler] [Info]: Initializing migration policy" << endl;
 	if (policyName == "off") {
 		migrationPolicy = NULL;
 	} //else if (policyName ="XYZ") {... } //Place to instantiate a new migration logic. Implementation is put in "policies" package.
+	else if(policyName == "simple"){
+		migrationPolicy = new MigrateSimple(coreRows,coreColumns);
+	}
+	else if (policyName == "coldestCore") {
+		float criticalTemperature = Sim()->getCfg()->getFloat(
+			"scheduler/open/migration/coldestCore/criticalTemperature");
+		migrationPolicy = new ColdestCore(performanceCounters, coreRows, coreColumns, criticalTemperature);}
+	else if (policyName == "periodic") {
+		float criticalTemperature = Sim()->getCfg()->getFloat(
+			"scheduler/open/migration/periodic/criticalTemperature");
+		migrationPolicy = new PeriodicCore(performanceCounters, coreRows, coreColumns, criticalTemperature);}
+	else if(policyName == "ttsp"){
+		float criticalTemperature = Sim()->getCfg()->getFloat(
+			"scheduler/open/migration/periodic/criticalTemperature");
+		migrationPolicy = new TaskReassign(thermalModel,performanceCounters, coreRows, coreColumns, criticalTemperature);}
 	else {
-		cout << "\n[Scheduler] [Error]: Unknown Migration Algorithm" << endl;
+		cout << "\n[Scheduler] [Error]: Unknown Migration Algorithm: " << policyName << endl;
  		exit (1);
 	}
 }
@@ -366,6 +436,7 @@ int taskFrontOfQueue () {
 /** numberOfFreeCores
     Returns number of free cores in the system.
 */
+
 int numberOfFreeCores () {
 	int freeCoresCounter = 0;
 	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
@@ -611,8 +682,18 @@ bool SchedulerOpen::executeMappingPolicy(int taskID, SubsecondTime time) {
 		availableCores.at(i) = m_core_mask[i] && !isAssignedToTask(i);
 		activeCores.at(i) = isAssignedToTask(i);
 	}
+
+	//core mask modification 
+	// if(taskID == 1 && openTasks[0].completed == true){
+	// 		availableCores.at(9) = 0;
+	// 		availableCores.at(49) = 0;
+	// 		availableCores.at(14) = 1;
+	// 		availableCores.at(54) = 1;
+	// 	}
 	// get the cores
 	vector<int> bestCores = mappingPolicy->map(openTasks[taskID].taskName, openTasks[taskID].taskCoreRequirement, availableCores, activeCores);
+	// cout << "the bestCores are***************" << endl;
+	// for(int i : bestCores) cout << "best i is" << i << endl; 
 	if ((int)bestCores.size() < openTasks[taskID].taskCoreRequirement) {
 		cout << "[Scheduler]: Policy returned too few cores, mapping failed." << endl;
 		return false;
@@ -626,6 +707,121 @@ bool SchedulerOpen::executeMappingPolicy(int taskID, SubsecondTime time) {
 
 	return true;
 }
+
+
+/** executeMigrationPolicy
+ * Perform migration according to the used policy.
+ */
+void SchedulerOpen::executeMigrationPolicy(SubsecondTime time) {
+	std::vector<int> taskIds;
+	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
+		taskIds.push_back(systemCores.at(coreCounter).assignedTaskID);
+	}
+	std::vector<bool> activeCores;
+	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
+		static bool reserved_cores_are_active = Sim()->getCfg()->getBool("scheduler/open/dvfs/reserved_cores_are_active");
+		activeCores.push_back(reserved_cores_are_active ? isAssignedToTask(coreCounter) : isAssignedToThread(coreCounter));
+	}
+	std::vector<migration> migrations = migrationPolicy->migrate(time, taskIds, activeCores);
+
+	// for (migration &migration : migrations) {
+	// 	if (migration.swap) {
+	// 		int taskFrom = systemCores.at(migration.fromCore).assignedTaskID;
+	// 		int threadFrom = systemCores.at(migration.fromCore).assignedThreadID;
+	// 		int taskTo = systemCores.at(migration.toCore).assignedTaskID;
+	// 		int threadTo = systemCores.at(migration.toCore).assignedThreadID;
+
+	// 		if (threadFrom != -1) {
+	// 			cout << "[Scheduler] moving thread " << threadFrom << " from core " << migration.fromCore << " to core " << migration.toCore << endl;
+	// 			cpu_set_t my_set;
+	// 			CPU_ZERO(&my_set);
+	// 			CPU_SET(migration.toCore, &my_set);
+	// 			threadSetAffinity(INVALID_THREAD_ID, threadFrom, sizeof(cpu_set_t), &my_set);
+	// 		}
+	// 		if (threadTo != -1) {
+	// 			cout << "[Scheduler] moving thread " << threadTo << " from core " << migration.toCore << " to core " << migration.fromCore << endl;
+	// 			cpu_set_t my_set;
+	// 			CPU_ZERO(&my_set);
+	// 			CPU_SET(migration.fromCore, &my_set);
+	// 			threadSetAffinity(INVALID_THREAD_ID, threadTo, sizeof(cpu_set_t), &my_set);
+	// 		}
+	// 		systemCores.at(migration.toCore).assignedTaskID = taskFrom;
+	// 		systemCores.at(migration.toCore).assignedThreadID = threadFrom;
+	// 		systemCores.at(migration.fromCore).assignedTaskID = taskTo;
+	// 		systemCores.at(migration.fromCore).assignedThreadID = threadTo;
+	// 	} else {
+	// 		if (systemCores.at(migration.toCore).assignedTaskID != -1) {	
+	// 			cout << "\n[Scheduler][Error]: Migration Policy ordered migration to already used core.\n";
+	// 			exit (1);
+	// 		}
+	// 		int thread = systemCores.at(migration.fromCore).assignedThreadID;
+	// 		if (thread != -1) {
+				
+	// 			migrateThread(thread, migration.toCore);
+	// 		} else {
+	// 			systemCores.at(migration.toCore).assignedTaskID = systemCores.at(migration.fromCore).assignedTaskID;
+	// 			systemCores.at(migration.fromCore).assignedTaskID = -1;
+	// 		}
+	// 	}
+	// }
+
+	for (migration &migration : migrations) {
+		if (systemCores.at(migration.fromCore).assignedTaskID == -1) {
+			cout << "\n migration.fromCore is " << migration.fromCore << endl;
+			cout << "\n[Scheduler][Error]: Migration Policy ordered migration from unused core.\n";
+			exit (1);
+		}
+
+		if (migration.swap) {
+			if (systemCores.at(migration.toCore).assignedTaskID == -1) {
+				cout << "\n[Scheduler][Error]: Migration Policy ordered swap with unused core.\n";
+				exit (1);
+			}
+			int taskFrom = systemCores.at(migration.fromCore).assignedTaskID;
+			int threadFrom = systemCores.at(migration.fromCore).assignedThreadID;
+			int taskTo = systemCores.at(migration.toCore).assignedTaskID;
+			int threadTo = systemCores.at(migration.toCore).assignedThreadID;
+
+			if (threadFrom != -1) {
+				cout << "[Scheduler] moving thread " << threadFrom << " from core " << migration.fromCore << " to core " << migration.toCore << endl;
+				cpu_set_t my_set;
+				CPU_ZERO(&my_set);
+				CPU_SET(migration.toCore, &my_set);
+				threadSetAffinity(INVALID_THREAD_ID, threadFrom, sizeof(cpu_set_t), &my_set);
+			}
+			if (threadTo != -1) {
+				cout << "[Scheduler] moving thread " << threadTo << " from core " << migration.toCore << " to core " << migration.fromCore << endl;
+				cpu_set_t my_set;
+				CPU_ZERO(&my_set);
+				CPU_SET(migration.fromCore, &my_set);
+				threadSetAffinity(INVALID_THREAD_ID, threadTo, sizeof(cpu_set_t), &my_set);
+			}
+			systemCores.at(migration.toCore).assignedTaskID = taskFrom;
+			systemCores.at(migration.toCore).assignedThreadID = threadFrom;
+			systemCores.at(migration.fromCore).assignedTaskID = taskTo;
+			systemCores.at(migration.fromCore).assignedThreadID = threadTo;
+		} else {
+			if (systemCores.at(migration.toCore).assignedTaskID != -1) {	
+				for(auto i : activeCores){
+					cout << "AAA the active cores is " << i << endl;
+				}
+				cout << "The migration to core is " << migration.toCore << endl;
+				cout << "\n[Scheduler][Error]: *Migration Policy ordered migration to already used core.\n";
+				exit (1);
+			}
+			int thread = systemCores.at(migration.fromCore).assignedThreadID;
+			if (thread != -1) {
+				migrateThread(thread, migration.toCore);
+			} else {
+				systemCores.at(migration.toCore).assignedTaskID = systemCores.at(migration.fromCore).assignedTaskID;
+				systemCores.at(migration.fromCore).assignedTaskID = -1;
+			}
+		}
+	}
+	
+}
+
+
 
 /** schedule
     This function attempt to schedule a task with logic defined in base.cfg.
@@ -793,7 +989,7 @@ core_id_t SchedulerOpen::threadCreate(thread_id_t thread_id) {
 			cout <<"\n[Scheudler] [Error]: A non-intial Thread " << thread_id << " From Task " << app_id << " failed to get a core.\n";
 			exit (1);
 		}
-	cout <<"\n[Scheduler]: Putting Thread " << thread_id << " From Task " << app_id << " to sleep.\n";
+	cout <<"\n[Scheudler]: Putting Thread " << thread_id << " From Task " << app_id << " to sleep.\n";
       	m_thread_info[thread_id].setCoreRunning(INVALID_CORE_ID);
       	return INVALID_CORE_ID;
    	}
@@ -905,7 +1101,11 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 			}
 			
 		cout << "\n[Scheduler][Result]: Task " << app_id << " (Response/Service/Wait) Time (ns) "  << " :\t" <<  time.getNS() - openTasks[app_id].taskArrivalTime << "\t" <<  time.getNS() - openTasks[app_id].taskStartTime << "\t" << openTasks[app_id].taskStartTime - openTasks[app_id].taskArrivalTime << "\n";
-	
+		
+		if (numberOfTasksInQueue () ){
+			schedule (taskFrontOfQueue (), false, time);
+		}
+
 	}
 	
 	if (numberOfFreeCores () == numberOfCores && numberOfTasksWaitingToSchedule () != 0) {
@@ -917,7 +1117,7 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 		}
 		else if (numberOfTasksWaitingToSchedule () != 0) {
 
-			SInt64 timeJump = 0;
+			UInt64 timeJump = 0;
 
 			UInt64 nextArrivalTime = 0;
 			for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
@@ -933,9 +1133,6 @@ void SchedulerOpen::threadExit(thread_id_t thread_id, SubsecondTime time) {
 			}
 
 			timeJump = nextArrivalTime - time.getNS();
-			if (timeJump < 0) {
-                cout << "\n[Scheduler]: Task arrival time in past, moving it forward to the current time with negative arrival time adjustment.\n";
-            }
 			cout << "\n[Scheduler]: Readjusting Arrival Time by " << timeJump << " ns \n"; // This will not effect the result of response time as arrival time of all unscheduled tasks are adjusted relatively.
 
 			for (int taskIterator = 0; taskIterator < numberOfTasks; taskIterator++) {
@@ -1186,6 +1383,7 @@ void SchedulerOpen::executeDVFSPolicy() {
 	    static bool reserved_cores_are_active = Sim()->getCfg()->getBool("scheduler/open/dvfs/reserved_cores_are_active");
 		activeCores.push_back(reserved_cores_are_active ? isAssignedToTask(coreCounter) : isAssignedToThread(coreCounter));
 	}
+
 	vector<int> frequencies = dvfsPolicy->getFrequencies(oldFrequencies, activeCores);
 	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
 		setFrequency(coreCounter, frequencies.at(coreCounter));
@@ -1193,69 +1391,19 @@ void SchedulerOpen::executeDVFSPolicy() {
 	performanceCounters->notifyFreqsOfCores(frequencies);
 }
 
-/** executeMigrationPolicy
- * Perform migration according to the used policy.
+/** apply_budget
+ * Apply the computed power budgets considering the timing overhead.
  */
-void SchedulerOpen::executeMigrationPolicy(SubsecondTime time) {
-	std::vector<int> taskIds;
+void SchedulerOpen::apply_budget(SubsecondTime time) {
+	dvfsPolicy->setPowerBudget(powerBudget);
+	std::ofstream f;
+	f.open("Periodic_PowerBudget.log", std::ios_base::app);
 	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
-		taskIds.push_back(systemCores.at(coreCounter).assignedTaskID);
-	}
-	std::vector<bool> activeCores;
-	for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
-	    static bool reserved_cores_are_active = Sim()->getCfg()->getBool("scheduler/open/dvfs/reserved_cores_are_active");
-		activeCores.push_back(reserved_cores_are_active ? isAssignedToTask(coreCounter) : isAssignedToThread(coreCounter));
-	}
-	std::vector<migration> migrations = migrationPolicy->migrate(time, taskIds, activeCores);
-
-	for (migration &migration : migrations) {
-		if (systemCores.at(migration.fromCore).assignedTaskID == -1) {
-			cout << "\n[Scheduler][Error]: Migration Policy ordered migration from unused core.\n";		
-			exit (1);
-		}
-
-		if (migration.swap) {
-			if (systemCores.at(migration.toCore).assignedTaskID == -1) {
-				cout << "\n[Scheduler][Error]: Migration Policy ordered swap with unused core.\n";		
-				exit (1);
-			}
-			int taskFrom = systemCores.at(migration.fromCore).assignedTaskID;
-			int threadFrom = systemCores.at(migration.fromCore).assignedThreadID;
-			int taskTo = systemCores.at(migration.toCore).assignedTaskID;
-			int threadTo = systemCores.at(migration.toCore).assignedThreadID;
-
-			if (threadFrom != -1) {
-				cout << "[Scheduler] moving thread " << threadFrom << " from core " << migration.fromCore << " to core " << migration.toCore << endl;
-				cpu_set_t my_set;
-				CPU_ZERO(&my_set);
-				CPU_SET(migration.toCore, &my_set);
-				threadSetAffinity(INVALID_THREAD_ID, threadFrom, sizeof(cpu_set_t), &my_set); 
-			}
-			if (threadTo != -1) {
-				cout << "[Scheduler] moving thread " << threadTo << " from core " << migration.toCore << " to core " << migration.fromCore << endl;
-				cpu_set_t my_set;
-				CPU_ZERO(&my_set);
-				CPU_SET(migration.fromCore, &my_set);
-				threadSetAffinity(INVALID_THREAD_ID, threadTo, sizeof(cpu_set_t), &my_set);
-			}
-			systemCores.at(migration.toCore).assignedTaskID = taskFrom;
-			systemCores.at(migration.toCore).assignedThreadID = threadFrom;
-			systemCores.at(migration.fromCore).assignedTaskID = taskTo;
-			systemCores.at(migration.fromCore).assignedThreadID = threadTo;
-		} else {
-			if (systemCores.at(migration.toCore).assignedTaskID != -1) {
-				cout << "\n[Scheduler][Error]: Migration Policy ordered migration to already used core.\n";
-				exit (1);
-			}
-			int thread = systemCores.at(migration.fromCore).assignedThreadID;
-			if (thread != -1) {
-				migrateThread(thread, migration.toCore);
-			} else {
-				systemCores.at(migration.toCore).assignedTaskID = systemCores.at(migration.fromCore).assignedTaskID;
-				systemCores.at(migration.fromCore).assignedTaskID = -1;
-			}
-		}
-	}
+		if(coreCounter!=0)
+			f<<"	";
+		f<<powerBudget.at(coreCounter);
+	} 
+	f<<endl;
 }
 
 
@@ -1271,6 +1419,9 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		//Following error checking code makes sure that the system state is not messed up.
 
 		if (numberOfCores - totalCoreRequirementsOfActiveTasks () != numberOfFreeCores ()) {
+			cout << "The number of Cores are " << numberOfCores << endl;
+			cout << "totalCoreRequirementsOfActiveTasks () is " << totalCoreRequirementsOfActiveTasks () << endl;
+			cout << "numberOfFreeCores () is " << numberOfFreeCores () << endl;
 			cout <<"\n[Scheduler] [Error]: Number of Free Cores + Number of Active Tasks Requirements != Number Of Cores.\n";		
 			exit (1);
 		}
@@ -1281,16 +1432,53 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 		}
 	}
 
+	if(string(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str()) == "ttsp")
+	{
+		if(time.getNS() % power_budgeting_epoch == 0 || time.getNS() == 100000)
+		{
+			cout<<"[Scheduler][TTSP] Power budgeting invoked at "<< formatTime(time) << endl;
+			std::vector<bool> activeCores;
+			for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
+	    		static bool reserved_cores_are_active = Sim()->getCfg()->getBool("scheduler/open/dvfs/reserved_cores_are_active");
+				activeCores.push_back(reserved_cores_are_active ? isAssignedToTask(coreCounter) : isAssignedToThread(coreCounter));
+			}
+			powerBudget = thermalModel->powerBudgetTTSP(activeCores);
+		}
+
+		if ((dvfsPolicy != NULL) && ((time.getNS() - power_budgeting_time_overhead) % power_budgeting_epoch == 0) && (time.getNS() - power_budgeting_time_overhead)!=0) {
+			cout<<"[Scheduler][TTSP] The computed power budgets are applied at "<< formatTime(time) << endl;
+    		apply_budget(time);
+		}
+	}
+
 	if ((migrationPolicy != NULL) && (time.getNS() % migrationEpoch == 0)) {
 		cout << "\n[Scheduler]: Migration invoked at " << formatTime(time) << endl;
 
 		executeMigrationPolicy(time);
 	}
 
+	if(string(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str()) == "tsp")
+	{
+		if(time.getNS() % power_budgeting_epoch == 0 || time.getNS() == 100000)
+		{
+			cout<<"[Scheduler][TSP] Power budgeting invoked at "<< formatTime(time) << endl;
+			std::vector<bool> activeCores;
+			for (int coreCounter = 0; coreCounter < numberOfCores; coreCounter++) {
+	    		static bool reserved_cores_are_active = Sim()->getCfg()->getBool("scheduler/open/dvfs/reserved_cores_are_active");
+				activeCores.push_back(reserved_cores_are_active ? isAssignedToTask(coreCounter) : isAssignedToThread(coreCounter));
+			}
+			powerBudget = thermalModel->powerBudgetMaxSteadyState(activeCores);
+		}
+
+		if ((dvfsPolicy != NULL) && ((time.getNS() - power_budgeting_time_overhead) % power_budgeting_epoch == 0) && (time.getNS() - power_budgeting_time_overhead)!=0) {
+			cout<<"[Scheduler][TSP] The computed power budgets are applied at "<< formatTime(time) << endl;
+    		apply_budget(time);
+		}
+	}
+
+
 	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
 		cout << "\n[Scheduler]: DVFS Control Loop invoked at " << formatTime(time) << endl;
-        // SP: Debug: show that rvalues are now accessible to the scheduler
-        // cout << "SP: Core 0 rvalue:" << performanceCounters->getRvalueOfCore(0) << endl;
 
 		executeDVFSPolicy();
 

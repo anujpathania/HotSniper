@@ -15,6 +15,7 @@
 #include "policies/migrationpolicy.h"
 
 
+
 class SchedulerOpen : public SchedulerPinnedBase {
 
 	public:
@@ -33,6 +34,10 @@ class SchedulerOpen : public SchedulerPinnedBase {
 
 		PerformanceCounters *performanceCounters;
 		MappingPolicy *mappingPolicy = NULL;
+		long power_budgeting_epoch;
+		long power_budgeting_time_overhead;
+		std::vector<double> powerBudget;
+
 		long mappingEpoch;
 		void initMappingPolicy(String policyName);
 		bool executeMappingPolicy(int taskID, SubsecondTime time);
@@ -44,6 +49,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		long dvfsEpoch;
 		void initDVFSPolicy(String policyName);
 		void executeDVFSPolicy();
+		void apply_budget(SubsecondTime time) ;
 		const int maxDVFSPatience = 0;
 		std::vector<int> downscalingPatience; // can be used by the DVFS control loop to delay DVFS downscaling for very little violations
 		std::vector<int> upscalingPatience; // can be used by the DVFS control loop to delay DVFS upscaling for very little violations
@@ -56,10 +62,6 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		int maxFrequency;
 		int frequencyStepSize;
 
-		MigrationPolicy *migrationPolicy = NULL;
-		long migrationEpoch;
-		void initMigrationPolicy(String policyName);
-		void executeMigrationPolicy(SubsecondTime time);
 		void migrateThread(thread_id_t thread_id, core_id_t core_id);
 
 		std::string formatTime(SubsecondTime time);
@@ -73,6 +75,12 @@ class SchedulerOpen : public SchedulerPinnedBase {
 
 		int setAffinity (thread_id_t thread_id);
 		bool schedule (int taskID, bool isInitialCall, SubsecondTime time);
+
+		MigrationPolicy *migrationPolicy = NULL;
+		long migrationEpoch;
+		void initMigrationPolicy(String policyName);
+		void executeMigrationPolicy(SubsecondTime time);
+		
 };
 
 #endif // __SCHEDULER_OPEN_H

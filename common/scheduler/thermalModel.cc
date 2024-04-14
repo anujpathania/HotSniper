@@ -1,20 +1,26 @@
 #include "thermalModel.h"
 #include <algorithm>
 #include <sstream>
+#include <fstream>
+#include <iomanip>
+using namespace std;
 
-ThermalModel::ThermalModel(unsigned int coreRows, unsigned int coreColumns, const String thermalModelFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp)
-    : ambientTemperature(ambientTemperature), maxTemperature(maxTemperature), inactivePower(inactivePower), tdp(tdp) {
+ThermalModel::ThermalModel(unsigned int coreRows, unsigned int coreColumns, const String thermalModelFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp, long pb_epoch_length, long pb_time_overhead)
+    : ambientTemperature(ambientTemperature), maxTemperature(maxTemperature), inactivePower(inactivePower), tdp(tdp), pb_epoch_length(pb_epoch_length), pb_time_overhead(pb_time_overhead) {
     this->coreRows = coreRows;
     this->coreColumns = coreColumns;
 
     std::ifstream f;
     f.open(thermalModelFilename.c_str());
 
-    unsigned int numberUnits = readValue<unsigned int>(f);
-    unsigned int numberNodesAmbient = readValue<unsigned int>(f);
-    unsigned int numberThermalNodes = readValue<unsigned int>(f);
+    numberUnits = readValue<unsigned int>(f);
+    numberNodesAmbient = readValue<unsigned int>(f);
+    numberThermalNodes = readValue<unsigned int>(f);
 
     if (numberUnits != coreRows * coreColumns) {
+        // std::cout << "numberUnits is " << numberUnits << std::endl;
+        // std::cout << "coreRows is " << coreRows << std::endl;
+        std::cout << "coreColumns is " << coreColumns << std::endl;
         std::cout << "Assertion error in thermal model file: numberUnits != coreRows * coreColumns" << std::endl;
 		exit (1);
     }
@@ -35,7 +41,118 @@ ThermalModel::ThermalModel(unsigned int coreRows, unsigned int coreColumns, cons
 
     readDoubleMatrix(f, &BInv, numberThermalNodes, numberThermalNodes);
 
-    // remaining file is not read
+    Gamb = new double[numberNodesAmbient];
+    for (int c = 0; c < numberNodesAmbient; c++) {
+            Gamb[c] = readValue<double>(f);
+    }
+   
+    eigenValues = new double[numberThermalNodes];
+    for (int c = 0; c < numberThermalNodes; c++) {
+        eigenValues[c] = readValue<double>(f);
+    }
+    
+    
+    readDoubleMatrix(f, &eigenVectors, numberThermalNodes, numberThermalNodes);
+    readDoubleMatrix(f, &eigenVectorsInv, numberThermalNodes, numberThermalNodes);
+
+    matrix_exponentials = new double*[numberThermalNodes];
+    Inv_matrix_exponentials = new double*[numberThermalNodes];
+    HelpIECT = new double*[numberThermalNodes];
+    HelpW = new double*[numberThermalNodes];
+
+    for(int i = 0; i < numberThermalNodes; i++){
+        matrix_exponentials[i] = new double[numberThermalNodes];
+        Inv_matrix_exponentials[i] = new double[numberThermalNodes];
+        HelpIECT[i] = new double[numberThermalNodes];
+        HelpW[i] = new double[numberThermalNodes];
+
+    }   
+    Tsteady = new double[numberThermalNodes];
+    Tinit = new double[numberThermalNodes]; 
+    exponentials = new double[numberThermalNodes];
+
+    for(int i = 0; i < numberThermalNodes; i++){
+        exponentials[i] = pow((double)M_E, eigenValues[i] * pb_epoch_length * pow(10,-9));
+    }
+    for(int k = 0; k < numberThermalNodes; k++){
+        for(int j = 0; j < numberThermalNodes; j++){
+            matrix_exponentials[k][j] = 0;
+            Inv_matrix_exponentials[k][j] = 0;
+            HelpIECT[k][j] = 0;
+            for(int i = 0; i < numberThermalNodes; i++){
+                matrix_exponentials[k][j] += eigenVectors[k][i]*eigenVectorsInv[i][j]*exponentials[i];
+                HelpIECT[k][j] += eigenVectors[k][i]*eigenVectorsInv[i][j]* (1 - exponentials[i]);
+                
+            }
+            Inv_matrix_exponentials[k][j] = (k==j) ? matrix_exponentials[k][j]-1.0: matrix_exponentials[k][j];
+        }
+        for(int j = 0; j < numberThermalNodes; j++){
+            HelpW[k][j] = 0;
+            for(int i = 0; i < numberThermalNodes; i++){
+                HelpW[k][j] += HelpIECT[k][i] * BInv[i][j];
+            }
+        }
+    }
+
+    // for(int k = 0; k < numberThermalNodes; k++){
+    //     for(int j = 0; j < numberThermalNodes; j++){
+    //         HelpW[k][j] = 0;
+    //         for(int i = 0; i < numberThermalNodes; i++){
+    //             HelpW[k][j] += HelpIECT[k][i] * BInv[i][j];
+    //         }
+
+    //     }
+    // }
+
+    
+
+
+    // std::cout << "*******The eigen matrix is  *******" << endl;
+    // for(int row = 0; row < numberUnits;row++){
+    //     std::cout << '[';
+    //     int column = 0;
+    //     for(column = 0; column < numberUnits - 1;column++){
+    //         std::cout << setiosflags(std::ios::fixed)<< std::setprecision(3);
+    //         std::cout << eigenVectors[row][column] << ",";
+    //     }
+    //     std::cout << eigenVectors[row][column];
+    //     std::cout << ']';
+    //     if (row != numberUnits - 1) std::cout << ',';
+    //     std::cout << std::endl;
+        
+    // }
+    // std::cout << "*******The eigenVectorInv reverse matrix is  *******" << endl;
+
+    // for(int row = 0; row < numberUnits;row++){
+    //     std::cout << '[';
+    //     int column = 0;
+    //     for(column = 0; column < numberUnits - 1;column++){
+    //         std::cout << setiosflags(std::ios::fixed)<< std::setprecision(3);
+    //         std::cout << eigenVectorsInv[row][column] << ",";
+    //     }
+    //     std::cout << eigenVectorsInv[row][column];
+    //     std::cout << ']';
+    //     if (row != numberUnits - 1) std::cout << ',';
+    //     std::cout << std::endl;
+        
+    // }
+
+    // std::cout << "*******The C matrix is  *******" << endl;
+    // readDoubleMatrix(f, &C, numberThermalNodes, numberThermalNodes);
+    // for(int row = 0; row < numberUnits;row++){
+    //     std::cout << '[';
+    //     int column = 0;
+    //     for(column = 0; column < numberUnits - 1;column++){
+    //         std::cout << setiosflags(std::ios::fixed)<< std::setprecision(3);
+    //         std::cout << C[row][column] << ",";
+    //     }
+    //     std::cout << C[row][column];
+    //     std::cout << ']';
+    //     if (row != numberUnits - 1) std::cout << ',';
+    //     std::cout << std::endl;
+        
+    // }
+
     f.close();
 }
 
@@ -205,6 +322,7 @@ void inplaceGauss(std::vector<std::vector<float>> &A, std::vector<float> &b) {
     }
 }
 
+
 /** powerBudgetMaxSteadyState
  * Return a per-core power budget that (if matched by the power consumption) heats every core exactly to the critical temperature.
  */
@@ -244,6 +362,114 @@ std::vector<double> ThermalModel::powerBudgetMaxSteadyState(const std::vector<bo
 
     return powers;
 }
+
+
+// double ThermalModel::peakTemperature(const std::vector<bool> &activeCores) const{
+
+
+
+// }
+
+/** powerBudgetTTSP
+ * Return a per-core power budget wrt. the location and transient temperature of the cores that (if matched by the power consumption) heats every core exactly to the critical temperature.
+ */
+std::vector<double> ThermalModel::powerBudgetTTSP(const std::vector<bool> &activeCores) const {
+    
+    std::vector<int> activeIndices;
+    std::vector<double> inactivePowers(coreRows * coreColumns, 0);
+    std::vector<double> powers(coreRows * coreColumns, inactivePower);
+
+    for (int i = 0; i < coreRows * coreColumns; i++) {
+        if (activeCores.at(i)) {
+            activeIndices.push_back(i);
+        } else {
+            inactivePowers.at(i) = inactivePower;
+        }
+    } 
+
+    //1.Reading the transient temperatures 
+    std::string instTemperatureFileName="Temperature.init";
+	ifstream temperatureLogFile(instTemperatureFileName);
+	std::string header;
+    double temp;
+ 
+    int component = 0;
+    double max_temp = 0;
+    //std::cout << "The max_temp *** is " << max_temp << std::endl;
+    while(temperatureLogFile >> header >> temp)
+    {
+        Tinit[component] = temp - 273.15;
+        max_temp = (max_temp > Tinit[component]) ? max_temp:Tinit[component];
+        //std::cout << "The max_temp *** is " << max_temp << std::endl;
+        component++;
+    }
+    temperatureLogFile.close();
+    
+    //2. Computing the targeted steady-state termperatures
+    std::vector<float> A(activeIndices.size());
+    for (unsigned int i = 0; i < activeIndices.size(); i++) {
+        A.at(i) = 0;
+        for (unsigned int j = 0; j < activeIndices.size(); j++) {
+            A.at(i) += matrix_exponentials[activeIndices.at(i)][activeIndices.at(j)]*Tinit[activeIndices.at(j)];
+        }
+        A.at(i) -= maxTemperature;
+    }
+    std::vector<float> T_steady = A;
+    
+        
+    std::vector<std::vector<float>> B;
+    for (unsigned int i = 0; i < activeIndices.size(); i++) {
+        std::vector<float> row;
+        for (unsigned int j = 0; j < activeIndices.size(); j++) {
+            row.push_back(Inv_matrix_exponentials[activeIndices.at(i)][activeIndices.at(j)]);
+        }
+        B.push_back(row);
+    }
+
+    // now solve B * Tsteady = A
+    inplaceGauss(B, T_steady);
+    
+    for(int k = 0; k < activeIndices.size(); k++)
+    {
+        cout<<"[ThermalModel][TTSP]: The initial termperature and targeted steady-state termperature  of core "<< activeIndices.at(k) <<" for the next epoch: "<< Tinit[activeIndices.at(k)] <<", "<<T_steady.at(k) <<endl; 
+    }
+
+    //3. Computing the corresponding power budget to the computed steady-state termperatures
+    std::vector<float> tInactive = getSteadyState(inactivePowers);
+    std::vector<float> ambient(activeIndices.size());
+    std::vector<float> headroomTrunc(activeIndices.size());
+
+   
+    for (unsigned int i = 0; i < activeIndices.size(); i++) {
+        int index = activeIndices.at(i);
+        headroomTrunc.at(i) = T_steady.at(i) - tInactive.at(index);
+    }
+   
+    std::vector<float> powersTrunc = headroomTrunc;
+    std::vector<std::vector<float>> BInvTrunc;
+    for (unsigned int i = 0; i < activeIndices.size(); i++) {
+        std::vector<float> row;
+        for (unsigned int j = 0; j < activeIndices.size(); j++) {
+            row.push_back(BInv[activeIndices.at(i)][activeIndices.at(j)]);
+        }
+        BInvTrunc.push_back(row);
+    }
+    // now solve BInvTrunc * powersTrunc = headroomTrunc
+    inplaceGauss(BInvTrunc, powersTrunc);
+
+    for (unsigned int i = 0; i < activeIndices.size(); i++) {
+         powers.at(activeIndices.at(i)) = powersTrunc.at(i);
+    }
+
+    // for(auto i: powers){
+    //     std::cout << "The powers is " << i << std::endl;
+    // }
+
+    return powers;
+}
+
+
+
 
 std::vector<float> ThermalModel::getSteadyState(const std::vector<double> &powers) const {
     std::vector<float> temperatures(coreRows * coreColumns);
