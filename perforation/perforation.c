@@ -10,6 +10,10 @@
 
 int pr = 0;
 
+void init_perforation() {
+    // tonight
+}
+
 int get_perforation_rate(int type)
 {
     return SimUser(USER_GET_PERFORATION_RATE, type);
@@ -110,30 +114,3 @@ void print_vec(int *vec, int n, int pr)
                                 get_k(n, pr), get_mf(n, pr));
 }
 
-// FILE* init_output_file(const char* file_name) {
-//     if(file_name == NULL) {
-//         perror("No filename specified");
-//         return NULL;
-//     }
-
-//     FILE* log_file = fopen(file_name, "w");
-//     if (log_file == NULL) {
-//       perror("Failed to open QoS log file");
-//       return NULL;
-//     }
-
-//     fprintf(log_file, "Output\n" );
-//     return log_file;
-// }
-
-// // but where do i get the baseline output???
-// void log_output(double output) {
-//     std::cout << "outputfile inited" << std::endl;
-//     FILE* file = init_output_file("/home/pager/Documents/approx_computing/HotSniper-LoopPerf/benchmarks/benchmark_output.log");
-
-//     if(file == NULL) return;
-
-//     fprintf(file, "%f\n", output);
-
-//     fclose(file);
-// }

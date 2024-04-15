@@ -105,8 +105,8 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
     create_plots(run)
 
 
-def run(base_configuration, benchmark, label: str, perforation_rate: int, ignore_error=False):
-    print('running {}: {} with configuration {} and pr {}'.format(label, benchmark, '+'.join(base_configuration), perforation_rate))
+def run(base_configuration, benchmark, label: str, ignore_error=False):
+    print('running {}: {} with configuration {}'.format(label, benchmark, '+'.join(base_configuration)))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
 
@@ -125,15 +125,14 @@ def run(base_configuration, benchmark, label: str, perforation_rate: int, ignore
     if 'fastDVFS' in base_configuration:
         periodicPower = 100000 
    
-    # args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic} -smagic_perforation_rate:{pr}{script}{benchmark_options}' \
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
                 periodic=periodicPower,
-                pr=perforation_rate,
                 script= ''.join([' -s' + script for script in SCRIPTS]),
                 benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
+    
     console_output = ''
 
     print(args)
@@ -145,6 +144,7 @@ def run(base_configuration, benchmark, label: str, perforation_rate: int, ignore
             linestr = line.decode('utf-8')
             console_output += linestr
             print(linestr, end='')
+
     p.wait()
 
     try:
@@ -252,31 +252,55 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
         raise Exception('either parallelism or number_tasks needs to be set')
 
 
-def perforation_rate():
+def single_program_perforation_rate():
     before = time.monotonic()
 
-    # , 20, 30, 40, 50, 60, 70, 80, 90
-    for perforation_rate in (0, 10,):
-        for benchmark in (
-                        # 'parsec-blackscholes',
+    for benchmark in (  # 'parsec-blackscholes',
                         # 'parsec-bodytrack',
-                        'parsec-canneal', 
+                        # 'parsec-canneal', 
                         # 'parsec-streamcluster',
-                        # 'parsec-swaptions',
+                        'parsec-swaptions',
                         # 'parsec-x264',                   
-                        #   'parsec-ferret' # unimplemented
-                        ):
+                        # 'parsec-ferret' # unimplemented
+                    ):
 
-            freq = 4 
-            parallelism = 4
+        freq = 4 
+        parallelism = 4
             
-            run(label=("pr_%d_range_medium" % perforation_rate), perforation_rate=perforation_rate, 
-                base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], 
-                benchmark=get_instance(benchmark, parallelism, input_set='small'))
+        run(label=("exp_pr_single"), 
+            base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], 
+            benchmark=get_instance(benchmark, parallelism, input_set='small'))
     
     after = time.monotonic()
     print(after- before)
     
+
+def multi_program_perforation_rate():
+    input_set = 'small'
+
+    freqency = 4
+    parallel = 3
+
+    benchmarks  = ''
+    for i, benchmark in enumerate((# 'parsec-blackscholes',
+                        # 'parsec-bodytrack',
+                        # 'parsec-canneal', 
+                        # 'parsec-streamcluster',
+                        'parsec-swaptions',
+                        'parsec-x264',                   
+                        #   'parsec-ferret' # unimplemented
+                        )):
+        min_parallelism = get_feasible_parallelisms(benchmark)[0]
+        
+        if i != 0:
+            benchmarks = benchmarks + ',' + get_instance(benchmark, parallel, input_set)
+        else:
+            benchmarks = benchmarks + get_instance(benchmark, parallel, input_set)
+
+    run(label="dev_multi_prog", 
+        base_configuration=['{:.1f}GHz'.format(freqency), 'maxFreq', 'slowDVFS'],
+        benchmark=benchmarks)
+
 
 def example():
     for benchmark in (
@@ -346,7 +370,10 @@ def test_static_power():
 
 
 def main():
-    perforation_rate()
+
+    # multi_program_perforation_rate()
+    single_program_perforation_rate()
+    
     # example()
     # test_static_power()
     # multi_program()

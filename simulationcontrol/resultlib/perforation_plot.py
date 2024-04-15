@@ -260,7 +260,6 @@ def perforation_qos_loss_plot(benchmark:str, data: ExpData, ax: Axes):
 # main
 benchmarks = compile_testdata("_range_medium")
 
-n = 0
 for func in (perforation_resp_time_speedup_plot, 
              perforation_hb_time_speedup_plot, 
              perforation_heart_rate_plot, perforation_qos_loss_plot,):
@@ -273,9 +272,8 @@ for func in (perforation_resp_time_speedup_plot,
         i+=1
 
     plt.tight_layout()
-    plt.savefig("perforation_{}.pdf".format(n))
+    plt.savefig("perforation_{}.pdf".format(func.__name__))
     plt.clf()
-    n+=1
 
 
 # Make multi loop perforation rate.
