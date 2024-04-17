@@ -7,6 +7,7 @@ class Marker:
     self.write_terminal = 'verbose' in args
     self.write_markers = 'markers' in args
     self.write_stats = 'stats' in args
+    
   def hook_magic_marker(self, thread, core, a, b, s):
     if self.write_terminal:
       print '[SCRIPT] Magic marker from thread %d: a = %d,' % (thread, a),

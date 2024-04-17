@@ -161,11 +161,8 @@ class Program:
 
     # copy the environment and add the siper app_id to it.
     proc_env = os.environ.copy()
-    proc_env['SNIPER_ID'] = str(42)
-# self.app_id
-    os.putenv('SNIPER_ID', str(42))
-
-
+    proc_env['SNIPER_ID'] = str(self.app_id)
+    proc_env['SNIPER_APP_NAME'] = self.program.upper()
 
     proc = subprocess.Popen([ '%s/parsec-2.1/bin/parsecmgmt' % HOME,
                          '-a', 'run', '-p', self.program, '-c', PLATFORM, '-i', self.inputsize, '-n', str(self.get_nthreads()),

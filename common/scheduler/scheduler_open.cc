@@ -286,7 +286,8 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	initMappingPolicy(Sim()->getCfg()->getString("scheduler/open/logic").c_str());
 	initDVFSPolicy(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str());
 	initMigrationPolicy(Sim()->getCfg()->getString("scheduler/open/migration/logic").c_str());
-	initPerforationPolicy("normal");
+	
+	initPerforationPolicy("normal", numberOfTasks);
 }
 
 /** initMappingPolicy
@@ -1371,18 +1372,27 @@ void SchedulerOpen::setFrequency(int coreCounter, int frequency)
 // TODO: Make it change over time to show the effect.
 void SchedulerOpen::executePerforationPolicy()
 {
-	perforation_rate = 5;
+	// Stats
+	// TODO
 }
 
 // TODO: Make an actual policy? or have it be a knob to twist.
 // TODO: Application specific rates.
-void SchedulerOpen::initPerforationPolicy(String policyName)
-{
-	registerStatsMetric("scheduler", 0, "perforation_rate", &perforation_rate);
 
-	if (policyName == "normal")
-	{
-		perforation_rate = 0; // skips 70% of iterations
+std::vector<std::vector<UInt64>> perforation_rates;
+std::vector<UInt64> app_codes;
+
+void SchedulerOpen::initPerforationPolicy(String policyName, int taskCount)
+{
+	perforation_rates.resize(taskCount);
+
+	for(int task_i = 0; task_i < taskCount; task_i++) {
+		perforation_rates[task_i].resize(32);
+
+		for(int loop_i = 0; loop_i < 32; loop_i++) {
+			registerStatsMetric("scheduler", loop_i, itostr(task_i) + "_perforation_rate", &(perforation_rates[task_i][loop_i]));
+			perforation_rates[task_i][loop_i] = 10 + loop_i;
+		}
 	}
 }
 
