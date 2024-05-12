@@ -52,8 +52,9 @@ def prev_run_cleanup():
             os.remove(file_path)
 
     for f in os.listdir(BENCHMARKS):
-        if ('output.' in f) or ('.264' in f) or ('poses.' in f) :
+        if ('output.' in f) or ('.264' in f) or ('poses.' in f) or ('app_mapping' in f) :
             os.remove(os.path.join(BENCHMARKS, f))
+        
 
 def save_output(base_configuration, benchmark, console_output, cpistack, started, ended, label: str):
     benchmark_text = benchmark
@@ -100,6 +101,8 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
         elif 'poses.' in f:
             shutil.copy(os.path.join(BENCHMARKS, f), directory)
         elif '.264' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'app_mapping.' in f:
             shutil.copy(os.path.join(BENCHMARKS, f), directory)
 
     create_plots(run)
@@ -255,22 +258,26 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 def single_program_perforation_rate():
     before = time.monotonic()
 
-    for benchmark in (  
-                        'parsec-blackscholes',
+    for pr in (4,5,6,7):
+        for benchmark in (  
+                        # 'parsec-blackscholes',
                         # 'parsec-bodytrack',
                         # 'parsec-canneal', 
-                        # 'parsec-streamcluster',
+                        'parsec-streamcluster',
                         # 'parsec-swaptions',
                         # 'parsec-x264',                   
                         # 'parsec-ferret' # unimplemented
                     ):
-
-        freq = 4 
-        parallelism = 4
+            freq = 3 
+            parallelism = 4
             
-        run(label=("exp_pr_single"), 
-            base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], 
-            benchmark=get_instance(benchmark, parallelism, input_set='small'))
+            SCRIPTS.append('magic_perforation_rate:{}'.format(pr))
+
+            print("running sniper with {}".format(SCRIPTS))
+
+            run(label=("exp_temp"), 
+                base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+                benchmark=get_instance(benchmark, parallelism, input_set='small'))
     
     after = time.monotonic()
     print(after- before)

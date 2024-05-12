@@ -1391,7 +1391,7 @@ void SchedulerOpen::initPerforationPolicy(String policyName, int taskCount)
 
 		for(int loop_i = 0; loop_i < 32; loop_i++) {
 			registerStatsMetric("scheduler", loop_i, itostr(task_i) + "_perforation_rate", &(perforation_rates[task_i][loop_i]));
-			perforation_rates[task_i][loop_i] = 10 + loop_i;
+			perforation_rates[task_i][loop_i] = 0;
 		}
 	}
 }

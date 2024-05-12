@@ -1,3 +1,4 @@
+import os
 import sim
 
 pr = 0
@@ -9,15 +10,15 @@ class Perf:
         global app_map
 
         args = (args or '').split(':')
-        pr = int(args[0])
 
+
+        # 'pr1,pr2,...,prn'
+        pr = [e for e in args[0].split(',')]
+        
         sim.util.register_command(0x126, Perf.hook_set_app)
 
-        for app in range(0,10):
-            sim.stats.register('scheduler', app, 'app_code', self.get_app_code)
-
-        if(pr != 0):
-            sim.util.register_command(0x125, Perf.hook_perforation_rate_stub)
+        if(len(pr) != 0):
+            sim.util.register_command(0x125, Perf.hook_m_perforation_rate_stub)
             return
         else:
             sim.util.register_command(0x125, Perf.hook_perforation_rate)
@@ -29,13 +30,13 @@ class Perf:
 
         return (a, b)
 
-    def get_app_code(self, objectName, index, metricName):
-        global app_map
-        for key, value in app_map.items():
-            if key == index:
-                return value
+    # def get_app_code(self, objectName, index, metricName):
+    #     global app_map
+    #     for key, value in app_map.items():
+    #         if key == index:
+    #             return value
             
-        return 0 #long(0)
+    #     return 0 #long(0)
 
     @staticmethod
     def hook_set_app(core, id):
@@ -43,6 +44,11 @@ class Perf:
 
         app_id, app_code = Perf.decomp_value(id)
         app_map[app_id] = app_code
+
+        results_path = os.getcwd()
+        file = open(os.path.join(results_path, 'app_mapping.txt'), "w")
+        file.write("{}, {}".format(app_id, app_code))
+        file.close()
 
         print("[MAGIC]: setting app: {} to be an instance of {}".format(app_id, app_code))
 
@@ -60,5 +66,18 @@ class Perf:
     def hook_perforation_rate_stub(core, id):
         global pr
         return pr
+    
+    @staticmethod
+    def hook_m_perforation_rate_stub(core, id):
+        global pr
+
+        loop_id, app_id = Perf.decomp_value(id)
+        try:
+            print("[MAGIC] **stub** app: ({}), loop_id: {} retrieved pr: {}".format(app_id, loop_id, pr[loop_id]))
+            return pr[loop_id]
+        except IndexError as e:
+            print("[MAGIC] **stub**, WARNING: index out of range ({}, {})".format(loop_id, pr[0]))
+            return pr[0]
+    
     
 sim.util.register(Perf())

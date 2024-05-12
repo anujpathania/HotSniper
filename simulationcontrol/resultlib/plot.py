@@ -101,10 +101,10 @@ def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=Non
             if core in active_cores:
                 valid_trace = [value for value in trace if value is not None]
                 if len(valid_trace) > 0:
-                    #if yMin is not None:
-                    #    yMin = min(yMin, min(valid_trace) * 1.1)
-                    #if yMax is not None:
-                    #    yMax = max(yMax, max(valid_trace) * 1.1)
+                    if yMin is not None:
+                       yMin = min(yMin, min(valid_trace) * 1.1)
+                    if yMax is not None:
+                       yMax = max(yMax, max(valid_trace) * 1.1)
                     tracelen = len(trace)
                     if smooth is not None:
                         trace = smoothen(trace, smooth)

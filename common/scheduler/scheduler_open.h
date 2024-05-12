@@ -54,7 +54,6 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		int maxFrequency;
 		int frequencyStepSize;
 
-		UInt64 perforation_rate;
 		void initPerforationPolicy(String policyName, int taskCount);
 		void executePerforationPolicy();
 
