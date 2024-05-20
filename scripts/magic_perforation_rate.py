@@ -17,6 +17,8 @@ class Perf:
         
         sim.util.register_command(0x126, Perf.hook_set_app)
 
+        sim.util.register_command(0x127, Perf.hook_log)
+
         if(len(pr) != 0):
             sim.util.register_command(0x125, Perf.hook_m_perforation_rate_stub)
             return
@@ -52,6 +54,15 @@ class Perf:
 
         print("[MAGIC]: setting app: {} to be an instance of {}".format(app_id, app_code))
 
+
+    @staticmethod
+    def hook_log(core, id):
+        
+        # a, b = Perf.decomp_value(id)
+        # print("[MAGIC]: a: {} b: {}".format(a, b))
+        print("[MAGIC]: value: {}".format(id))
+        return id
+
     @staticmethod
     def hook_perforation_rate(core, id):
         loop_id, app_id = Perf.decomp_value(id)
@@ -74,10 +85,10 @@ class Perf:
         loop_id, app_id = Perf.decomp_value(id)
         try:
             print("[MAGIC] **stub** app: ({}), loop_id: {} retrieved pr: {}".format(app_id, loop_id, pr[loop_id]))
-            return pr[loop_id]
+            return long(pr[loop_id])
         except IndexError as e:
             print("[MAGIC] **stub**, WARNING: index out of range ({}, {})".format(loop_id, pr[0]))
-            return pr[0]
+            return long(pr[0])
     
     
 sim.util.register(Perf())

@@ -1,9 +1,6 @@
-import io
-import re
-import cv2
+import os.path, io, sys, gzip
+import re, cv2
 import math
-import gzip
-import os.path
 
 import numpy as np
 import pandas as pd
@@ -47,7 +44,12 @@ def compile_testdata(label: str):
             elif 'x264' in dirname:
                 benchmarks['x264'].append(dirname)
 
+    print("Handeling the files: ")
+    for name, value in benchmarks.items():
+        print(name)
+        pprint(value)
 
+    print("\n")
 
     benchmark_analysis = {'blackscholes': ExpData(), 
                           'bodytrack': ExpData(),
@@ -90,7 +92,7 @@ def compile_testdata(label: str):
 
                     bench.hb_df = pd.concat([bench.hb_df, file_df])
 
-    return benchmark_analysis        
+    return benchmark_analysis
 
 
 def perforation_resp_time_speedup_plot(name:str, benchmark: ExpData, ax: Axes):
@@ -258,16 +260,21 @@ def perforation_qos_loss_plot(benchmark:str, data: ExpData, ax: Axes):
     ax.set_xlabel("perforation rate")
 
 # main
-benchmarks = compile_testdata("_range_medium")
+benchmarks = compile_testdata(sys.argv[1])
 
-for func in (perforation_resp_time_speedup_plot, 
-             perforation_hb_time_speedup_plot, 
-             perforation_heart_rate_plot, perforation_qos_loss_plot,):
+for func in (
+            #  perforation_resp_time_speedup_plot, 
+            #  perforation_hb_time_speedup_plot, 
+            #  perforation_heart_rate_plot, 
+             perforation_qos_loss_plot,):
     fig, axs = plt.subplots(2, 3, figsize=(15, 10))
     flat_ax = (axs.flatten())
 
     i = 0
     for name, data in benchmarks.items():
+        if not data:
+            continue
+
         func(name, data, flat_ax[i])
         i+=1
 

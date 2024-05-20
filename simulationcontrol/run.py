@@ -108,7 +108,7 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
     create_plots(run)
 
 
-def run(base_configuration, benchmark, label: str, ignore_error=False):
+def run(base_configuration, benchmark, label: str, script: str, ignore_error=False):
     print('running {}: {} with configuration {}'.format(label, benchmark, '+'.join(base_configuration)))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
@@ -133,7 +133,7 @@ def run(base_configuration, benchmark, label: str, ignore_error=False):
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
                 periodic=periodicPower,
-                script= ''.join([' -s' + script for script in SCRIPTS]),
+                script= ' -s'+script + ''.join([' -s' + s for s in SCRIPTS]),
                 benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
     
     console_output = ''
@@ -258,26 +258,28 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 def single_program_perforation_rate():
     before = time.monotonic()
 
-    for pr in (4,5,6,7):
-        for benchmark in (  
-                        # 'parsec-blackscholes',
-                        # 'parsec-bodytrack',
-                        # 'parsec-canneal', 
-                        'parsec-streamcluster',
-                        # 'parsec-swaptions',
-                        # 'parsec-x264',                   
-                        # 'parsec-ferret' # unimplemented
-                    ):
-            freq = 3 
-            parallelism = 4
-            
-            SCRIPTS.append('magic_perforation_rate:{}'.format(pr))
+    for pr in ((0,0), (32, 32), (30, 30), (35, 10), (40, 5)):
+            for benchmark in (  
+                            # 'parsec-blackscholes',
+                            # 'parsec-bodytrack',
+                            # 'parsec-canneal', 
+                            # 'parsec-streamcluster',
+                            'parsec-swaptions',
+                            # 'parsec-x264',                   
+                            # 'parsec-ferret' # unimplemented
+                        ):
 
-            print("running sniper with {}".format(SCRIPTS))
+                freq = 2
+                parallelism = 4
 
-            run(label=("exp_temp"), 
-                base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
-                benchmark=get_instance(benchmark, parallelism, input_set='small'))
+                pr1, pr2 = pr                
+
+                print("running sniper with {}".format(SCRIPTS))
+
+                run(label=("exp_qos_pr:{},{}".format(pr1, pr2)), 
+                    base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+                    benchmark=get_instance(benchmark, parallelism, input_set='small'),
+                    script='magic_perforation_rate:{},{}'.format(pr1, pr2))
     
     after = time.monotonic()
     print(after- before)
