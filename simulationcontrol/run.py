@@ -258,7 +258,7 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 def single_program_perforation_rate():
     before = time.monotonic()
 
-    for pr in ((0,0), (32, 32), (30, 30), (35, 10), (40, 5)):
+    for pr in ((40, 0),(60, 0),(80, 0),(0, 40),(0, 60),(0, 80),):
             for benchmark in (  
                             # 'parsec-blackscholes',
                             # 'parsec-bodytrack',
@@ -269,17 +269,13 @@ def single_program_perforation_rate():
                             # 'parsec-ferret' # unimplemented
                         ):
 
-                freq = 2
-                parallelism = 4
+                freq = 4
+                parallelism = 10
 
-                pr1, pr2 = pr                
-
-                print("running sniper with {}".format(SCRIPTS))
-
-                run(label=("exp_qos_pr:{},{}".format(pr1, pr2)), 
+                run(label=("swap_profile_pr:{},{}".format(pr[0], pr[1])), 
                     base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
-                    benchmark=get_instance(benchmark, parallelism, input_set='small'),
-                    script='magic_perforation_rate:{},{}'.format(pr1, pr2))
+                    benchmark=get_instance(benchmark, parallelism, input_set='medium'),
+                    script='magic_perforation_rate:{},{}'.format(pr[0], pr[1]))
     
     after = time.monotonic()
     print(after- before)
