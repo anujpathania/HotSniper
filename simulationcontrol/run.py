@@ -258,13 +258,16 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 def single_program_perforation_rate():
     before = time.monotonic()
 
-    for pr in ((40, 0),(60, 0),(80, 0),(0, 40),(0, 60),(0, 80),):
+    #TODO: profile the newly instrumented bodytrack
+    #TODO: see if we can use 2Ghz to need more perforation for the motivational example.
+    for pr in range(10, 91, 10):
+        for pos in range(6):
             for benchmark in (  
                             # 'parsec-blackscholes',
-                            # 'parsec-bodytrack',
+                            'parsec-bodytrack',
                             # 'parsec-canneal', 
                             # 'parsec-streamcluster',
-                            'parsec-swaptions',
+                            # 'parsec-swaptions',
                             # 'parsec-x264',                   
                             # 'parsec-ferret' # unimplemented
                         ):
@@ -272,10 +275,13 @@ def single_program_perforation_rate():
                 freq = 4
                 parallelism = 10
 
-                run(label=("swap_profile_pr:{},{}".format(pr[0], pr[1])), 
+                pr_vec = [0,0,0,0,0,0]
+                pr_vec[pos] = pr
+
+                run(label=("bodytrack_medium_baseline:{}".format(''.join('%d,' % rate for rate in pr)[:-1])), 
                     base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
                     benchmark=get_instance(benchmark, parallelism, input_set='medium'),
-                    script='magic_perforation_rate:{},{}'.format(pr[0], pr[1]))
+                    script='magic_perforation_rate:{}'.format(''.join('%d,' % rate for rate in pr)[:-1]))
     
     after = time.monotonic()
     print(after- before)
