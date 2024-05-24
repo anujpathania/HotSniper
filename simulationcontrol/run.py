@@ -269,7 +269,7 @@ def single_program_perforation_rate():
                 freq = 4
                 parallelism = 10
 
-                pr_vec = [pr for e in range(benchmark[1])]
+                pr_vec = [str(pr) for e in range(benchmark[1])]
 
                 run(label="symmetric_profiling:%s" % ','.join(pr_vec), 
                     base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
