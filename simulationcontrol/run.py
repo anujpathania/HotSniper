@@ -256,35 +256,25 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 
 
 def single_program_perforation_rate():
-    before = time.monotonic()
-
-    #TODO: profile the newly instrumented bodytrack
-    #TODO: see if we can use 2Ghz to need more perforation for the motivational example.
-    for pr in range(10, 91, 10):
-        for pos in range(6):
-            for benchmark in (  
-                            # 'parsec-blackscholes',
-                            'parsec-bodytrack',
-                            # 'parsec-canneal', 
-                            # 'parsec-streamcluster',
-                            # 'parsec-swaptions',
-                            # 'parsec-x264',                   
-                            # 'parsec-ferret' # unimplemented
+    for pr in range(0, 91, 10):
+        for benchmark in (     
+                            ('parsec-blackscholes', 1),
+                            ('parsec-bodytrack', 6),
+                            ('parsec-canneal', 4), 
+                            ('parsec-streamcluster', 2),
+                            ('parsec-swaptions', 3),
+                            ('parsec-x264', 6),
                         ):
-
+  
                 freq = 4
                 parallelism = 10
 
-                pr_vec = [0,0,0,0,0,0]
-                pr_vec[pos] = pr
+                pr_vec = [pr for e in range(benchmark[1])]
 
-                run(label=("bodytrack_medium_baseline:{}".format(''.join('%d,' % rate for rate in pr)[:-1])), 
+                run(label="symmetric_profiling:%s" % ','.join(pr_vec), 
                     base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
-                    benchmark=get_instance(benchmark, parallelism, input_set='medium'),
-                    script='magic_perforation_rate:{}'.format(''.join('%d,' % rate for rate in pr)[:-1]))
-    
-    after = time.monotonic()
-    print(after- before)
+                    benchmark=get_instance(benchmark[0], parallelism, input_set='medium'),
+                    script='magic_perforation_rate:%s' % ','.join(pr_vec))
     
 
 def multi_program_perforation_rate():
