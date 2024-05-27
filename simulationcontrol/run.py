@@ -256,7 +256,7 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 
 
 def single_program_perforation_rate():
-    for pr in (50):
+    for pr in (50, 0):
         for benchmark in (     
                             ('parsec-bodytrack', 6),
                             ('parsec-blackscholes', 1),
@@ -266,6 +266,8 @@ def single_program_perforation_rate():
                             ('parsec-x264', 6),
                         ):
                 for loop in range(benchmark[1]):
+
+                    if pr == 0 and loop > 0: continue
 
                     freq = 4
                     parallelism = 9
