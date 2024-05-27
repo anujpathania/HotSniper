@@ -272,7 +272,7 @@ def single_program_perforation_rate():
                     freq = 4
                     parallelism = 9
 
-                    pr_vec = [0 for e in range(benchmark[1])]
+                    pr_vec = ["0" for e in range(benchmark[1])]
                     pr_vec[loop] = str(pr)
 
                     run(label="asymetric_profiling_50", 
