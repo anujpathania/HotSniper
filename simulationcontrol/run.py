@@ -256,26 +256,24 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 
 
 def single_program_perforation_rate():
-    for pr in (50, 0):
-        for benchmark in (     
-                            ('parsec-bodytrack', 6),
-                            ('parsec-blackscholes', 1),
-                            # ('parsec-canneal', 4), 
-                            # ('parsec-streamcluster', 2?),
-                            ('parsec-swaptions', 3),
-                            ('parsec-x264', 6),
-                        ):
+    for benchmark in (
+                        ('parsec-bodytrack', 6),
+                        ('parsec-x264', 6),
+                        ('parsec-swaptions', 3),
+                        # ('parsec-streamcluster', 2),
+                        # ('parsec-blackscholes', 1),
+                        # ('parsec-canneal', 3), 
+                    ):
+        for background_pr in (0, 25, 50, 75,):
+            for loop_pr in (0, 25, 50, 75,):
                 for loop in range(benchmark[1]):
-
-                    if pr == 0 and loop > 0: continue
-
                     freq = 4
-                    parallelism = 9
+                    parallelism = 3
 
-                    pr_vec = ["0" for e in range(benchmark[1])]
-                    pr_vec[loop] = str(pr)
+                    pr_vec = [str(background_pr) for e in range(benchmark[1])]
+                    pr_vec[loop] = str(loop_pr)
 
-                    run(label="asymetric_profiling_50", 
+                    run(label="modeling_pr_vec:{}".format(','.join(pr_vec)), 
                         base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
                         benchmark=get_instance(benchmark[0], parallelism, input_set='small'),
                         script='magic_perforation_rate:%s' % ','.join(pr_vec))
