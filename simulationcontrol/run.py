@@ -255,25 +255,43 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
         raise Exception('either parallelism or number_tasks needs to be set')
 
 
+def dev_single():
+    benchmark = ('parsec-canneal', 3)
+
+    freq = 4
+    parallelism = 4
+
+    pr = 50
+    pr_vec = [str(pr) for e in range(benchmark[1])]
+
+    run(label="development_pr:{}".format(','.join(pr_vec)), 
+        base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+        benchmark=get_instance(benchmark[0], parallelism, input_set='small'),
+        script='magic_perforation_rate:%s' % ','.join(pr_vec))
+
+
 def single_program_perforation_rate():
     for benchmark in (
-                        ('parsec-bodytrack', 6),
-                        ('parsec-x264', 6),
-                        ('parsec-swaptions', 3),
+                        ('parsec-swaptions', 2),
+                        # ('parsec-bodytrack', 6),
+                        # ('parsec-x264', 6),
                         # ('parsec-streamcluster', 2),
                         # ('parsec-blackscholes', 1),
                         # ('parsec-canneal', 3), 
                     ):
         for background_pr in (0, 25, 50, 75,):
-            for loop_pr in (0, 25, 50, 75,):
+            for loop_pr in (25, 50, 75,):
                 for loop in range(benchmark[1]):
+                    if(background_pr == loop_pr and loop <= 1):
+                        continue;
+
                     freq = 4
                     parallelism = 3
 
                     pr_vec = [str(background_pr) for e in range(benchmark[1])]
                     pr_vec[loop] = str(loop_pr)
 
-                    run(label="modeling_pr_vec:{}".format(','.join(pr_vec)), 
+                    run(label="swaptions_surface_graph:{}".format(','.join(pr_vec)), 
                         base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
                         benchmark=get_instance(benchmark[0], parallelism, input_set='small'),
                         script='magic_perforation_rate:%s' % ','.join(pr_vec))
@@ -376,7 +394,8 @@ def test_static_power():
 def main():
 
     # multi_program_perforation_rate()
-    single_program_perforation_rate()
+    dev_single()
+    # single_program_perforation_rate()
     
     # example()
     # test_static_power()

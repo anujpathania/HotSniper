@@ -11,7 +11,6 @@ class Perf:
 
         args = (args or '').split(':')
 
-
         # 'pr1,pr2,...,prn'
         pr = [e for e in args[0].split(',')]
         
