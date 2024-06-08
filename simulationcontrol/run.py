@@ -270,9 +270,9 @@ def dev_single():
         script='magic_perforation_rate:%s' % ','.join(pr_vec))
 
 
-def single_program_perforation_rate():
+def single_program_perforation_rate_background_mask():
     for benchmark in (
-                        ('parsec-swaptions', 2),
+                        ('parsec-swaptions', 3),
                         # ('parsec-bodytrack', 6),
                         # ('parsec-x264', 6),
                         # ('parsec-streamcluster', 2),
@@ -280,7 +280,7 @@ def single_program_perforation_rate():
                         # ('parsec-canneal', 3), 
                     ):
         for background_pr in (0, 25, 50, 75,):
-            for loop_pr in (25, 50, 75,):
+            for loop_pr in (0, 25, 50, 75,):
                 for loop in range(benchmark[1]):
                     if(background_pr == loop_pr and loop <= 1):
                         continue;
@@ -291,10 +291,28 @@ def single_program_perforation_rate():
                     pr_vec = [str(background_pr) for e in range(benchmark[1])]
                     pr_vec[loop] = str(loop_pr)
 
-                    run(label="swaptions_surface_graph:{}".format(','.join(pr_vec)), 
+                    run(label="model_collection:{}".format(','.join(pr_vec)), 
                         base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
                         benchmark=get_instance(benchmark[0], parallelism, input_set='small'),
                         script='magic_perforation_rate:%s' % ','.join(pr_vec))
+                    
+def perforation_rate_loop_pair_profile(loop_a: int, loop_b: int, benchmark_loop):
+    freq = 4
+    parallelism = 3
+    background_pr = 0
+    
+    pr_vec = [str(background_pr) for e in range(benchmark_loop[1])]
+    
+    for pr_a in (0, 25, 50, 75):
+        for pr_b in (0, 25, 50, 75):
+
+            pr_vec[loop_a] = str(pr_a)
+            pr_vec[loop_b] = str(pr_b)
+
+            run(label="swaptions_surface_a{}_b{}:{}".format(loop_a, loop_b, ','.join(pr_vec)), 
+                base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+                benchmark=get_instance(benchmark_loop[0], parallelism, input_set='small'),
+                script='magic_perforation_rate:%s' % ','.join(pr_vec))
     
 
 def multi_program_perforation_rate():
@@ -392,9 +410,11 @@ def test_static_power():
 
 
 def main():
+    perforation_rate_loop_pair_profile(0, 2, ('parsec-swaptions', 3))
+    # perforation_rate_loop_pair_profile(0, 1, ('parsec-swaptions', 3))
 
     # multi_program_perforation_rate()
-    dev_single()
+    # dev_single()
     # single_program_perforation_rate()
     
     # example()
