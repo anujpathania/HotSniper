@@ -311,7 +311,7 @@ def perforation_rate_loop_pair_profile(loop_a: int, loop_b: int, benchmark_loop)
 
             run(label="swaptions_surface_3_a{}_b{}:{}".format(loop_a, loop_b, ','.join(pr_vec)), 
                 base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
-                benchmark=get_instance(benchmark_loop[0], parallelism, input_set='accuracy'),
+                benchmark=get_instance(benchmark_loop[0], parallelism, input_set='small'),
                 script='magic_perforation_rate:%s' % ','.join(pr_vec))
     
 
