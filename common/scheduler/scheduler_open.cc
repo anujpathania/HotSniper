@@ -310,11 +310,16 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 	} else if (policyName == "fixedPower") {
 		float perCorePowerBudget = Sim()->getCfg()->getFloat("scheduler/open/dvfs/fixed_power/per_core_power_budget");
 		dvfsPolicy = new DVFSFixedPower(performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, perCorePowerBudget);
-	} else if (false && policyName == "tsp") {
-        // TSP is not supported on subcomponent simulations.
+	} else if (policyName == "tsp") {
+		double ambientTemperature = Sim()->getCfg()->getFloat("periodic_thermal/ambient_temperature");
+    double maxTemperature = Sim()->getCfg()->getFloat("periodic_thermal/max_temperature");
+    double inactivePower = Sim()->getCfg()->getFloat("periodic_thermal/inactive_power");
+    double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
+		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
+
 		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
-	} //else if (policyName ="XYZ") {... } //Place to instantiate a new DVFS logic. Implementation is put in "policies" package.
-	else {
+	} else {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
  		exit (1);
 	}
