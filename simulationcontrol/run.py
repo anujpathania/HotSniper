@@ -338,8 +338,8 @@ def perforation_rate_profile(benchmark_loop, loop_rates, background_rates):
     parallelism = 3
     
     for loop in range(benchmark_loop[1]):
-        for background_pr in loop_rates: #(0, 20, 40, 60):
-            for loop_pr in background_rates: #(0, 18, 20, 22, 38, 40, 42, 58, 60, 62):
+        for background_pr in loop_rates: 
+            for loop_pr in background_rates: 
                 pr_vec = [str(background_pr) for e in range(benchmark_loop[1])]
                 pr_vec[loop] = loop_pr
 
@@ -348,7 +348,15 @@ def perforation_rate_profile(benchmark_loop, loop_rates, background_rates):
                     benchmark=get_instance(benchmark_loop[0], parallelism, input_set='small'),
                     script='magic_perforation_rate:%s' % ','.join(pr_vec))
     
+def perforation_rate(label, benchmark, loop_rates, input_set='small'):
+    freq = 4
+    parallelism = 3
 
+    run(label="{}_{}:{}".format(label, benchmark, ','.join(loop_rates)), 
+        base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+        benchmark=get_instance(benchmark, parallelism, input_set=input_set),
+        script='magic_perforation_rate:%s' % ','.join(loop_rates))
+    
 
 def multi_program_perforation_rate():
     input_set = 'small'
@@ -445,20 +453,14 @@ def test_static_power():
 
 
 def main():
-    # perforation_rate_loop_pair_profile(0, 2, ('parsec-swaptions', 3))
-    # perforation_rate_loop_pair_profile(0, 1, ('parsec-swaptions', 3))
-    
-    perforation_rate_profile(("parsec-swaptions", 2), background_rates=(20,40,60), loop_rates=(18, 20, 22))
-    perforation_rate_profile(("parsec-swaptions", 2), background_rates=(20,40,60), loop_rates=(38, 40, 42))
-    perforation_rate_profile(("parsec-swaptions", 2), background_rates=(20,40,60), loop_rates=(58, 60, 62))
+    label = sys.argv[1]
+    benchmark = sys.argv[2]
+    pr_vec = [e for e in sys.argv[3].split(',')]
 
-    # multi_program_perforation_rate()
-    # dev_single()
-    # single_program_perforation_rate()
-    
-    # example()
-    # test_static_power()
-    # multi_program()
+    print('running: ', label, benchmark, pr_vec)
+
+    # perforation_rate(label, benchmark, pr_vec)
+
 
 if __name__ == '__main__':
     main()
