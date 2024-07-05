@@ -1376,9 +1376,6 @@ void SchedulerOpen::executePerforationPolicy()
 	// TODO
 }
 
-// TODO: Make an actual policy? or have it be a knob to twist.
-// TODO: Application specific rates.
-
 std::vector<std::vector<UInt64>> perforation_rates;
 std::vector<UInt64> app_codes;
 

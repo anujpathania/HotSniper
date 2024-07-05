@@ -454,7 +454,7 @@ def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='small'))
 
 
-def the_eye_of_sauron():
+def run_perforation_mp():
     label = sys.argv[1]
     benchmark = sys.argv[2]
     pr_vec = [e for e in sys.argv[3].split(',')]
@@ -493,23 +493,65 @@ def create_grid_search(ranges, step_sizes):
 
 	return grid_points
 
-def sim_u_later():
+
+def create_accuracy_reference():
     input_size = "simlarge"
+    
+    for benchmark in (
+                        ("parsec-blackscholes", 1),
+                        ("parsec-bodytrack", 6),
+                        ("parsec-canneal", 3),
+                        ("parsec-streamcluster", 2),
+                        ("parsec-swaptions", 2),
+                        ("parsec-x264", 6),
+                    ):
+            
+        config = [0 for _ in range(benchmark[1])]
+        print("{} -> {}".format(benchmark[0], ','.join(map(str, config))))
+        prev_run_cleanup()
+
+        cmd = os.path.join(os.getenv("BENCHMARKS_ROOT"), 'parsec/parsec-2.1/bin/parsecmgmt')
+        
+        proc_env = os.environ.copy()
+        proc_env["MANUAL_PERFORATION"] = ','.join(map(str, config))
+
+        console_output = ''
+        p = subprocess.Popen([cmd, '-a', 'run', '-p', benchmark[0], '-i', input_size, '-n', '4', '-c',  'gcc-sniper'], 
+                                env=proc_env,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
+        with p.stdout:
+            for line in iter(p.stdout.readline, b''):
+                linestr = line.decode('utf-8')
+                console_output += linestr
+
+        p.wait()
+
+        save_output_no_sim(benchmark[0], console_output, input_size, 
+                            datetime.datetime.now(), 
+                            "accuracy_montecarlo_ref:{}".format(','.join(map(str, config))))
+
+    return
+
+
+def create_accuracy_profile():
+    input_size = "simlarge"
+    
     for benchmark in (
                         ("parsec-bodytrack", 6),
                         ("parsec-blackscholes", 1),
                         ("parsec-canneal", 3),
                         ("parsec-swaptions", 2),
-                        ("parsec-streamcluster", 2),
-                        ("parsec-x264", 6),
+                        # ("parsec-streamcluster", 2),
+                        # ("parsec-x264", 6),
                     ):
-        
-        ranges = [[0, 100] for _ in range(benchmark[1])]
-        stepsz = [10 for _ in range(benchmark[1])]
-        
-        search = create_grid_search(ranges, stepsz)
-        for i, config in enumerate(search):
-            print("{} -> [{}/{}]: {}".format(benchmark[0], i, len(search), ','.join(map(str, config))))
+
+
+        for i in range(int(100*100)):
+            if(benchmark[0] == "parsec-x264" and i > 1e4/2):
+                break
+
+            config = [random.randint(0, 100) for _ in range(benchmark[1])]
+            print("{} -> [{}% ({})]: {}".format(benchmark[0], (i / int(1e4))*100, int(1e4),  ','.join(map(str, config))))
             prev_run_cleanup()
 
             cmd = os.path.join(os.getenv("BENCHMARKS_ROOT"), 'parsec/parsec-2.1/bin/parsecmgmt')
@@ -528,14 +570,17 @@ def sim_u_later():
 
             p.wait()
 
-            save_output_no_sim(benchmark[0], console_output, input_size, datetime.datetime.now(), "accuracy_grid_search")
+            save_output_no_sim(benchmark[0], console_output, input_size, 
+                               datetime.datetime.now(), 
+                               "accuracy_montecarlo:{}".format(','.join(map(str, config))))
 
     return
 
 
 def main():
-    # the_eye_of_sauron()
-    sim_u_later()
+    run_perforation_mp()
+    # create_accuracy_reference()
+    # create_accuracy_profile()
     
 
 if __name__ == '__main__':
