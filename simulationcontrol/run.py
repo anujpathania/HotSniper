@@ -352,7 +352,7 @@ def perforation_rate_profile(benchmark_loop, loop_rates, background_rates):
     
 def perforation_rate(label, benchmark, loop_rates, input_set='small'):
     freq = 4
-    parallelism = 3
+    parallelism = 4
 
     run(label="{}_{}:{}".format(label, benchmark, ','.join(loop_rates)), 
         base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
@@ -495,7 +495,7 @@ def create_grid_search(ranges, step_sizes):
 
 
 def create_accuracy_reference():
-    input_size = "simlarge"
+    input_size = "simsmall"
     
     for benchmark in (
                         ("parsec-blackscholes", 1),
@@ -507,7 +507,6 @@ def create_accuracy_reference():
                     ):
             
         config = [0 for _ in range(benchmark[1])]
-        print("{} -> {}".format(benchmark[0], ','.join(map(str, config))))
         prev_run_cleanup()
 
         cmd = os.path.join(os.getenv("BENCHMARKS_ROOT"), 'parsec/parsec-2.1/bin/parsecmgmt')
@@ -528,27 +527,25 @@ def create_accuracy_reference():
 
         save_output_no_sim(benchmark[0], console_output, input_size, 
                             datetime.datetime.now(), 
-                            "accuracy_montecarlo_ref:{}".format(','.join(map(str, config))))
+                            "reference:{}".format(','.join(map(str, config))))
 
     return
 
 
 def create_accuracy_profile():
-    input_size = "simlarge"
+    input_size = "simsmall"
     
     for benchmark in (
                         ("parsec-bodytrack", 6),
                         ("parsec-blackscholes", 1),
                         ("parsec-canneal", 3),
                         ("parsec-swaptions", 2),
-                        # ("parsec-streamcluster", 2),
-                        # ("parsec-x264", 6),
+                        ("parsec-streamcluster", 2),
+                        ("parsec-x264", 6),
                     ):
 
 
-        for i in range(int(100*100)):
-            if(benchmark[0] == "parsec-x264" and i > 1e4/2):
-                break
+        for i in range(1000):
 
             config = [random.randint(0, 100) for _ in range(benchmark[1])]
             print("{} -> [{}% ({})]: {}".format(benchmark[0], (i / int(1e4))*100, int(1e4),  ','.join(map(str, config))))
@@ -572,16 +569,25 @@ def create_accuracy_profile():
 
             save_output_no_sim(benchmark[0], console_output, input_size, 
                                datetime.datetime.now(), 
-                               "accuracy_montecarlo:{}".format(','.join(map(str, config))))
+                               "accuracy_montecarlo_simsmall:{}".format(','.join(map(str, config))))
 
     return
 
 
 def main():
-    run_perforation_mp()
+    # run_perforation_mp()
     # create_accuracy_reference()
     # create_accuracy_profile()
-    
+
+    perforation_rate("50 profile", "parsec-streamcluster", [  str(0) for j in range(2) ])
+
+    for i in range(2):
+        perforation_rate("50 profile", "parsec-streamcluster", [  str(50) if i == j else str(0) for j in range(2) ])
+   
+    # for i in range(0,99, 10):
+    #     perforation_rate("speed-up_monte-carlo", "parsec-bodytrack", [str(i)] * 6)
+    #     perforation_rate("speed-up_monte-carlo", "parsec-x264", [str(i)] * 6)
+    #     perforation_rate("speed-up_monte-carlo", "parsec-swaptions", [str(i)] * 3)
 
 if __name__ == '__main__':
     main()
