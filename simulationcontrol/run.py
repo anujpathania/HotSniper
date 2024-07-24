@@ -7,10 +7,13 @@ import random
 import re
 import shutil
 import subprocess
+import time
 import traceback
 import sys
 
-from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPT, ENABLE_HEARTBEATS
+import numpy as np
+
+from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPTS, ENABLE_HEARTBEATS
 from resultlib.plot import create_plots
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -50,12 +53,16 @@ def prev_run_cleanup():
         if os.path.isfile(file_path):
             os.remove(file_path)
 
+    for f in os.listdir(BENCHMARKS):
+        if ('output.' in f) or ('.264' in f) or ('poses.' in f) or ('app_mapping' in f) :
+            os.remove(os.path.join(BENCHMARKS, f))
+        
 
-def save_output(base_configuration, benchmark, console_output, cpistack, started, ended):
+def save_output(base_configuration, benchmark, console_output, cpistack, started, ended, label: str):
     benchmark_text = benchmark
     if len(benchmark_text) > 100:
         benchmark_text = benchmark_text[:100] + '__etc'
-    run = 'results_{}_{}_{}'.format(BATCH_START, '+'.join(base_configuration), benchmark_text)
+    run = 'results_{}_{}_{}_{}'.format(BATCH_START, '+'.join(base_configuration), benchmark_text, label)
     directory = os.path.join(RESULTS_FOLDER, run)
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -89,12 +96,22 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
         if not re.match(pattern, f):
             continue
         shutil.copy(os.path.join(BENCHMARKS, f), directory)
+    
+    for f in os.listdir(BENCHMARKS):
+        if 'output.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'poses.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif '.264' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'app_mapping.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
 
     create_plots(run)
 
 
-def run(base_configuration, benchmark, ignore_error=False):
-    print('running {} with configuration {}'.format(benchmark, '+'.join(base_configuration)))
+def run(base_configuration, benchmark, label: str, script: str, ignore_error=False):
+    print('running {}: {} with configuration {}'.format(label, benchmark, '+'.join(base_configuration)))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
 
@@ -111,15 +128,19 @@ def run(base_configuration, benchmark, ignore_error=False):
     if 'mediumDVFS' in base_configuration:
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
-        periodicPower = 100000    
+        periodicPower = 100000 
+   
     args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
                 periodic=periodicPower,
-                script=" -s %s" % SCRIPT if SCRIPT else '',
+                script= ' -s'+script + ''.join([' -s' + s for s in SCRIPTS]),
                 benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
+    
     console_output = ''
+
+    print(args)
 
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
     p = subprocess.Popen([run_sniper] + args.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
@@ -128,6 +149,7 @@ def run(base_configuration, benchmark, ignore_error=False):
             linestr = line.decode('utf-8')
             console_output += linestr
             print(linestr, end='')
+
     p.wait()
 
     try:
@@ -140,7 +162,7 @@ def run(base_configuration, benchmark, ignore_error=False):
 
     ended = datetime.datetime.now()
 
-    save_output(base_configuration, benchmark, console_output, cpistack, started, ended)
+    save_output(base_configuration, benchmark, console_output, cpistack, started, ended, label)
 
     if p.returncode != 0:
         raise Exception('return code != 0')
@@ -235,16 +257,149 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
         raise Exception('either parallelism or number_tasks needs to be set')
 
 
+def dev_single():
+    benchmark = ('parsec-canneal', 3)
+
+    freq = 4
+    parallelism = 4
+
+    pr = 50
+    pr_vec = [str(pr) for e in range(benchmark[1])]
+
+    run(label="development_pr:{}".format(','.join(pr_vec)), 
+        base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+        benchmark=get_instance(benchmark[0], parallelism, input_set='small'),
+        script='magic_perforation_rate:%s' % ','.join(pr_vec))
+
+
+def single_program_perforation_rate_background_mask():
+    for benchmark in (
+                        ('parsec-swaptions', 3),
+                        # ('parsec-bodytrack', 6),
+                        # ('parsec-x264', 6),
+                        # ('parsec-streamcluster', 2),
+                        # ('parsec-blackscholes', 1),
+                        # ('parsec-canneal', 3), 
+                    ):
+        for background_pr in (0, 25, 50, 75,):
+            for loop_pr in (0, 25, 50, 75,):
+                for loop in range(benchmark[1]):
+                    if(background_pr == loop_pr and loop <= 1):
+                        continue;
+
+                    freq = 4
+                    parallelism = 3
+
+                    pr_vec = [str(background_pr) for e in range(benchmark[1])]
+                    pr_vec[loop] = str(loop_pr)
+
+                    run(label="model_collection:{}".format(','.join(pr_vec)), 
+                        base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+                        benchmark=get_instance(benchmark[0], parallelism, input_set='small'),
+                        script='magic_perforation_rate:%s' % ','.join(pr_vec))
+                    
+def perforation_rate_loop_pair_profile(loop_a: int, loop_b: int, benchmark_loop):
+    freq = 4
+    parallelism = 3
+    background_pr = 0
+    
+    pr_vec = [str(background_pr) for e in range(benchmark_loop[1])]
+    
+    for pr_a in (0, 20, 40, 60):
+        for pr_b in (0, 20, 40, 60):
+
+            pr_vec[loop_a] = str(pr_a)
+            pr_vec[loop_b] = str(pr_b)
+
+            run(label="swaptions_surface_3_a{}_b{}:{}".format(loop_a, loop_b, ','.join(pr_vec)), 
+                base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+                benchmark=get_instance(benchmark_loop[0], parallelism, input_set='small'),
+                script='magic_perforation_rate:%s' % ','.join(pr_vec))
+
+def perforation_rate_loop_pair_profile(loop_a: int, loop_b: int, benchmark_loop):
+    freq = 4
+    parallelism = 3
+    background_pr = 0
+    
+    pr_vec = [str(background_pr) for e in range(benchmark_loop[1])]
+    
+    for pr_a in (0, 20, 40, 60):
+        for pr_b in (0, 20, 40, 60):
+
+            pr_vec[loop_a] = str(pr_a)
+            pr_vec[loop_b] = str(pr_b)
+
+            run(label="swaptions_surface_3_a{}_b{}:{}".format(loop_a, loop_b, ','.join(pr_vec)), 
+                base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+                benchmark=get_instance(benchmark_loop[0], parallelism, input_set='small'),
+                script='magic_perforation_rate:%s' % ','.join(pr_vec))
+            
+
+def perforation_rate_profile(benchmark_loop, loop_rates, background_rates):
+    freq = 4
+    parallelism = 3
+    
+    for loop in range(benchmark_loop[1]):
+        for background_pr in loop_rates: 
+            for loop_pr in background_rates: 
+                pr_vec = [str(background_pr) for e in range(benchmark_loop[1])]
+                pr_vec[loop] = loop_pr
+
+                run(label="{}_surface:{}".format(benchmark_loop[0], ','.join(pr_vec)), 
+                    base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+                    benchmark=get_instance(benchmark_loop[0], parallelism, input_set='small'),
+                    script='magic_perforation_rate:%s' % ','.join(pr_vec))
+    
+def perforation_rate(label, benchmark, loop_rates, input_set='small'):
+    freq = 4
+    parallelism = 4
+
+    run(label="{}_{}:{}".format(label, benchmark, ','.join(loop_rates)), 
+        base_configuration=['{:.1f}GHz'.format(freq), 'maxFreq'], # 'slowDVFS' 
+        benchmark=get_instance(benchmark, parallelism, input_set=input_set),
+        script='magic_perforation_rate:%s' % ','.join(loop_rates))
+    
+
+def multi_program_perforation_rate():
+    input_set = 'small'
+
+    freqency = 4
+    parallel = 3
+
+    benchmarks  = ''
+    for i, benchmark in enumerate((# 'parsec-blackscholes',
+                        # 'parsec-bodytrack',
+                        # 'parsec-canneal', 
+                        # 'parsec-streamcluster',
+                        'parsec-swaptions',
+                        'parsec-x264',                   
+                        #   'parsec-ferret' # unimplemented
+                        )):
+        min_parallelism = get_feasible_parallelisms(benchmark)[0]
+        
+        if i != 0:
+            benchmarks = benchmarks + ',' + get_instance(benchmark, parallel, input_set)
+        else:
+            benchmarks = benchmarks + get_instance(benchmark, parallel, input_set)
+
+    run(label="dev_multi_prog", 
+        base_configuration=['{:.1f}GHz'.format(freqency), 'maxFreq', 'slowDVFS'],
+        benchmark=benchmarks)
+
+
 def example():
     for benchmark in (
-                      'parsec-blackscholes',
-                      #'parsec-bodytrack',
-                      #'parsec-canneal',
-                      #'parsec-dedup',
+                    #   'parsec-blackscholes',
+                    #   'parsec-bodytrack',
+                    #   'parsec-canneal',
+                    #   'parsec-streamcluster',
+                    #   'parsec-swaptions',
+                    #   'parsec-x264',
+                      #'parsec-ferret'
+        
                       #'parsec-fluidanimate',
-                      #'parsec-streamcluster',
-                      #'parsec-swaptions',
-                      #'parsec-x264',
+                      #'parsec-dedup',
+                      
                       #'splash2-barnes',
                       #'splash2-fmm',
                       #'splash2-ocean.cont',
@@ -262,11 +417,11 @@ def example():
 
         min_parallelism = get_feasible_parallelisms(benchmark)[0]
         max_parallelism = get_feasible_parallelisms(benchmark)[-1]
-        for freq in (1, 2):
+        for freq in (4, ): # SP: only 4ghz
             #for parallelism in (max_parallelism,):
-            for parallelism in (3, ):
+            for parallelism in (4,):
                 # you can also use try_run instead
-                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
+                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='small'))
 
 
 def multi_program():
@@ -296,13 +451,143 @@ def multi_program():
 
     
 def test_static_power():
-    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
+    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='small'))
+
+
+def run_perforation_mp():
+    label = sys.argv[1]
+    benchmark = sys.argv[2]
+    pr_vec = [e for e in sys.argv[3].split(',')]
+
+    print('running: ', label, benchmark, pr_vec)
+
+    perforation_rate(label, benchmark, pr_vec)
+
+
+def save_output_no_sim(benchmark, console_output, input_size, started, label: str):
+    run = 'results_no_sim_{}_{}_{}_{}'.format(started, input_size, benchmark, label)
+    directory = os.path.join(RESULTS_FOLDER, run)
+    
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    with gzip.open(os.path.join(directory, 'execution.log.gz'), 'w') as f:
+        f.write(console_output.encode('utf-8'))
+    
+    for f in os.listdir(BENCHMARKS):
+        if 'output.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'poses.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif '.264' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'app_mapping.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+
+
+def create_grid_search(ranges, step_sizes):
+	grids = [np.arange(start, stop, step) for (start, stop), step in zip(ranges, step_sizes)]
+	mesh = np.meshgrid(*grids, indexing='ij')
+	
+	grid_points = np.vstack([np.ravel(m) for m in mesh]).T
+
+	return grid_points
+
+
+def create_accuracy_reference():
+    input_size = "simsmall"
+    
+    for benchmark in (
+                        ("parsec-blackscholes", 1),
+                        ("parsec-bodytrack", 6),
+                        ("parsec-canneal", 3),
+                        ("parsec-streamcluster", 2),
+                        ("parsec-swaptions", 2),
+                        ("parsec-x264", 6),
+                    ):
+            
+        config = [0 for _ in range(benchmark[1])]
+        prev_run_cleanup()
+
+        cmd = os.path.join(os.getenv("BENCHMARKS_ROOT"), 'parsec/parsec-2.1/bin/parsecmgmt')
+        
+        proc_env = os.environ.copy()
+        proc_env["MANUAL_PERFORATION"] = ','.join(map(str, config))
+
+        console_output = ''
+        p = subprocess.Popen([cmd, '-a', 'run', '-p', benchmark[0], '-i', input_size, '-n', '4', '-c',  'gcc-sniper'], 
+                                env=proc_env,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
+        with p.stdout:
+            for line in iter(p.stdout.readline, b''):
+                linestr = line.decode('utf-8')
+                console_output += linestr
+
+        p.wait()
+
+        save_output_no_sim(benchmark[0], console_output, input_size, 
+                            datetime.datetime.now(), 
+                            "reference:{}".format(','.join(map(str, config))))
+
+    return
+
+
+def create_accuracy_profile():
+    input_size = "simsmall"
+    
+    for benchmark in (
+                        ("parsec-bodytrack", 6),
+                        ("parsec-blackscholes", 1),
+                        ("parsec-canneal", 3),
+                        ("parsec-swaptions", 2),
+                        ("parsec-streamcluster", 2),
+                        ("parsec-x264", 6),
+                    ):
+
+
+        for i in range(1000):
+
+            config = [random.randint(0, 100) for _ in range(benchmark[1])]
+            print("{} -> [{}% ({})]: {}".format(benchmark[0], (i / int(1e4))*100, int(1e4),  ','.join(map(str, config))))
+            prev_run_cleanup()
+
+            cmd = os.path.join(os.getenv("BENCHMARKS_ROOT"), 'parsec/parsec-2.1/bin/parsecmgmt')
+            
+            proc_env = os.environ.copy()
+            proc_env["MANUAL_PERFORATION"] = ','.join(map(str, config))
+
+            console_output = ''
+            p = subprocess.Popen([cmd, '-a', 'run', '-p', benchmark[0], '-i', input_size, '-n', '4', '-c',  'gcc-sniper'], 
+                                    env=proc_env,
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
+            with p.stdout:
+                for line in iter(p.stdout.readline, b''):
+                    linestr = line.decode('utf-8')
+                    console_output += linestr
+
+            p.wait()
+
+            save_output_no_sim(benchmark[0], console_output, input_size, 
+                               datetime.datetime.now(), 
+                               "accuracy_montecarlo_simsmall:{}".format(','.join(map(str, config))))
+
+    return
 
 
 def main():
-    example()
-    #test_static_power()
-    # multi_program()
+    # run_perforation_mp()
+    # create_accuracy_reference()
+    # create_accuracy_profile()
+
+    perforation_rate("50 profile", "parsec-streamcluster", [  str(0) for j in range(2) ])
+
+    for i in range(2):
+        perforation_rate("50 profile", "parsec-streamcluster", [  str(50) if i == j else str(0) for j in range(2) ])
+   
+    # for i in range(0,99, 10):
+    #     perforation_rate("speed-up_monte-carlo", "parsec-bodytrack", [str(i)] * 6)
+    #     perforation_rate("speed-up_monte-carlo", "parsec-x264", [str(i)] * 6)
+    #     perforation_rate("speed-up_monte-carlo", "parsec-swaptions", [str(i)] * 3)
 
 if __name__ == '__main__':
     main()

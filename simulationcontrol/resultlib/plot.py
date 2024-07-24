@@ -101,10 +101,10 @@ def plot_trace(run, name, title, ylabel, traces_function, active_cores, yMin=Non
             if core in active_cores:
                 valid_trace = [value for value in trace if value is not None]
                 if len(valid_trace) > 0:
-                    #if yMin is not None:
-                    #    yMin = min(yMin, min(valid_trace) * 1.1)
-                    #if yMax is not None:
-                    #    yMax = max(yMax, max(valid_trace) * 1.1)
+                    if yMin is not None:
+                       yMin = min(yMin, min(valid_trace) * 1.1)
+                    if yMax is not None:
+                       yMax = max(yMax, max(valid_trace) * 1.1)
                     tracelen = len(trace)
                     if smooth is not None:
                         trace = smoothen(trace, smooth)
@@ -238,6 +238,8 @@ def plot_hb_histogram(run, force_recreate=False):
         timestamps = [int(x) for x in timestamps]
         interval_diffs = get_interval_diffs(timestamps)
 
+        if(len(interval_diffs) < 2): continue
+
         int_diff_mean = np.mean(interval_diffs)
 
         # Freedman-Diaconis rule
@@ -245,6 +247,9 @@ def plot_hb_histogram(run, force_recreate=False):
         iqr = q3 - q1
         n = len(interval_diffs)
         bin_size = 2 * iqr / (n ** (1 / 3))
+
+        if(bin_size == 0): return
+
         bin_count = int(np.ceil((max(interval_diffs) - min(interval_diffs)) / bin_size))
         bin_count = bin_count if bin_count < n else n
 
@@ -307,6 +312,9 @@ def create_plots(run, force_recreate=False):
     plot_cpi_stack_trace(run, active_cores, force_recreate=force_recreate)
     plot_hb_trace(run, force_recreate)
     plot_hb_histogram(run, force_recreate)
+
+    # Make QoS plot for the current run.
+    # plot_QoS(run, force_recreate)
 
 if __name__ == '__main__':
     for run in sorted(get_runs())[::-1]:

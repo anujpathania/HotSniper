@@ -140,7 +140,7 @@ class Program:
     if self.openmp:
       os.putenv('OMP_NUM_THREADS', str(self.get_nthreads()))
 
-    if self.enable_heartbeats:
+    if self.enable_heartbeats:     
       if self.app_id < 0:
         print 'heartbeat enabled parsec run requires app_id to be set'
         sys.exit(-1)
@@ -148,20 +148,37 @@ class Program:
       hb_enabled_dir = '%(rundir)s/heartbeat' % locals()
       hb_results_file = '%s/%d.hb.log' % (self.hb_results_dir, self.app_id)
 
-      os.putenv('ENABLE_HEARTBEATS', "true")
+      # os.putenv('ENABLE_HEARTBEATS', "true")
       os.system('mkdir -p %s' % hb_enabled_dir)
-      os.putenv('HEARTBEAT_ENABLED_DIR', hb_enabled_dir)
+      # os.putenv('HEARTBEAT_ENABLED_DIR', hb_enabled_dir)
 
+
+      proc_env = os.environ.copy()
+    
       # self.program comes from simulationcontrol/run.py::run() its "benchmark"
       # parameter.
       # Each PARSEC benchmark program will read its own "*_HB_LOGFILE"
       # environment variable. I.e. blackscholes reads "BLACKSCHOLES_HB_LOGFILE"
-      os.putenv('%s_HB_LOGFILE' % self.program.upper(), hb_results_file)
+      # os.putenv('%s_HB_LOGFILE' % self.program.upper(), hb_results_file)
+
+    # copy the environment and add the siper app_id to it.
+      proc_env['%s_HB_LOGFILE' % self.program.upper()] = hb_results_file
+      proc_env['ENABLE_HEARTBEATS'] = "true"
+      proc_env['HEARTBEAT_ENABLED_DIR'] = hb_enabled_dir
+
+
+    proc_env['SNIPER_ID'] = str(self.app_id)
+    proc_env['SNIPER_APP_NAME'] = self.program.upper()
+
+    # os.putenv('SNIPER_ID', str(self.app_id))
+    # os.putenv('SNUPER_APP_NAME', self.program.upper())
+
 
     proc = subprocess.Popen([ '%s/parsec-2.1/bin/parsecmgmt' % HOME,
                          '-a', 'run', '-p', self.program, '-c', PLATFORM, '-i', self.inputsize, '-n', str(self.get_nthreads()),
                          '-s', graphitecmd, '-d', rundir
-                     ] + flags)
+                     ] + flags, env=proc_env)
+    
     proc.communicate()
 
     os.system('rm -r %(rundir)s' % locals())
