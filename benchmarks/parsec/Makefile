@@ -11,14 +11,13 @@ parsec-2.1/.parsec_source :
 	patch -p1 -dparsec-2.1 < patches/bugfixes/parsec-ocreat.patch
 	patch -p1 -dparsec-2.1 < patches/bugfixes/ferret-deadlock.patch 
 	patch -p0 -dparsec-2.1/pkgs/apps/blackscholes/src < patches/bugfixes/blackscholes.c.patch 
-	patch -p0 -dparsec-2.1/pkgs/apps/blackscholes/src < patches/bugfixes/blackscholes.tbb.cpp.patch 
-	patch -p1 -dparsec-2.1 < patches/bugfixes/streamcluster_barrier.patch 
+	patch -p0 -dparsec-2.1/pkgs/apps/blackscholes/src < patches/bugfixes/blackscholes.tbb.cpp.patch
+	patch -p1 -dparsec-2.1 < patches/bugfixes/streamcluster_barrier.patch
 
 	patch -p1 -dparsec-2.1 < patches/ssl-asm.patch
 	patch -p1 -dparsec-2.1 < patches/raytrace-unistd-gcc-fix.patch
 	patch -p3 -dparsec-2.1 < patches/raytrace-Xext-fix.patch
 	patch -p1 -dparsec-2.1 < patches/heartbeat.patch
-	patch -p0 -dparsec-2.1 < patches/loop-perforation.patch
 
 	patches/fixPODSyntax.sh
 	# Once the download succeeded and we applied all patches, mark as done
@@ -27,6 +26,10 @@ parsec-2.1/.parsec_source :
 parsec-input-sim : parsec-2.1/pkgs/apps/blackscholes/inputs/input_simsmall.tar
 parsec-2.1/pkgs/apps/blackscholes/inputs/input_simsmall.tar :
 	wget -O - $(PARSEC_2.1_SIMSMALL_URL) | tar xz
+
+	python ../tools/python/dos2unix.py "parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/ImageMeasurements.cpp" "parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/ImageMeasurements.cpp"
+	python ../tools/python/dos2unix.py "parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/BodyGeometry.cpp" "parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/BodyGeometry.cpp"
+	patch -l -p1 -dparsec-2.1 < patches/perforation.patch
 
 parsec-input-native : parsec-2.1/pkgs/apps/blackscholes/inputs/input_native.tar
 parsec-2.1/pkgs/apps/blackscholes/inputs/input_native.tar :

@@ -583,11 +583,6 @@ def main():
 
     for i in range(2):
         perforation_rate("50 profile", "parsec-streamcluster", [  str(50) if i == j else str(0) for j in range(2) ])
-   
-    # for i in range(0,99, 10):
-    #     perforation_rate("speed-up_monte-carlo", "parsec-bodytrack", [str(i)] * 6)
-    #     perforation_rate("speed-up_monte-carlo", "parsec-x264", [str(i)] * 6)
-    #     perforation_rate("speed-up_monte-carlo", "parsec-swaptions", [str(i)] * 3)
 
 if __name__ == '__main__':
     main()
