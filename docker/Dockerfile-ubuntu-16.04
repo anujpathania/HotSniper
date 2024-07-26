@@ -71,7 +71,7 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
  && rm -rf /var/lib/apt/lists/*
 RUN pip3 install --upgrade pip==20.*  # pip 21 is not compatible with Ubuntu 16.04 Python version
-RUN pip3 install matplotlib seaborn diskcache tabulate open-cv
+RUN pip3 install matplotlib seaborn diskcache tabulate opencv-python
 
 # Install libheartbeats
 WORKDIR /build
