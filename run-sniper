@@ -720,7 +720,6 @@ if standalone:
     f = open(fn, 'w')
     # When using GDB in standalone mode, do not set the LD_LIBRARY_PATH for GDB, but instead set the shared library path inside GDB for debugging Sniper-standalone
     f.write("set environment LD_LIBRARY_PATH = %s\n" % env['LD_LIBRARY_PATH'])
-    
     del env['LD_LIBRARY_PATH']
     # Create a GDB command file to handle --gdb, --gdb-wait and --gdb-quit for standalone mode
     if not gdb_wait:
@@ -732,7 +731,7 @@ if standalone:
       f.write(' quit\n')
       f.write('end\n')
     f.close()
-    gdbcmd = 'gdb -quiet --command=%(fn)s %(HOME)s/lib/sniper --args ' % locals() 
+    gdbcmd = 'gdb -quiet --command=%(fn)s %(HOME)s/lib/sniper --args ' % locals()
   elif use_wrap_sim:
     gdbcmd = '%(use_wrap_sim)s ' % locals()
   else:
@@ -942,6 +941,3 @@ if os.path.exists('pin.log') and os.path.realpath(os.getcwd()) != os.path.realpa
   os.system('cp pin.log %s' % outputdir)
 
 sys.exit(rc)
-
-	patch -p0 -dparsec-2.1/pkgs/apps/blackscholes/src < patches/bugfixes/blackscholes.tbb.cpp.patch
-	patch -p1 -dparsec-2.1 < patches/bugfixes/streamcluster_barrier.patch
