@@ -275,17 +275,18 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
     else:
         raise Exception('either parallelism or number_tasks needs to be set')
 
+
 def example():
     for benchmark in (
                       'parsec-blackscholes',
                       #'parsec-bodytrack',
                       #'parsec-canneal',
+                      #'parsec-dedup',
+                      #'parsec-ferret'
+                      #'parsec-fluidanimate',
                       #'parsec-streamcluster',
                       #'parsec-swaptions',
                       #'parsec-x264',
-                      #'parsec-ferret'
-                      #'parsec-fluidanimate',
-                      #'parsec-dedup',
                       #'splash2-barnes',
                       #'splash2-fmm',
                       #'splash2-ocean.cont',
@@ -376,6 +377,7 @@ def multi_program():
     
 def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
+
 
 def main():
     example()
