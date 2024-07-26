@@ -18,7 +18,10 @@ from resultlib import *
 import seaborn as sns
 import subprocess
 
-import cv2
+try:
+    import cv2
+except Exception as e:
+    print(e)
 
 from resultlib import periodic_plot
 
@@ -460,12 +463,15 @@ def app_mapping(path):
 
 
 def perforation_statistics(run):
-    final_results_path = find_run(run)
+    try:
+        final_results_path = find_run(run)
 
-    for benchmark in app_mapping(os.path.join(final_results_path, 'app_mapping.txt')):
-        ref_results_path = create_accuracy_reference(benchmark, "simsmall", run)
-        with open(os.path.join(RESULTS_DIR, run, 'accuracy-{}.txt'.format(benchmark)), 'w') as accuracy_file:
-            accuracy_file.write("Final Accuracy: "+ str(calc_accuracy(final_results_path, ref_results_path, benchmark)))
+        for benchmark in app_mapping(os.path.join(final_results_path, 'app_mapping.txt')):
+            ref_results_path = create_accuracy_reference(benchmark, "simsmall", run)
+            with open(os.path.join(RESULTS_DIR, run, 'accuracy-{}.txt'.format(benchmark)), 'w') as accuracy_file:
+                accuracy_file.write("Final Accuracy: "+ str(calc_accuracy(final_results_path, ref_results_path, benchmark)))
+    except Exception as e:
+        print(e)
 
 
 def create_plots(run, force_recreate=False):
