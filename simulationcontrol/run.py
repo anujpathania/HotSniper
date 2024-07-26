@@ -128,7 +128,7 @@ def save_output_no_sim(benchmark, console_output, input_size, started, label: st
         elif 'app_mapping.' in f:
             shutil.copy(os.path.join(BENCHMARKS, f), directory)
 
-def run(base_configuration, benchmark, ignore_error=False, script: str = None):
+def run(base_configuration, benchmark, ignore_error=False, script: str = "magic_perforation_rate:0"):
     print('running {} with configuration {}'.format(benchmark, '+'.join(base_configuration)))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
@@ -277,38 +277,37 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 
 def example():
     for benchmark in (
-                    #   'parsec-blackscholes',
-                    #   'parsec-bodytrack',
-                    #   'parsec-canneal',
-                    #   'parsec-streamcluster',
-                    #   'parsec-swaptions',
-                    #   'parsec-x264',
-                    #   'parsec-ferret'
-                    #   'parsec-fluidanimate',
-                    #   'parsec-dedup',
-                    
-                    #   'splash2-barnes',
-                    #   'splash2-fmm',
-                    #   'splash2-ocean.cont',
-                    #   'splash2-ocean.ncont',
-                    #   'splash2-radiosity',
-                    #   'splash2-raytrace',
-                    #   'splash2-water.nsq',
-                    #   'splash2-water.sp',
-                    #   'splash2-cholesky',
-                    #   'splash2-fft',
-                    #   'splash2-lu.cont',
-                    #   'splash2-lu.ncont',
-                    #   'splash2-radix',
+                      'parsec-blackscholes',
+                      #'parsec-bodytrack',
+                      #'parsec-canneal',
+                      #'parsec-streamcluster',
+                      #'parsec-swaptions',
+                      #'parsec-x264',
+                      #'parsec-ferret'
+                      #'parsec-fluidanimate',
+                      #'parsec-dedup',
+                      #'splash2-barnes',
+                      #'splash2-fmm',
+                      #'splash2-ocean.cont',
+                      #'splash2-ocean.ncont',
+                      #'splash2-radiosity',
+                      #'splash2-raytrace',
+                      #'splash2-water.nsq',
+                      #'splash2-water.sp',
+                      #'splash2-cholesky',
+                      #'splash2-fft',
+                      #'splash2-lu.cont',
+                      #'splash2-lu.ncont',
+                      #'splash2-radix',
                       ):
 
         min_parallelism = get_feasible_parallelisms(benchmark)[0]
         max_parallelism = get_feasible_parallelisms(benchmark)[-1]
-        for freq in (4, ): # SP: only 4ghz
+        for freq in (1, 2):
             #for parallelism in (max_parallelism,):
-            for parallelism in (4,):
+            for parallelism in (3, ):
                 # you can also use try_run instead
-                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='small'))
+                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
 def example_symmetric_perforation():
     for benchmark in (
@@ -326,7 +325,8 @@ def example_symmetric_perforation():
         perforation_rate = str(50)
         for freq in (4, ):
             for parallelism in (4,):
-                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='small'), script="magic_perforation_rate:%s" % perforation_rate )
+                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'), 
+                    script="magic_perforation_rate:%s" % perforation_rate )
 
 def example_asymmetric_perforation():
     for benchmark in (
@@ -344,7 +344,8 @@ def example_asymmetric_perforation():
         max_parallelism = get_feasible_parallelisms(benchmark)[-1]
         for freq in (4, ):
             for parallelism in (4,):
-                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark[0], parallelism, input_set='small'), script='magic_perforation_rate:%s' % ','.join(loop_rates))
+                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark[0], parallelism, input_set='simsmall'), 
+                    script='magic_perforation_rate:%s' % ','.join(loop_rates))
 
 
 def multi_program():
@@ -374,11 +375,14 @@ def multi_program():
 
     
 def test_static_power():
-    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='small'))
+    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 def main():
-    # example()
-    example_symmetric_perforation()
+    example()
+    #test_static_power()
+    # multi_program()
+
+    # example_symmetric_perforation()
     # example_asymmetric_perforation()
     
 if __name__ == '__main__':
