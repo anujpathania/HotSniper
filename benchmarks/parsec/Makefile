@@ -18,7 +18,6 @@ parsec-2.1/.parsec_source :
 	patch -p1 -dparsec-2.1 < patches/raytrace-unistd-gcc-fix.patch
 	patch -p3 -dparsec-2.1 < patches/raytrace-Xext-fix.patch
 	patch -p1 -dparsec-2.1 < patches/heartbeat.patch
-
 	patches/fixPODSyntax.sh
 	# Once the download succeeded and we applied all patches, mark as done
 	touch parsec-2.1/.parsec_source
@@ -34,7 +33,6 @@ parsec-2.1/pkgs/apps/blackscholes/inputs/input_simsmall.tar :
 parsec-input-native : parsec-2.1/pkgs/apps/blackscholes/inputs/input_native.tar
 parsec-2.1/pkgs/apps/blackscholes/inputs/input_native.tar :
 	echo "native inputs are not available"; false
-
 
 parsec-dependencies :
 	./checkdependencies.py

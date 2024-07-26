@@ -300,6 +300,7 @@ def parse_images(video_path: str) -> list:
 
     return frames
 
+
 def get_benchmark_output(run, benchmark):
     run_out = []
 
@@ -356,6 +357,7 @@ def get_benchmark_output(run, benchmark):
     
     return run_out
 
+
 def calc_accuracy(run, ref, benchmark):
     comparison = list(zip(get_benchmark_output(run, benchmark), get_benchmark_output(ref, benchmark)))
 
@@ -373,6 +375,7 @@ def calc_accuracy(run, ref, benchmark):
         print("warning zero div: no output of the run")
         return 0
 
+
 def prev_run_cleanup():
     pattern = r"^\d+\.hb.log$" # Heartbeat logs
     for f in os.listdir(BENCHMARKS):
@@ -387,6 +390,7 @@ def prev_run_cleanup():
     for f in os.listdir(BENCHMARKS):
         if ('output.' in f) or ('.264' in f) or ('poses.' in f) or ('app_mapping' in f) :
             os.remove(os.path.join(BENCHMARKS, f))
+
 
 def save_output_no_sim(benchmark, console_output, input_size, started, run):
     ref_run = 'results_no_sim_{}_{}_{}'.format(started, input_size, benchmark)
@@ -454,6 +458,7 @@ def app_mapping(path):
 
     return [app_map[int(id)] for id in ids]
 
+
 def perforation_statistics(run):
     final_results_path = find_run(run)
 
@@ -462,7 +467,6 @@ def perforation_statistics(run):
         with open(os.path.join(RESULTS_DIR, run, 'accuracy-{}.txt'.format(benchmark)), 'w') as accuracy_file:
             accuracy_file.write("Final Accuracy: "+ str(calc_accuracy(final_results_path, ref_results_path, benchmark)))
 
-    return
 
 def create_plots(run, force_recreate=False):
     print('creating plots for {}'.format(run))

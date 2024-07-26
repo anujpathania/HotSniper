@@ -1,8 +1,7 @@
 import os
 import sim
 
-pr = 0
-# app_map = {}
+pr = []
 
 class Perforation:
     def setup(self, args):
@@ -30,14 +29,6 @@ class Perforation:
         b = value >> 16
 
         return (a, b)
-
-    # def get_app_code(self, objectName, index, metricName):
-    #     global app_map
-    #     for key, value in app_map.items():
-    #         if key == index:
-    #             return value
-            
-    #     return 0 #long(0)
 
     @staticmethod
     def hook_set_app(core, id):
