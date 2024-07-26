@@ -108,27 +108,8 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
 
     create_plots(run)
 
-def save_output_no_sim(benchmark, console_output, input_size, started, label: str):
-    run = 'results_no_sim_{}_{}_{}_{}'.format(started, input_size, benchmark, label)
-    directory = os.path.join(RESULTS_FOLDER, run)
-    
-    if not os.path.exists(directory):
-        os.makedirs(directory)
 
-    with gzip.open(os.path.join(directory, 'execution.log.gz'), 'w') as f:
-        f.write(console_output.encode('utf-8'))
-    
-    for f in os.listdir(BENCHMARKS):
-        if 'output.' in f:
-            shutil.copy(os.path.join(BENCHMARKS, f), directory)
-        elif 'poses.' in f:
-            shutil.copy(os.path.join(BENCHMARKS, f), directory)
-        elif '.264' in f:
-            shutil.copy(os.path.join(BENCHMARKS, f), directory)
-        elif 'app_mapping.' in f:
-            shutil.copy(os.path.join(BENCHMARKS, f), directory)
-
-def run(base_configuration, benchmark, ignore_error=False, script: str = "magic_perforation_rate:0"):
+def run(base_configuration, benchmark, ignore_error=False, perforation_script: str = None):
     print('running {} with configuration {}'.format(benchmark, '+'.join(base_configuration)))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
@@ -146,15 +127,18 @@ def run(base_configuration, benchmark, ignore_error=False, script: str = "magic_
     if 'mediumDVFS' in base_configuration:
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
-        periodicPower = 100000 
+        periodicPower = 100000
+
+    if not perforation_script:
+        perforation_script = 'magic_perforation_rate' 
    
-    SCRIPTS.append(script)
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{perforation}{benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
                 periodic=periodicPower,
                 script= ''.join([' -s' + s for s in SCRIPTS]),
+                perforation=' -s'+perforation_script,
                 benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
     
     console_output = ''
