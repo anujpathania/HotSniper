@@ -13,7 +13,6 @@ parsec-2.1/.parsec_source :
 	patch -p0 -dparsec-2.1/pkgs/apps/blackscholes/src < patches/bugfixes/blackscholes.c.patch 
 	patch -p0 -dparsec-2.1/pkgs/apps/blackscholes/src < patches/bugfixes/blackscholes.tbb.cpp.patch 
 	patch -p1 -dparsec-2.1 < patches/bugfixes/streamcluster_barrier.patch 
-
 	patch -p1 -dparsec-2.1 < patches/ssl-asm.patch
 	patch -p1 -dparsec-2.1 < patches/raytrace-unistd-gcc-fix.patch
 	patch -p3 -dparsec-2.1 < patches/raytrace-Xext-fix.patch
