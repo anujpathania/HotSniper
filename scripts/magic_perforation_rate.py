@@ -12,16 +12,15 @@ class Perforation:
 
         # 'pr_1,pr_2,...,pr_n'
         pr = [e for e in args[0].split(',')]
-        
-        sim.util.register_command(0x126, Perforation.hook_set_app)
 
+        if args[0] == '':
+            sim.util.register_command(0x125, Perforation.hook_perforation_rate)
+        else:
+            sim.util.register_command(0x125, Perforation.hook_m_perforation_rate_stub)
+
+        sim.util.register_command(0x126, Perforation.hook_set_app)
         sim.util.register_command(0x127, Perforation.hook_log)
 
-        if(len(pr) != 0):
-            sim.util.register_command(0x125, Perforation.hook_m_perforation_rate_stub)
-            return
-        else:
-            sim.util.register_command(0x125, Perforation.hook_perforation_rate)
 
     @staticmethod
     def decomp_value(value):
@@ -61,7 +60,7 @@ class Perforation:
         
         print("[MAGIC] app: ({}), loop_id: {} retrieved pr: {}".format(app_id, loop_id, pr))
         
-        return pr
+        return long(pr)
 
     @staticmethod
     def hook_perforation_rate_stub(core, id):

@@ -130,7 +130,7 @@ def run(base_configuration, benchmark, ignore_error=False, perforation_script: s
         periodicPower = 100000
 
     if not perforation_script:
-        perforation_script = 'magic_perforation_rate' 
+        perforation_script = 'magic_perforation_rate:' 
    
     args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{perforation}{benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
@@ -296,12 +296,12 @@ def example():
 
 def example_symmetric_perforation():
     for benchmark in (
-                    #   'parsec-blackscholes',
-                      'parsec-bodytrack',
-                      'parsec-streamcluster',
-                      'parsec-swaptions',
-                      'parsec-x264',
-                      'parsec-canneal',
+                      'parsec-blackscholes',
+                      #'parsec-bodytrack',
+                      #'parsec-streamcluster',
+                      #'parsec-swaptions',
+                      #'parsec-x264',
+                      #'parsec-canneal',
                     ):
 
         min_parallelism = get_feasible_parallelisms(benchmark)[0]
@@ -311,16 +311,16 @@ def example_symmetric_perforation():
         for freq in (4, ):
             for parallelism in (4,):
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'), 
-                    script="magic_perforation_rate:%s" % perforation_rate )
+                    perforation_script="magic_perforation_rate:%s" % perforation_rate )
 
 def example_asymmetric_perforation():
     for benchmark in (
-                        # ("parsec-blackscholes", 1),
-                        ("parsec-bodytrack", 6),
-                        ("parsec-streamcluster", 2),
-                        ("parsec-swaptions", 2),
-                        ("parsec-x264", 6),
-                        ("parsec-canneal", 3),
+                        ("parsec-blackscholes", 1),
+                        #("parsec-bodytrack", 6),
+                        #("parsec-streamcluster", 2),
+                        #("parsec-swaptions", 2),
+                        #("parsec-x264", 6),
+                        #("parsec-canneal", 3),
                     ):
     
         loop_rates = [  str(i*10) for i in range(benchmark[1]) ]
@@ -330,7 +330,7 @@ def example_asymmetric_perforation():
         for freq in (4, ):
             for parallelism in (4,):
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark[0], parallelism, input_set='simsmall'), 
-                    script='magic_perforation_rate:%s' % ','.join(loop_rates))
+                    perforation_script='magic_perforation_rate:%s' % ','.join(loop_rates))
 
 
 def multi_program():
@@ -364,11 +364,11 @@ def test_static_power():
 
 
 def main():
-    example()
+    # example()
     #test_static_power()
     # multi_program()
 
-    # example_symmetric_perforation()
+    example_symmetric_perforation()
     # example_asymmetric_perforation()
     
 if __name__ == '__main__':
