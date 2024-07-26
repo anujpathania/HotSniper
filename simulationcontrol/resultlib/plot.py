@@ -1,7 +1,11 @@
+import datetime
 import os
+import shutil
 import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 SIMULATIONCONTROL = os.path.dirname(HERE)
+BENCHMARKS = os.getenv("BENCHMARKS_ROOT")
+RESULTS_DIR = os.path.join(os.getenv('GRAPHITE_ROOT'), 'results')
 sys.path.append(SIMULATIONCONTROL)
 
 import matplotlib as mpl
@@ -13,6 +17,9 @@ import numpy as np
 from resultlib import *
 import seaborn as sns
 import subprocess
+
+import cv2
+
 from resultlib import periodic_plot
 
 # Returns the value of 'item' in the 'sim.cfg' file located in the
@@ -271,6 +278,192 @@ def plot_hb_histogram(run, force_recreate=False):
         plt.close()
 
 
+PIXEL_MAX = 255.0
+def psnr(original, contrast):
+    mse = np.mean((original - contrast) ** 2)
+
+    if mse == 0:
+        return 100
+    
+    psnr = 20 * math.log10(PIXEL_MAX/ math.sqrt(mse))
+    return psnr
+
+
+def parse_images(video_path: str) -> list:
+    encoded_vid = cv2.VideoCapture(video_path)
+            
+    frames = []
+    succ, img = encoded_vid.read()
+    while succ:
+        frames.append(img) 
+        succ, img = encoded_vid.read()
+
+    return frames
+
+def get_benchmark_output(run, benchmark):
+    run_out = []
+
+    if benchmark in 'parsec-blackscholes':
+        file =  open(os.path.join(run, 'output.txt'), 'r')
+        for line in file.readlines():
+            run_out += [float(num) for num in  re.findall(r'-?\b\d+\.?\d*\b', line)]
+
+    elif benchmark in 'parsec-bodytrack':
+        file =  open(os.path.join(run, 'poses.txt'), 'r')
+        for line in file.readlines():
+            run_out += [float(num) for num in  re.findall(r'-?\b\d+\.?\d*\b', line)]
+
+    elif benchmark in'parsec-swaptions':
+        execution_log =  io.TextIOWrapper(gzip.open(os.path.join(run, 'execution.log.gz'), 'r'), encoding="utf-8")
+        for line in execution_log:
+            m = re.search(r'SwaptionPrice: (\d+\.\d+) StdError: (\d+\.\d+)', line)
+            if m is not None:
+                run_out.append(float(m.group(1)))
+                # run_out.append(float(m.group(2))) # std error printed with the options price
+
+    elif benchmark in 'parsec-streamcluster':
+        file =  open(os.path.join(run, 'output.txt'), 'r')
+        for line in file.readlines():
+            numbers = [float(num) for num in  re.findall(r'-?\b\d+\.?\d*\b', line)]
+
+            if len(numbers) == 1:
+                continue
+
+            run_out += numbers
+
+    elif benchmark in'parsec-canneal':
+        execution_log =  io.TextIOWrapper(gzip.open(os.path.join(run, 'execution.log.gz'), 'r'), encoding="utf-8")
+        
+        for line in execution_log:
+            m = re.search(r'Final routing is: (\d+\.\d+)', line)
+            if m is not None:
+                run_out += [float(m.group(1))]
+                break
+
+    elif benchmark in 'parsec-x264':        
+        ref_file = os.path.join(SIMULATIONCONTROL, 'resultlib/resources', 'eledream_640x360_8.y4m') # TODO:only for simsmall.
+        ref_images = parse_images(ref_file)
+
+        run_file = os.path.join(run, 'eledream.264')
+        run_images = parse_images(run_file)
+
+        if(len(ref_images) != len(run_images)):
+            print("Warning the reference video is different from the run video")
+            return [0]*len(run_images)
+
+        for ref_i, run_i in zip(ref_images, run_images):
+            run_out.append(psnr(ref_i, run_i))
+    
+    return run_out
+
+def calc_accuracy(run, ref, benchmark):
+    comparison = list(zip(get_benchmark_output(run, benchmark), get_benchmark_output(ref, benchmark)))
+
+    loss = 0
+    for e in comparison:
+        try:
+            loss += abs(e[0] - e[1])/ abs(e[0])
+        except:
+            # print("warning zero div: trying calculation ({} - {} / {})".format(e[0], e[1], e[0]))
+            continue
+    
+    try:
+        return max(1 - (loss / len(comparison)), 0)
+    except ZeroDivisionError:
+        print("warning zero div: no output of the run")
+        return 0
+
+def prev_run_cleanup():
+    pattern = r"^\d+\.hb.log$" # Heartbeat logs
+    for f in os.listdir(BENCHMARKS):
+        if not re.match(pattern, f):
+            continue
+
+        file_path = os.path.join(BENCHMARKS, f)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+    
+    # Benchmark Output
+    for f in os.listdir(BENCHMARKS):
+        if ('output.' in f) or ('.264' in f) or ('poses.' in f) or ('app_mapping' in f) :
+            os.remove(os.path.join(BENCHMARKS, f))
+
+def save_output_no_sim(benchmark, console_output, input_size, started, run):
+    ref_run = 'results_no_sim_{}_{}_{}'.format(started, input_size, benchmark)
+    directory = os.path.join(RESULTS_FOLDER, run, ref_run)
+    
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    with gzip.open(os.path.join(directory, 'execution.log.gz'), 'w') as f:
+        f.write(console_output.encode('utf-8'))
+    
+    for f in os.listdir(BENCHMARKS):
+        if 'output.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'poses.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif '.264' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'app_mapping.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+
+    return directory
+
+
+def create_accuracy_reference(benchmark, input_size, run):
+    config = [0 for _ in range(20)]
+            
+    prev_run_cleanup()
+
+    cmd = os.path.join(os.getenv("BENCHMARKS_ROOT"), 'parsec/parsec-2.1/bin/parsecmgmt')
+    
+    proc_env = os.environ.copy()
+    proc_env["MANUAL_PERFORATION"] = ','.join(map(str, config))
+
+    console_output = ''
+    p = subprocess.Popen([cmd, '-a', 'run', '-p', benchmark, '-i', input_size, '-n', '4', '-c',  'gcc-sniper'], 
+                            env=proc_env,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
+    with p.stdout:
+        for line in iter(p.stdout.readline, b''):
+            linestr = line.decode('utf-8')
+            console_output += linestr
+
+    p.wait()
+
+    dir = save_output_no_sim(benchmark, console_output, input_size, 
+                        datetime.datetime.now(), run)
+
+    return dir
+
+
+app_map = { 0:'parsec-blackscholes',
+            1:'parsec-bodytrack',
+            2:'parsec-canneal',
+            3:'parsec-streamcluster',
+            4:'parsec-swaptions',
+            5:'parsec-x264' }
+
+
+def app_mapping(path):
+    file = open(path)
+    ids = []
+    for line in file.readlines():
+        ids.append(line.split(',')[1])
+
+    return [app_map[int(id)] for id in ids]
+
+def perforation_statistics(run):
+    final_results_path = find_run(run)
+
+    for benchmark in app_mapping(os.path.join(final_results_path, 'app_mapping.txt')):
+        ref_results_path = create_accuracy_reference(benchmark, "simsmall", run)
+        with open(os.path.join(RESULTS_DIR, run, 'accuracy-{}.txt'.format(benchmark)), 'w') as accuracy_file:
+            accuracy_file.write("Final Accuracy: "+ str(calc_accuracy(final_results_path, ref_results_path, benchmark)))
+
+    return
+
 def create_plots(run, force_recreate=False):
     print('creating plots for {}'.format(run))
     active_cores = get_active_cores(run)
@@ -313,8 +506,9 @@ def create_plots(run, force_recreate=False):
     plot_hb_trace(run, force_recreate)
     plot_hb_histogram(run, force_recreate)
 
-    # Make QoS plot for the current run.
-    # plot_QoS(run, force_recreate)
+    # Make perforation statistics for the current run.
+    perforation_statistics(run)
+
 
 if __name__ == '__main__':
     for run in sorted(get_runs())[::-1]:
