@@ -155,7 +155,7 @@ class Program:
       # Each PARSEC benchmark program will read its own "*_HB_LOGFILE"
       # environment variable. I.e. blackscholes reads "BLACKSCHOLES_HB_LOGFILE"
 
-      # copy the environment and add the siper app_id to it.
+      # copy the environment and add the sniper app_id to it.
       proc_env = os.environ.copy()
       proc_env['%s_HB_LOGFILE' % self.program.upper()] = hb_results_file
       proc_env['ENABLE_HEARTBEATS'] = "true"
