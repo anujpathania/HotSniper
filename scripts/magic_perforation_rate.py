@@ -44,6 +44,7 @@ class Perforation:
         print("[MAGIC]: setting app: {} to be an instance of {}".format(app_id, app_code))
 
 
+    
     @staticmethod
     def hook_log(core, id):
         
@@ -51,6 +52,7 @@ class Perforation:
         # print("[MAGIC]: a: {} b: {}".format(a, b))
         print("[MAGIC]: value: {}".format(id))
         return id
+
 
     @staticmethod
     def hook_perforation_rate(core, id):
@@ -62,10 +64,6 @@ class Perforation:
         
         return long(pr)
 
-    @staticmethod
-    def hook_perforation_rate_stub(core, id):
-        global pr
-        return pr
     
     @staticmethod
     def hook_m_perforation_rate_stub(core, id):
