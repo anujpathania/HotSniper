@@ -454,10 +454,10 @@ app_map = { 0:'parsec-blackscholes',
 
 
 def app_mapping(path):
-    file = open(path)
     ids = []
-    for line in file.readlines():
-        ids.append(line.split(',')[1])
+    with open(path) as file:
+        for line in file.readlines():
+            ids.append(line.split(',')[1])
 
     return [app_map[int(id)] for id in ids]
 
