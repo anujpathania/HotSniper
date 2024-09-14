@@ -11,6 +11,7 @@
 #include "performance_model.h"
 #include "magic_server.h"
 #include "thread_manager.h"
+#include "stats.h"
 
 #include "policies/dvfsMaxFreq.h"
 #include "policies/dvfsFixedPower.h"
@@ -262,6 +263,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	initMappingPolicy(Sim()->getCfg()->getString("scheduler/open/logic").c_str());
 	initDVFSPolicy(Sim()->getCfg()->getString("scheduler/open/dvfs/logic").c_str());
 	initMigrationPolicy(Sim()->getCfg()->getString("scheduler/open/migration/logic").c_str());
+	initPerforationPolicy("", numberOfTasks);
 }
 
 /** initMappingPolicy
@@ -1174,6 +1176,28 @@ void SchedulerOpen::setFrequency(int coreCounter, int frequency) {
 	}
 }
 
+// apply perforation for compensating a performance deficite .
+void SchedulerOpen::executePerforationPolicy()
+{
+
+}
+
+std::vector<std::vector<UInt64>> perforation_rates;
+std::vector<UInt64> app_codes;
+
+void SchedulerOpen::initPerforationPolicy(String policyName, int taskCount)
+{
+	perforation_rates.resize(taskCount);
+
+	for(int task_i = 0; task_i < taskCount; task_i++) {
+		perforation_rates[task_i].resize(32);
+
+		for(int loop_i = 0; loop_i < 32; loop_i++) {
+			registerStatsMetric("scheduler", loop_i, itostr(task_i) + "_perforation_rate", &(perforation_rates[task_i][loop_i]));
+			perforation_rates[task_i][loop_i] = 0;
+		}
+	}
+}
 
 /** executeDVFSPolicy
  * Set DVFS levels according to the used policy.
@@ -1286,6 +1310,9 @@ void SchedulerOpen::periodic(SubsecondTime time) {
 
 		executeMigrationPolicy(time);
 	}
+
+	// TODO: extend this to a full policy
+	// executePerforationPolicy();
 
 	if ((dvfsPolicy != NULL) && (time.getNS() % dvfsEpoch == 0)) {
 		cout << "\n[Scheduler]: DVFS Control Loop invoked at " << formatTime(time) << endl;

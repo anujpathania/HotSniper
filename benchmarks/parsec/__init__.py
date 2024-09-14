@@ -148,20 +148,28 @@ class Program:
       hb_enabled_dir = '%(rundir)s/heartbeat' % locals()
       hb_results_file = '%s/%d.hb.log' % (self.hb_results_dir, self.app_id)
 
-      os.putenv('ENABLE_HEARTBEATS', "true")
       os.system('mkdir -p %s' % hb_enabled_dir)
-      os.putenv('HEARTBEAT_ENABLED_DIR', hb_enabled_dir)
 
       # self.program comes from simulationcontrol/run.py::run() its "benchmark"
       # parameter.
       # Each PARSEC benchmark program will read its own "*_HB_LOGFILE"
       # environment variable. I.e. blackscholes reads "BLACKSCHOLES_HB_LOGFILE"
-      os.putenv('%s_HB_LOGFILE' % self.program.upper(), hb_results_file)
+
+      # copy the environment and add the sniper app_id to it.
+      proc_env = os.environ.copy()
+      proc_env['%s_HB_LOGFILE' % self.program.upper()] = hb_results_file
+      proc_env['ENABLE_HEARTBEATS'] = "true"
+      proc_env['HEARTBEAT_ENABLED_DIR'] = hb_enabled_dir
+
+
+    proc_env['SNIPER_ID'] = str(self.app_id)
+    proc_env['SNIPER_APP_NAME'] = self.program.upper()
 
     proc = subprocess.Popen([ '%s/parsec-2.1/bin/parsecmgmt' % HOME,
                          '-a', 'run', '-p', self.program, '-c', PLATFORM, '-i', self.inputsize, '-n', str(self.get_nthreads()),
                          '-s', graphitecmd, '-d', rundir
-                     ] + flags)
+                     ] + flags, env=proc_env)
+    
     proc.communicate()
 
     os.system('rm -r %(rundir)s' % locals())
