@@ -25,6 +25,10 @@ parsec-input-sim : parsec-2.1/pkgs/apps/blackscholes/inputs/input_simsmall.tar
 parsec-2.1/pkgs/apps/blackscholes/inputs/input_simsmall.tar :
 	wget -O - $(PARSEC_2.1_SIMSMALL_URL) | tar xz
 
+	python ../tools/python/dos2unix.py "parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/ImageMeasurements.cpp" "parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/ImageMeasurements.cpp"
+	python ../tools/python/dos2unix.py "parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/BodyGeometry.cpp" "parsec-2.1/pkgs/apps/bodytrack/src/TrackingBenchmark/BodyGeometry.cpp"
+	patch -l -p1 -dparsec-2.1 < patches/perforation.patch
+
 parsec-input-native : parsec-2.1/pkgs/apps/blackscholes/inputs/input_native.tar
 parsec-2.1/pkgs/apps/blackscholes/inputs/input_native.tar :
 	echo "native inputs are not available"; false

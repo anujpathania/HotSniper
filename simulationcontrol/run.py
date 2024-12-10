@@ -7,10 +7,12 @@ import random
 import re
 import shutil
 import subprocess
+import time
 import traceback
 import sys
 
-from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPT, ENABLE_HEARTBEATS
+
+from config import NUMBER_CORES, RESULTS_FOLDER, SNIPER_CONFIG, SCRIPTS, ENABLE_HEARTBEATS
 from resultlib.plot import create_plots
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -50,6 +52,10 @@ def prev_run_cleanup():
         if os.path.isfile(file_path):
             os.remove(file_path)
 
+    for f in os.listdir(BENCHMARKS):
+        if ('output.' in f) or ('.264' in f) or ('poses.' in f) or ('app_mapping' in f) :
+            os.remove(os.path.join(BENCHMARKS, f))
+        
 
 def save_output(base_configuration, benchmark, console_output, cpistack, started, ended):
     benchmark_text = benchmark
@@ -89,11 +95,21 @@ def save_output(base_configuration, benchmark, console_output, cpistack, started
         if not re.match(pattern, f):
             continue
         shutil.copy(os.path.join(BENCHMARKS, f), directory)
+    
+    for f in os.listdir(BENCHMARKS):
+        if 'output.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'poses.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif '.264' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
+        elif 'app_mapping.' in f:
+            shutil.copy(os.path.join(BENCHMARKS, f), directory)
 
     create_plots(run)
 
 
-def run(base_configuration, benchmark, ignore_error=False):
+def run(base_configuration, benchmark, ignore_error=False, perforation_script: str = None):
     print('running {} with configuration {}'.format(benchmark, '+'.join(base_configuration)))
     started = datetime.datetime.now()
     change_base_configuration(base_configuration)
@@ -111,15 +127,23 @@ def run(base_configuration, benchmark, ignore_error=False):
     if 'mediumDVFS' in base_configuration:
         periodicPower = 250000
     if 'fastDVFS' in base_configuration:
-        periodicPower = 100000    
-    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{benchmark_options}' \
+        periodicPower = 100000
+
+    if not perforation_script:
+        perforation_script = 'magic_perforation_rate:' 
+   
+    args = '-n {number_cores} -c {config} --benchmarks={benchmark} --no-roi --sim-end=last -senergystats:{periodic} -speriodic-power:{periodic}{script}{perforation}{benchmark_options}' \
         .format(number_cores=NUMBER_CORES,
                 config=SNIPER_CONFIG,
                 benchmark=benchmark,
                 periodic=periodicPower,
-                script=" -s %s" % SCRIPT if SCRIPT else '',
+                script= ''.join([' -s' + s for s in SCRIPTS]),
+                perforation=' -s'+perforation_script,
                 benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
+    
     console_output = ''
+
+    print(args)
 
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
     p = subprocess.Popen([run_sniper] + args.split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, cwd=BENCHMARKS)
@@ -128,6 +152,7 @@ def run(base_configuration, benchmark, ignore_error=False):
             linestr = line.decode('utf-8')
             console_output += linestr
             print(linestr, end='')
+
     p.wait()
 
     try:
@@ -241,6 +266,7 @@ def example():
                       #'parsec-bodytrack',
                       #'parsec-canneal',
                       #'parsec-dedup',
+                      #'parsec-ferret'
                       #'parsec-fluidanimate',
                       #'parsec-streamcluster',
                       #'parsec-swaptions',
@@ -267,6 +293,44 @@ def example():
             for parallelism in (3, ):
                 # you can also use try_run instead
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
+
+def example_symmetric_perforation():
+    for benchmark in (
+                      'parsec-blackscholes',
+                      #'parsec-bodytrack',
+                      #'parsec-streamcluster',
+                      #'parsec-swaptions',
+                      #'parsec-x264',
+                      #'parsec-canneal',
+                    ):
+
+        min_parallelism = get_feasible_parallelisms(benchmark)[0]
+        max_parallelism = get_feasible_parallelisms(benchmark)[-1]
+
+        perforation_rate = str(50)
+        for freq in (4, ):
+            for parallelism in (4,):
+                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'), 
+                    perforation_script="magic_perforation_rate:%s" % perforation_rate )
+
+def example_asymmetric_perforation():
+    for benchmark in (
+                        ("parsec-blackscholes", 1),
+                        #("parsec-bodytrack", 6),
+                        #("parsec-streamcluster", 2),
+                        #("parsec-swaptions", 2),
+                        #("parsec-x264", 6),
+                        #("parsec-canneal", 3),
+                    ):
+    
+        loop_rates = [  str(i*10) for i in range(benchmark[1]) ]
+
+        min_parallelism = get_feasible_parallelisms(benchmark)[0]
+        max_parallelism = get_feasible_parallelisms(benchmark)[-1]
+        for freq in (4, ):
+            for parallelism in (4,):
+                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark[0], parallelism, input_set='simsmall'), 
+                    perforation_script='magic_perforation_rate:%s' % ','.join(loop_rates))
 
 
 def multi_program():
@@ -304,5 +368,8 @@ def main():
     #test_static_power()
     # multi_program()
 
+    # example_symmetric_perforation()
+    # example_asymmetric_perforation()
+    
 if __name__ == '__main__':
     main()

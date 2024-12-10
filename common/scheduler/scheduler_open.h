@@ -56,6 +56,9 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		int maxFrequency;
 		int frequencyStepSize;
 
+		void initPerforationPolicy(String policyName, int taskCount);
+		void executePerforationPolicy();
+
 		MigrationPolicy *migrationPolicy = NULL;
 		long migrationEpoch;
 		void initMigrationPolicy(String policyName);
