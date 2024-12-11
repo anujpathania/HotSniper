@@ -610,10 +610,10 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
         Readings += str(getpower(core, 'Instruction Fetch Unit/Instruction Cache'))+"\t"
         Readings += str(getpower(core, 'L2'))+"\t"
 
-    powerInstantaneousFileName.write(Readings+"\n")
+    powerInstantaneousFileName.write(Readings.rstrip('\t')+"\n")
     powerInstantaneousFileName.close()
 
-    powerLogFileName.write(Readings+"\n")
+    powerLogFileName.write(Readings.rstrip('\t')+"\n")
     powerLogFileName.close()
 
     if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
