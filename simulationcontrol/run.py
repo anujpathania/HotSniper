@@ -325,8 +325,8 @@ def example_asymmetric_perforation():
     
         loop_rates = [  str(i*10) for i in range(benchmark[1]) ]
 
-        min_parallelism = get_feasible_parallelisms(benchmark)[0]
-        max_parallelism = get_feasible_parallelisms(benchmark)[-1]
+        min_parallelism = get_feasible_parallelisms(benchmark[0])[0]
+        max_parallelism = get_feasible_parallelisms(benchmark[0])[-1]
         for freq in (4, ):
             for parallelism in (4,):
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark[0], parallelism, input_set='simsmall'), 
