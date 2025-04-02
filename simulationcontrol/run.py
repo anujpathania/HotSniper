@@ -362,9 +362,12 @@ def multi_program():
 def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
+def ondemand_demo():
+    run([’{:.1f}GHz’.format(4), ’ondemand’, ’fastDVFS’], get_instance(’parsecblackscholes’, 3, input_set=’simsmall’))
 
 def main():
-    example()
+    # example()
+    ondemand_demo()
     #test_static_power()
     # multi_program()
 
