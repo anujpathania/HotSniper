@@ -365,10 +365,14 @@ def test_static_power():
 def ondemand_demo():
     run(['{:.1f}GHz'.format(4), 'ondemand', 'fastDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
+def coldestcore_demo():
+    run(['{:.1f}GHz'.format(2.4), 'maxFreq', 'slowDVFS', 'coldestCore'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
+             
 def main():
     # example()
-    ondemand_demo()
-    #test_static_power()
+    # ondemand_demo()
+    coldestcore_demo()
+    # test_static_power()
     # multi_program()
 
     # example_symmetric_perforation()
