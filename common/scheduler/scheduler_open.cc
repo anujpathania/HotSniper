@@ -19,6 +19,7 @@
 #include "policies/dvfsTestStaticPower.h"
 #include "policies/mapFirstUnused.h"
 #include "policies/dvfsOndemand.h"
+#include "policies/coldestCore.h"
 
 #include <iomanip>
 #include <random>
@@ -343,7 +344,12 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		dtmCriticalTemperature,
 		dtmRecoveredTemperature
 		);
-		} else {
+	}  else if (policyName == "coldestCore") {
+			float criticalTemperature = Sim()->getCfg()->getFloat(
+			"scheduler/open/migration/coldestCore/criticalTemperature");
+			mappingPolicy = new ColdestCore(performanceCounters, coreRows,
+			coreColumns, criticalTemperature);
+	} else {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
  		exit (1);
 	}
@@ -357,6 +363,12 @@ void SchedulerOpen::initMigrationPolicy(String policyName) {
 	if (policyName == "off") {
 		migrationPolicy = NULL;
 	} //else if (policyName ="XYZ") {... } //Place to instantiate a new migration logic. Implementation is put in "policies" package.
+	else if (policyName == "coldestCore") {
+		float criticalTemperature = Sim()->getCfg()->getFloat(
+		"scheduler/open/migration/coldestCore/criticalTemperature");
+		migrationPolicy = new ColdestCore(performanceCounters, coreRows,
+		coreColumns, criticalTemperature);
+		}
 	else {
 		cout << "\n[Scheduler] [Error]: Unknown Migration Algorithm" << endl;
  		exit (1);
