@@ -52,8 +52,8 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		void DVFSTransitionNotDelayed(int coreCounter);
 		void setFrequency(int coreCounter, int frequency);
 		ThermalModel *thermalModel;
-		int minFrequency;
-		int maxFrequency;
+		std::vector<int> minFrequency;
+		std::vector<int> maxFrequency;
 		int frequencyStepSize;
 
 		void initPerforationPolicy(String policyName, int taskCount);

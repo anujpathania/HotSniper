@@ -4,7 +4,7 @@
 
 using namespace std;
 
-DVFSMaxFreq::DVFSMaxFreq(const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int maxFrequency)
+DVFSMaxFreq::DVFSMaxFreq(const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, std::vector<int> maxFrequency)
 	: performanceCounters(performanceCounters), coreRows(coreRows), coreColumns(coreColumns), maxFrequency(maxFrequency) {
 	
 }
@@ -25,7 +25,7 @@ std::vector<int> DVFSMaxFreq::getFrequencies(const std::vector<int> &oldFrequenc
 			cout << " T=" << fixed << setprecision(1) << temperature << " °C";
 			cout << " utilization=" << fixed << setprecision(3) << utilization << endl;
 		}
-		frequencies.at(coreCounter) = maxFrequency;
+		frequencies.at(coreCounter) = maxFrequency[coreCounter];
 	}
 
 	return frequencies;

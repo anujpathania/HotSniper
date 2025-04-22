@@ -112,7 +112,7 @@ def stats_process(config, results):
     pass
   stats['pthread_locks_contended'] = float(sum(stats.get('pthread.pthread_mutex_lock_contended', [0]))) / (sum(stats.get('pthread.pthread_mutex_lock_count', [0])) or 1)
   # femtosecond to cycles conversion
-  freq = [ 1e9 * float(sniper_config.get_config(config, 'perf_model/core/frequency', idx)) for idx in range(ncores) ]
+  freq = [ 1e9 * float(sniper_config.get_config(config, 'perf_model/core/frequency', )[idx]) for idx in range(ncores) ]
   stats['fs_to_cycles_cores'] = map(lambda f: f / 1e15, freq)
   # Backwards compatible version returning fs_to_cycles for core 0, for heterogeneous configurations fs_to_cycles_cores needs to be used
   stats['fs_to_cycles'] = stats['fs_to_cycles_cores'][0]
@@ -153,7 +153,7 @@ def parse_results_from_dir(resultsdir, partial = None, metrics = None):
   ncores = int(simcfg['general/total_cores'])
 
   results += [ ('ncores', -1, ncores) ]
-  results += [ ('corefreq', idx, 1e9 * float(sniper_config.get_config(simcfg, 'perf_model/core/frequency', idx))) for idx in range(ncores) ]
+  results += [ ('corefreq', idx, 1e9 * float(sniper_config.get_config(simcfg, 'perf_model/core/frequency', )[idx])) for idx in range(ncores) ]
 
   ## sim.info or graphite.out
   siminfo = os.path.join(resultsdir, 'sim.info')

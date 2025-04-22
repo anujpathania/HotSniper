@@ -18,6 +18,8 @@
 #include "policies/dvfsTSP.h"
 #include "policies/dvfsTestStaticPower.h"
 #include "policies/mapFirstUnused.h"
+#include "policies/dvfsOndemand.h"
+#include "policies/coldestCore.h"
 
 #include <iomanip>
 #include <random>
@@ -131,10 +133,16 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
    : SchedulerPinnedBase(thread_manager, SubsecondTime::NS(Sim()->getCfg()->getInt("scheduler/pinned/quantum")))
    , m_interleaving(Sim()->getCfg()->getInt("scheduler/pinned/interleaving"))
    , m_next_core(0) {
+   numberOfCores = Sim()->getConfig()->getApplicationCores();
 
 	// Initialize config constants
-	minFrequency = (int)(1000 * Sim()->getCfg()->getFloat("scheduler/open/dvfs/min_frequency") + 0.5);
-	maxFrequency = (int)(1000 * Sim()->getCfg()->getFloat("scheduler/open/dvfs/max_frequency") + 0.5);
+	for(unsigned int i = 0; i < numberOfCores; ++i)
+      {
+      
+      minFrequency.push_back( (int)(1000 * Sim()->getCfg()->getFloatArray("scheduler/open/dvfs/min_frequency",i) + 0.5));
+      maxFrequency.push_back((int)(1000 * Sim()->getCfg()->getFloatArray("scheduler/open/dvfs/max_frequency",i) + 0.5));
+      }
+	
 	frequencyStepSize = (int)(1000 * Sim()->getCfg()->getFloat("scheduler/open/dvfs/frequency_step_size") + 0.5);
 	dvfsEpoch = atol(Sim()->getCfg()->getString("scheduler/open/dvfs/dvfs_epoch").c_str());
 	migrationEpoch = atol(Sim()->getCfg()->getString("scheduler/open/migration/epoch").c_str());
@@ -159,7 +167,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	arrivalRate = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalRate").c_str());
 	arrivalInterval = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalInterval").c_str());
 	numberOfTasks = Sim()->getCfg()->getInt("traceinput/num_apps");
-	numberOfCores = Sim()->getConfig()->getApplicationCores();
+	
 	randomPriority = Sim()->getCfg() ->getBool("scheduler/open/randompriority");
 	
 
@@ -291,7 +299,17 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 			}
 		}
 		mappingPolicy = new MapFirstUnused(coreRows, coreColumns, preferredCoresOrder);
-	} //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+	 //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+	} else if (policyName == "coldestCore") {
+float criticalTemperature = Sim()->getCfg()->getFloat(
+"scheduler/open/migration/coldestCore/criticalTemperature");
+mappingPolicy = new ColdestCore(performanceCounters, coreRows,
+coreColumns, criticalTemperature);
+
+} //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+	
+	
+	
 	else {
 		cout << "\n[Scheduler] [Error]: Unknown Mapping Algorithm" << endl;
  		exit (1);
@@ -307,7 +325,8 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		dvfsPolicy = NULL;
 	} else if (policyName == "maxFreq") {
 		dvfsPolicy = new DVFSMaxFreq(performanceCounters, coreRows, coreColumns, maxFrequency);
-	} else if (policyName == "testStaticPower") {
+	}/* 
+	else if (policyName == "testStaticPower") {
 		dvfsPolicy = new DVFSTestStaticPower(performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency);
 	} else if (policyName == "fixedPower") {
 		float perCorePowerBudget = Sim()->getCfg()->getFloat("scheduler/open/dvfs/fixed_power/per_core_power_budget");
@@ -321,7 +340,30 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
 
 		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
-	} else {
+	} else if (policyName == "ondemand") {
+float upThreshold = Sim()->getCfg()->getFloat(
+"scheduler/open/dvfs/ondemand/up_threshold");
+float downThreshold = Sim()->getCfg()->getFloat(
+"scheduler/open/dvfs/ondemand/down_threshold");
+float dtmCriticalTemperature = Sim()->getCfg()->getFloat(
+"scheduler/open/dvfs/ondemand/dtm_cricital_temperature");
+float dtmRecoveredTemperature = Sim()->getCfg()->getFloat(
+"scheduler/open/dvfs/ondemand/dtm_recovered_temperature");
+dvfsPolicy = new DVFSOndemand(
+performanceCounters,
+coreRows,
+coreColumns,
+minFrequency,
+maxFrequency,
+frequencyStepSize,
+upThreshold,
+downThreshold,
+dtmCriticalTemperature,
+dtmRecoveredTemperature
+);
+}*/
+	
+	 else {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
  		exit (1);
 	}
@@ -1177,11 +1219,13 @@ void SchedulerOpen::setFrequency(int coreCounter, int frequency) {
 	if (frequency > oldFrequency + 1000) {
 		frequency = oldFrequency + 1000;
 	}
-	if (frequency < minFrequency) {
-		frequency = minFrequency;
+	if (frequency < minFrequency[coreCounter]) {
+	        cout<<"[Scheduler] WARNING: Frequency "<<frequency<<"< min frequency ("<<minFrequency[coreCounter]<<") of the core "<<coreCounter<<endl;
+		frequency = minFrequency[coreCounter];
 	}
-	if (frequency > maxFrequency) {
-		frequency = maxFrequency;
+	if (frequency > maxFrequency[coreCounter]) {
+	        cout<<"[Scheduler]WARNING: Frequency "<<frequency<<"> max frequency ("<<maxFrequency[coreCounter]<<") of the core "<<coreCounter<<endl;
+		frequency = maxFrequency[coreCounter];
 	}
 
 	if (delayDVFSTransition(coreCounter, oldFrequency, frequency)) {

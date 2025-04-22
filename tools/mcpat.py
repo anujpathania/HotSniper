@@ -500,6 +500,7 @@ def power_stack(power_dat, cfg, seconds, powertype='total', nocollapse=False):
         os.path.join(sniper_config.get_config(cfg, "general/output_dir"),
                      "InstantaneousPower.log"), 'w')
 
+
     if (sniper_config.get_config(cfg, "periodic_thermal/enabled") == 'true'):
         thermalLogFileName = file(os.path.join(sniper_config.get_config(
             cfg, "general/output_dir"), "PeriodicThermal.log"), 'a')
@@ -798,16 +799,26 @@ def edit_XML(statsobj, stats, cfg):
     template = readTemplate(ncores, num_l2s, private_l2s,
                             num_l3s, technology_node)
     # for j in range(ncores):
+    
+    
+    
+    
+    # This loop is giving empty string
     for i in xrange(len(template)-1):
         # for j in range(ncores):
         if template[i][1] and template[i][1][1] in ('stat', 'cfg', 'comb'):
             core = template[i][1][2]
         else:
             core = None
+
+        
+        
+        
+    #setting o core as clock core
         clock_core = float(sniper_config.get_config(
-            cfg, 'perf_model/core/frequency', core))*1000
+            cfg, 'perf_model/core/frequency', )[0])*1000
         clock_global = float(sniper_config.get_config(
-            cfg, 'perf_model/core/frequency'))*1000
+            cfg, 'perf_model/core/frequency')[0])*1000
         if 'power/vdd' in cfg:
             vdd_global = float(sniper_config.get_config(cfg, 'power/vdd'))
             vdd_core = float(sniper_config.get_config(cfg, 'power/vdd', core))

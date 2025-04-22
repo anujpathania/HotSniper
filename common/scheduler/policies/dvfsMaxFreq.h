@@ -10,14 +10,14 @@
 
 class DVFSMaxFreq : public DVFSPolicy {
 public:
-    DVFSMaxFreq(const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int maxFrequency);
+    DVFSMaxFreq(const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, std::vector<int>maxFrequency);
     virtual std::vector<int> getFrequencies(const std::vector<int> &oldFrequencies, const std::vector<bool> &activeCores);
 
 private:
     const PerformanceCounters *performanceCounters;
     unsigned int coreRows;
     unsigned int coreColumns;
-    int maxFrequency;
+    std::vector<int> maxFrequency;
 };
 
 #endif

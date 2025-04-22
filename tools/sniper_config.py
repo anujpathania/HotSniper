@@ -54,6 +54,7 @@ def get_config(config, key, index = None):
     else:
       return config[key]
   elif is_hetero:
+    
     return config[key][index]
   else:
     return config[key]

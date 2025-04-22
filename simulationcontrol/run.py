@@ -21,12 +21,20 @@ BENCHMARKS = os.path.join(SNIPER_BASE, 'benchmarks')
 BATCH_START = datetime.datetime.now().strftime('%Y-%m-%d_%H.%M')
 
 
+def ondemand_demo():
+    run(['{:.1f}GHz'.format(4), 'ondemand', 'fastDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
+
+
 def change_base_configuration(base_configuration):
     base_cfg = os.path.join(SNIPER_BASE, 'config/base.cfg')
+    skipping_periodic_thermal_enable=0
+    
     with open(base_cfg, 'r') as f:
         content = f.read()
     with open(base_cfg, 'w') as f:
+        
         for line in content.splitlines():
+            
             m = re.match('.*cfg:(!?)([a-zA-Z_\\.0-9]+)$', line)
             if m:
                 inverted = m.group(1) == '!'
@@ -36,6 +44,9 @@ def change_base_configuration(base_configuration):
                     line = line[1:]
                 elif not include and included:
                     line = '#' + line
+
+
+            
             f.write(line)
             f.write('\n')
 
@@ -142,7 +153,8 @@ def run(base_configuration, benchmark, ignore_error=False, perforation_script: s
                 benchmark_options=''.join([' -B ' + opt for opt in benchmark_options]))
     
     console_output = ''
-
+    
+    
     print(args)
 
     run_sniper = os.path.join(BENCHMARKS, 'run-sniper')
@@ -191,6 +203,9 @@ class Infeasible(Exception):
 
 
 def get_instance(benchmark, parallelism, input_set='small'):
+
+    print("benchmark=", benchmark, "parallelism=", parallelism)
+
     threads = {
         'parsec-blackscholes': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
         'parsec-bodytrack': [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
@@ -214,8 +229,10 @@ def get_instance(benchmark, parallelism, input_set='small'):
         'splash2-water.nsq': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
         'splash2-water.sp': [1, 2, 0, 4, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 16],  # other parallelism values run but are suboptimal -> don't allow in the first place
     }
-    
+ 
     ps = threads[benchmark]
+    #ps = ps[benchmark[1]]
+    #print("PS: ", ps)
     if parallelism <= 0 or parallelism not in ps:
         raise Infeasible()
     p = ps.index(parallelism) + 1
@@ -326,12 +343,15 @@ def example_asymmetric_perforation():
         loop_rates = [  str(i*10) for i in range(benchmark[1]) ]
 
         min_parallelism = get_feasible_parallelisms(benchmark[0])[0]
+        
         max_parallelism = get_feasible_parallelisms(benchmark[0])[-1]
+        
         for freq in (4, ):
             for parallelism in (4,):
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark[0], parallelism, input_set='simsmall'), 
                     perforation_script='magic_perforation_rate:%s' % ','.join(loop_rates))
-
+def coldestcore_demo():
+  run(['{:.1f}GHz'.format(2.4), 'maxFreq', 'slowDVFS', 'coldestCore'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 def multi_program():
     # In this example, two instances of blackscholes will be scheduled.
@@ -363,13 +383,55 @@ def test_static_power():
     run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 
-def main():
-    example()
-    #test_static_power()
-    # multi_program()
 
-    # example_symmetric_perforation()
-    # example_asymmetric_perforation()
+def my_run():
+        for benchmark in (
+                      'parsec-blackscholes',
+                      'parsec-bodytrack',
+                      'parsec-canneal',
+                      'parsec-dedup',
+                      'parsec-ferret'
+                      'parsec-fluidanimate',
+                      'parsec-streamcluster',
+                      'parsec-swaptions',
+                      'parsec-x264',
+                      'splash2-barnes',
+                      'splash2-fmm',
+                      'splash2-ocean.cont',
+                      'splash2-ocean.ncont',
+                      'splash2-radiosity',
+                      'splash2-raytrace',
+                      'splash2-water.nsq',
+                      'splash2-water.sp',
+                      'splash2-cholesky',
+                      'splash2-fft',
+                      'splash2-lu.cont',
+                      'splash2-lu.ncont',
+                      'splash2-radix',
+                      ):
+                      
+                parallelism=4 # to engage all threads
+                
+                print("**************************************************************")
+                print("         Simulation on ",benchmark," has started                ")
+                print("**************************************************************")
+        	
+                run(['4.0GHz', 'maxFreq', 'slowDVFS'], get_instance(benchmark, 4, input_set='simsmall'))
+                print("**************************************************************")
+                print("         Simulation on ",benchmark," has ended                ")
+                print("**************************************************************")
+
+
+def main():
+    my_run()
+    #example()
+    #ondemand_demo()
+    #coldestcore_demo()
+    #test_static_power()
+    #multi_program()
+
+    #example_symmetric_perforation()
+    #example_asymmetric_perforation()
     
 if __name__ == '__main__':
     main()

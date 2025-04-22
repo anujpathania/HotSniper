@@ -27,7 +27,7 @@ DvfsManager::DvfsManager()
       m_num_proc_domains++;
    }
 
-   float core_frequency = Sim()->getCfg()->getFloat("perf_model/core/frequency");
+   float core_frequency = 5.0;
    // Create a domain, converting from GHz frequencies specified in the configuration to Hz
    ComponentPeriod core_period = ComponentPeriod::fromFreqHz(core_frequency*1000000000);
 
