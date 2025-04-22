@@ -26,7 +26,7 @@ DvfsManager::DvfsManager()
       // Round up if necessary
       m_num_proc_domains++;
    }
-
+   //Setting Clock Frequency
    float core_frequency = 5.0;
    // Create a domain, converting from GHz frequencies specified in the configuration to Hz
    ComponentPeriod core_period = ComponentPeriod::fromFreqHz(core_frequency*1000000000);

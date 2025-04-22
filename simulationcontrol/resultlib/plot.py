@@ -498,7 +498,6 @@ def create_plots(run, force_recreate=False):
 
     # R-value plots
     if get_config_val_bool(run, 'reliability/enabled'):
-        print("-----")
         full_name = get_file(run, 'PeriodicRvalue.log')
         periodic_plot.plot_periodic_log(full_name, core_level=False,
                 y_label='R-value')

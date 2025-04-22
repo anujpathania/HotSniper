@@ -50,9 +50,7 @@ def get_core_aggregate(df, core_level=False, atype='sum'):
 # Read data from file, aggregate subcomponents if needed and plot values.
 def plot_periodic_log(filename, core_level=False, no_display=True,
         atype='sum', x_label='Time (ms)', y_label='Metric'):
-        
-    print("*********************************")
-    print(filename)
+ 
     df_all = pd.read_csv(filename, delim_whitespace=True)
     dfs = get_core_aggregate(df_all, core_level, atype)
 

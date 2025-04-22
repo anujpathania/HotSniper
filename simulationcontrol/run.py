@@ -21,20 +21,13 @@ BENCHMARKS = os.path.join(SNIPER_BASE, 'benchmarks')
 BATCH_START = datetime.datetime.now().strftime('%Y-%m-%d_%H.%M')
 
 
-def ondemand_demo():
-    run(['{:.1f}GHz'.format(4), 'ondemand', 'fastDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
-
 
 def change_base_configuration(base_configuration):
     base_cfg = os.path.join(SNIPER_BASE, 'config/base.cfg')
-    skipping_periodic_thermal_enable=0
-    
     with open(base_cfg, 'r') as f:
         content = f.read()
     with open(base_cfg, 'w') as f:
-        
-        for line in content.splitlines():
-            
+        for line in content.splitlines(): 
             m = re.match('.*cfg:(!?)([a-zA-Z_\\.0-9]+)$', line)
             if m:
                 inverted = m.group(1) == '!'
@@ -44,9 +37,6 @@ def change_base_configuration(base_configuration):
                     line = line[1:]
                 elif not include and included:
                     line = '#' + line
-
-
-            
             f.write(line)
             f.write('\n')
 
@@ -203,9 +193,6 @@ class Infeasible(Exception):
 
 
 def get_instance(benchmark, parallelism, input_set='small'):
-
-    print("benchmark=", benchmark, "parallelism=", parallelism)
-
     threads = {
         'parsec-blackscholes': [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
         'parsec-bodytrack': [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
@@ -231,8 +218,6 @@ def get_instance(benchmark, parallelism, input_set='small'):
     }
  
     ps = threads[benchmark]
-    #ps = ps[benchmark[1]]
-    #print("PS: ", ps)
     if parallelism <= 0 or parallelism not in ps:
         raise Infeasible()
     p = ps.index(parallelism) + 1
@@ -350,8 +335,6 @@ def example_asymmetric_perforation():
             for parallelism in (4,):
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark[0], parallelism, input_set='simsmall'), 
                     perforation_script='magic_perforation_rate:%s' % ','.join(loop_rates))
-def coldestcore_demo():
-  run(['{:.1f}GHz'.format(2.4), 'maxFreq', 'slowDVFS', 'coldestCore'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 def multi_program():
     # In this example, two instances of blackscholes will be scheduled.
@@ -425,8 +408,6 @@ def my_run():
 def main():
     my_run()
     #example()
-    #ondemand_demo()
-    #coldestcore_demo()
     #test_static_power()
     #multi_program()
 

@@ -300,13 +300,7 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 		}
 		mappingPolicy = new MapFirstUnused(coreRows, coreColumns, preferredCoresOrder);
 	 //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
-	} else if (policyName == "coldestCore") {
-float criticalTemperature = Sim()->getCfg()->getFloat(
-"scheduler/open/migration/coldestCore/criticalTemperature");
-mappingPolicy = new ColdestCore(performanceCounters, coreRows,
-coreColumns, criticalTemperature);
-
-} //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+	}//else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
 	
 	
 	
