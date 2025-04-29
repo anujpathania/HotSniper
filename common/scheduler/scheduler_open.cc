@@ -18,8 +18,6 @@
 #include "policies/dvfsTSP.h"
 #include "policies/dvfsTestStaticPower.h"
 #include "policies/mapFirstUnused.h"
-#include "policies/dvfsOndemand.h"
-#include "policies/coldestCore.h"
 
 #include <iomanip>
 #include <random>
@@ -138,9 +136,8 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	// Initialize config constants
 	for(unsigned int i = 0; i < numberOfCores; ++i)
       {
-      
-      minFrequency.push_back( (int)(1000 * Sim()->getCfg()->getFloatArray("scheduler/open/dvfs/min_frequency",i) + 0.5));
-      maxFrequency.push_back((int)(1000 * Sim()->getCfg()->getFloatArray("scheduler/open/dvfs/max_frequency",i) + 0.5));
+		minFrequency.push_back( (int)(1000 * Sim()->getCfg()->getFloatArray("scheduler/open/dvfs/min_frequency",i) + 0.5));
+		maxFrequency.push_back((int)(1000 * Sim()->getCfg()->getFloatArray("scheduler/open/dvfs/max_frequency",i) + 0.5));
       }
 	
 	frequencyStepSize = (int)(1000 * Sim()->getCfg()->getFloat("scheduler/open/dvfs/frequency_step_size") + 0.5);
@@ -299,8 +296,8 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 			}
 		}
 		mappingPolicy = new MapFirstUnused(coreRows, coreColumns, preferredCoresOrder);
-	 //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
-	}//else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
+	 
+	}
 	
 	
 	
@@ -334,28 +331,7 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
 
 		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
-	} else if (policyName == "ondemand") {
-float upThreshold = Sim()->getCfg()->getFloat(
-"scheduler/open/dvfs/ondemand/up_threshold");
-float downThreshold = Sim()->getCfg()->getFloat(
-"scheduler/open/dvfs/ondemand/down_threshold");
-float dtmCriticalTemperature = Sim()->getCfg()->getFloat(
-"scheduler/open/dvfs/ondemand/dtm_cricital_temperature");
-float dtmRecoveredTemperature = Sim()->getCfg()->getFloat(
-"scheduler/open/dvfs/ondemand/dtm_recovered_temperature");
-dvfsPolicy = new DVFSOndemand(
-performanceCounters,
-coreRows,
-coreColumns,
-minFrequency,
-maxFrequency,
-frequencyStepSize,
-upThreshold,
-downThreshold,
-dtmCriticalTemperature,
-dtmRecoveredTemperature
-);
-}*/
+	} */
 	
 	 else {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
