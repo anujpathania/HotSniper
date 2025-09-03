@@ -9,6 +9,7 @@
 
 #include "scheduler_pinned_base.h"
 #include "thermalModel.h"
+#include "thermal_component_model.h"
 #include "performance_counters.h"
 #include "policies/dvfspolicy.h"
 #include "policies/mappingpolicy.h"

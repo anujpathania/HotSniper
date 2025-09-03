@@ -9,6 +9,7 @@
 
 # vi temp files
 *.swp
+benchmarks-old/
 
 # test output
 *.log
