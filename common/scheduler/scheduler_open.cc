@@ -295,6 +295,14 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 	} //else if (policyName ="XYZ") {... } //Place to instantiate a new mapping logic. Implementation is put in "policies" package.
 	else if (policyName == "PCGov") {
 		float delta = Sim()->getCfg()->getFloat("scheduler/open/dvfs/pcgov/delta");
+		double ambientTemperature = Sim()->getCfg()->getFloat("periodic_thermal/ambient_temperature");
+		double maxTemperature = Sim()->getCfg()->getFloat("periodic_thermal/max_temperature");
+		double inactivePower = Sim()->getCfg()->getFloat("periodic_thermal/inactive_power");
+		double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
+		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
+		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
 		mappingPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
 	} else {
 		cout << "\n[Scheduler] [Error]: Unknown Mapping Algorithm" << endl;
@@ -317,6 +325,14 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		float perCorePowerBudget = Sim()->getCfg()->getFloat("scheduler/open/dvfs/fixed_power/per_core_power_budget");
 		dvfsPolicy = new DVFSFixedPower(performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, perCorePowerBudget);
 	} else if (policyName == "PCGov") {
+		double ambientTemperature = Sim()->getCfg()->getFloat("periodic_thermal/ambient_temperature");
+		double maxTemperature = Sim()->getCfg()->getFloat("periodic_thermal/max_temperature");
+		double inactivePower = Sim()->getCfg()->getFloat("periodic_thermal/inactive_power");
+		double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
+		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
+		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
 		float delta = Sim()->getCfg()->getFloat("scheduler/open/dvfs/pcgov/delta");
 		dvfsPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
 	} else if (policyName == "tsp") {
@@ -326,7 +342,7 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
 		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
 		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
-		double maxPower = Sim()->getCfg()->getFloat("priodic_thermal/tdp");
+		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
 		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
 		// ThermalComponentModel thermalComponentModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
 

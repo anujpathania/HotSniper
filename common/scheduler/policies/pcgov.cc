@@ -17,6 +17,10 @@ PCGov::PCGov(ThermalModel *thermalModel, PerformanceCounters *performanceCounter
             amds.push_back(amd);
             uniqueAMDs.insert(amd);
             threadStates.push_back(ThreadState::IDLE);
+            std::cout << "hello" << std::endl;
+            std::cout << powerBudgets.size() << std::endl;
+            std::cout << thermalModel->getInactivePower() << std::endl;
+            std::cout << "end" << std::endl;
             powerBudgets.push_back(thermalModel->getInactivePower());
         }
     }
