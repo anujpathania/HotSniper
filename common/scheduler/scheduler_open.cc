@@ -302,7 +302,7 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
 		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
 		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
-		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
+		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
 		mappingPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
 	} else {
 		cout << "\n[Scheduler] [Error]: Unknown Mapping Algorithm" << endl;
@@ -332,7 +332,7 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
 		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
 		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
-		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
+		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
 		float delta = Sim()->getCfg()->getFloat("scheduler/open/dvfs/pcgov/delta");
 		dvfsPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
 	} else if (policyName == "tsp") {
@@ -343,9 +343,8 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
 		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
 		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
-		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
+		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
 		// ThermalComponentModel thermalComponentModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
-
 		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
 	} else {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;

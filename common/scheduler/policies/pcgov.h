@@ -36,7 +36,7 @@
 
 #include <vector>
 
-#include "thermalModel.h"
+#include "thermalComponentModel.h"
 
 #include "mappingpolicy.h"
 
@@ -46,7 +46,7 @@ class PCGov : public MappingPolicy, public DVFSPolicy
 {
 
 public:
-    PCGov(ThermalModel *thermalModel, PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, int frequencyStepSize, float delta);
+    PCGov(ThermalComponentModel *thermalModel, PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, int frequencyStepSize, float delta);
 
     virtual std::vector<int> map(String taskName, int taskCoreRequirement, const std::vector<bool> &availableCores, const std::vector<bool> &activeCores);
 
@@ -64,7 +64,7 @@ private:
 
     unsigned int coreColumns;
 
-    ThermalModel *thermalModel;
+    ThermalComponentModel *thermalModel;
 
     PerformanceCounters *performanceCounters;
 

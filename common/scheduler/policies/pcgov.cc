@@ -4,7 +4,7 @@
 #include <tuple>
 #include "powermodel.h"
 using namespace std;
-PCGov::PCGov(ThermalModel *thermalModel, PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, int frequencyStepSize, float delta)
+PCGov::PCGov(ThermalComponentModel *thermalModel, PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, int frequencyStepSize, float delta)
     : thermalModel(thermalModel), performanceCounters(performanceCounters), coreRows(coreRows), coreColumns(coreColumns),
       minFrequency(minFrequency), maxFrequency(maxFrequency), frequencyStepSize(frequencyStepSize), delta(delta)
 {

@@ -30,6 +30,7 @@ private:
     void readDoubleMatrix(std::ifstream &file, double ***matrix, unsigned int rows, unsigned int columns) const;
     void readDoubleVector(std::ifstream &file, double **vector, unsigned int size) const;
     bool readComponentSizes(const std::string &floorplanFilename, double * &areas, int size) const;
+    bool countNumberOfComponentsPerCore(const std::string &floorplanFilename, unsigned int &count);
 
     unsigned int coreRows;
     unsigned int coreColumns;

@@ -8,8 +8,8 @@
 #define __SCHEDULER_OPEN_H
 
 #include "scheduler_pinned_base.h"
+#include "thermalComponentModel.h"
 #include "thermalModel.h"
-#include "thermal_component_model.h"
 #include "performance_counters.h"
 #include "policies/dvfspolicy.h"
 #include "policies/mappingpolicy.h"
@@ -52,7 +52,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		void DVFSTransitionDelayed(int coreCounter, int oldFrequency, int newFrequency);
 		void DVFSTransitionNotDelayed(int coreCounter);
 		void setFrequency(int coreCounter, int frequency);
-		ThermalModel *thermalModel;
+		ThermalComponentModel *thermalModel;
 		int minFrequency;
 		int maxFrequency;
 		int frequencyStepSize;

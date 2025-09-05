@@ -7,15 +7,15 @@
 
 #include <vector>
 #include "dvfspolicy.h"
-#include "thermalModel.h"
+#include "thermalComponentModel.h"
 
 class DVFSTSP : public DVFSPolicy {
 public:
-    DVFSTSP(ThermalModel* thermalModel, const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, int frequencyStepSize);
+    DVFSTSP(ThermalComponentModel* thermalModel, const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, int frequencyStepSize);
     virtual std::vector<int> getFrequencies(const std::vector<int> &oldFrequencies, const std::vector<bool> &activeCores);
 
 private:
-    ThermalModel* thermalModel;
+    ThermalComponentModel* thermalModel;
     const PerformanceCounters *performanceCounters;
     unsigned int coreRows;
     unsigned int coreColumns;
