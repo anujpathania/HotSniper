@@ -1,22 +1,27 @@
 #include "thermalComponentModel.h"
 #include <algorithm>
 #include <sstream>
+#include <unistd.h>
+#include <limits.h>
 
 ThermalComponentModel::ThermalComponentModel(unsigned int coreRows, unsigned int coreColumns, const String ThermalComponentModelFilename, const String FloorplanFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp)
     : ambientTemperature(ambientTemperature), maxTemperature(maxTemperature), inactivePower(inactivePower), tdp(tdp) {
+    std::cout << "TCM INVOKED WHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO!" << std::endl;
+    std::cout << coreRows << ", " << coreColumns << ", " << ThermalComponentModelFilename << "," << FloorplanFilename << ", " << ambientTemperature << ", " << maxTemperature << ", " << inactivePower << ", " << tdp << std::endl;
     this->coreRows = coreRows;
     this->coreColumns = coreColumns;
-
     std::ifstream f;
     f.open(ThermalComponentModelFilename.c_str());
+
 
     unsigned int numberUnits = readValue<unsigned int>(f);
     unsigned int numberUnitsPerCore = 0;
     if (!countNumberOfComponentsPerCore(std::string(FloorplanFilename.c_str()), numberUnitsPerCore)) {
         std::cout << "Failed to count the number of components per core using the floorplan file" << std::endl;
-		// exit (1);
+		exit (1);
         numberUnitsPerCore = 21;
     }
+
     unsigned int numberNodesAmbient = readValue<unsigned int>(f);
     unsigned int numberThermalNodes = readValue<unsigned int>(f);
 
@@ -26,15 +31,17 @@ ThermalComponentModel::ThermalComponentModel(unsigned int coreRows, unsigned int
         std::cout << "Assertion error in thermal model file: numberUnits != coreRows * coreColumns" << std::endl;
 		exit (1);
     }
+    std::cout << "Passed 1" << std::endl;
     if (numberThermalNodes != 4 * numberUnits + 12) {
         std::cout << "Assertion error in thermal model file: numberThermalNodes != 4 * numberUnits + 12" << std::endl;
 		exit (1);
     }
+    std::cout << "Passed 2" << std::endl;
     if (numberNodesAmbient != numberThermalNodes - 3 * numberUnits) {
         std::cout << "Assertion error in thermal model file: numberNodesAmbient != numberThermalNodes - 3 * numberUnits" << std::endl;
 		exit (1);
     }
-
+    std::cout << "Passed 3" << std::endl;
     for (unsigned int u = 0; u < numberUnits; u++) {
         std::string unitName = readLine(f);
         //width = readDouble(f);
@@ -43,13 +50,14 @@ ThermalComponentModel::ThermalComponentModel(unsigned int coreRows, unsigned int
     numberOfThermalNodes = numberThermalNodes;
     numberofAmbientNodes = numberNodesAmbient;
     numberOfCoreNodes = coreRows * coreColumns;
-
+    std::cout << "Passed 4" << std::endl;
     readDoubleMatrix(f, &BInv, numberThermalNodes, numberThermalNodes);
-
+    std::cout << "Passed 5" << std::endl;
     readDoubleVector(f, &G, numberNodesAmbient);
+    std::cout << "Passed 6" << std::endl;
+    readComponentSizes(std::string(FloorplanFilename.c_str()), areas, numberUnits);
 
-    readComponentSizes(std::string(FloorplanFilename.c_str()), areas, numberOfCoreNodes);
-
+    std::cout << "Finished reading all files" << std::endl;
     // remaining file is not read
     f.close();
 }
@@ -90,7 +98,6 @@ void ThermalComponentModel::readDoubleMatrix(std::ifstream &file, double ***matr
 void ThermalComponentModel::readDoubleVector(std::ifstream &file, double **vector, unsigned int size) const {
     *vector = new double[size];
     for (unsigned int r = 0; r < size; r++) {
-        std::cout << "VECR " << (*vector) << " " << std::endl;
         (*vector)[r] = readValue<double>(file);
     }
 }
@@ -102,8 +109,13 @@ bool ThermalComponentModel::countNumberOfComponentsPerCore(const std::string &fl
     }
 
     std::ifstream inputFile(floorplanFilename.c_str());
+    char *cwd;
+    if ((cwd = (char *)malloc(PATH_MAX)) != NULL) {
+        getcwd(cwd, PATH_MAX);
+        std::cout << "THE CWD IS: " << cwd << std::endl;
+    }
 	if (!inputFile.is_open() || !inputFile.good()) {
-        std::cout << "Could not open floorplan file: " << floorplanFilename << std::endl;
+        std::cout << "CWD!!!!!!!!!: " << "Could not open floorplan file: " << floorplanFilename << std::endl;
 		return false;
 	}
 
@@ -141,14 +153,16 @@ bool ThermalComponentModel::readComponentSizes(const std::string &floorplanFilen
 
 	std::ifstream inputFile(floorplanFilename.c_str());
 	if (!inputFile.is_open() || !inputFile.good()) {
+        std::cout << "Failed to open file" << std::endl;
 		return false;
 	}
 
+    std::cout << "opened file" << std::endl;
 	int i = 0;
 	while (inputFile.good()) {
 		std::string line;
 		getline(inputFile, line);
-
+        std::cout << "LINE: " << line << std::endl;
 		// Skip comments
 		if (line[0] == '#') {
 			continue;
@@ -161,6 +175,10 @@ bool ThermalComponentModel::readComponentSizes(const std::string &floorplanFilen
 			double width, height;
 			std::string name;
 			ss >> name >> width >> height;
+            if (name.empty()) {
+                break;
+            }
+            std::cout << name << "," << width << "," << height <<  " < " << size << std::endl;
 			areas[i] = width * height;
 		} catch(...){
 			std::cout << "Error: File with the floorplan is invalid." << std::endl;
@@ -168,6 +186,7 @@ bool ThermalComponentModel::readComponentSizes(const std::string &floorplanFilen
 			return false;
 		}
 
+        std::cout << "I: " << i << " < " << areas[i] << " < " << &(areas[i]) << std::endl;
 
 		i++;
 	}
@@ -364,6 +383,7 @@ double ThermalComponentModel::worstCaseTSP(int amtActiveCores) const {
         }
     }
 
+    std::cout << "MIN TSP:" << minTSP << std::endl;
     return minTSP;
 }
 

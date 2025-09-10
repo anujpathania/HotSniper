@@ -302,7 +302,9 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
 		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
 		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+		std::cout << "INIT PCGOV mapping TCM" << std::endl;
 		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
+		std::cout << "END INIT PCGOV mapping TCM" << std::endl;
 		mappingPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
 	} else {
 		cout << "\n[Scheduler] [Error]: Unknown Mapping Algorithm" << endl;
@@ -332,7 +334,9 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
 		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
 		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+		std::cout << "INIT PCGOV DVFS TCM" << std::endl;
 		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
+		std::cout << "End init PCGOV DVFS TCM" << std::endl;
 		float delta = Sim()->getCfg()->getFloat("scheduler/open/dvfs/pcgov/delta");
 		dvfsPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
 	} else if (policyName == "tsp") {

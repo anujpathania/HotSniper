@@ -147,7 +147,9 @@ def parse_results_from_dir(resultsdir, partial = None, metrics = None):
 
   ## sim.cfg
   simcfg = os.path.join(resultsdir, 'sim.cfg')
+  print("SIMCFG: !!!!!!!!!", simcfg)
   if not os.path.exists(simcfg):
+    print("HELLLLLLLLLLLLLOOOOOOOOOOOOOOOo")
     raise SniperResultsException("No valid configuration found")
   simcfg = sniper_config.parse_config(open(simcfg).read())
   ncores = int(simcfg['general/total_cores'])
