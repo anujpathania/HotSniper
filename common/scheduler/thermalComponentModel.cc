@@ -1,8 +1,6 @@
 #include "thermalComponentModel.h"
 #include <algorithm>
 #include <sstream>
-#include <unistd.h>
-#include <limits.h>
 
 ThermalComponentModel::ThermalComponentModel(unsigned int coreRows, unsigned int coreColumns, const String ThermalComponentModelFilename, const String FloorplanFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp)
     : ambientTemperature(ambientTemperature), maxTemperature(maxTemperature), inactivePower(inactivePower), tdp(tdp) {
@@ -109,13 +107,7 @@ bool ThermalComponentModel::countNumberOfComponentsPerCore(const std::string &fl
     }
 
     std::ifstream inputFile(floorplanFilename.c_str());
-    char *cwd;
-    if ((cwd = (char *)malloc(PATH_MAX)) != NULL) {
-        getcwd(cwd, PATH_MAX);
-        std::cout << "THE CWD IS: " << cwd << std::endl;
-    }
 	if (!inputFile.is_open() || !inputFile.good()) {
-        std::cout << "CWD!!!!!!!!!: " << "Could not open floorplan file: " << floorplanFilename << std::endl;
 		return false;
 	}
 
@@ -153,16 +145,14 @@ bool ThermalComponentModel::readComponentSizes(const std::string &floorplanFilen
 
 	std::ifstream inputFile(floorplanFilename.c_str());
 	if (!inputFile.is_open() || !inputFile.good()) {
-        std::cout << "Failed to open file" << std::endl;
 		return false;
 	}
 
-    std::cout << "opened file" << std::endl;
 	int i = 0;
 	while (inputFile.good()) {
 		std::string line;
 		getline(inputFile, line);
-        std::cout << "LINE: " << line << std::endl;
+
 		// Skip comments
 		if (line[0] == '#') {
 			continue;
@@ -185,8 +175,6 @@ bool ThermalComponentModel::readComponentSizes(const std::string &floorplanFilen
 			inputFile.close();
 			return false;
 		}
-
-        std::cout << "I: " << i << " < " << areas[i] << " < " << &(areas[i]) << std::endl;
 
 		i++;
 	}
