@@ -14,6 +14,7 @@ std::vector<int> DVFSTSP::getFrequencies(const std::vector<int> &oldFrequencies,
 	std::vector<int> frequencies(coreRows * coreColumns);
 
 	float tsp = thermalModel->tsp(activeCores);
+	// std::cout << "~!!!!!!!!!!!!!!! DVFS TSP: " << uniformPerCorePowerBudget << std::endl;
 
 	for (unsigned int coreCounter = 0; coreCounter < coreRows * coreColumns; coreCounter++) {
 		if (activeCores.at(coreCounter)) {

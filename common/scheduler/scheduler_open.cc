@@ -281,7 +281,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
  */
 void SchedulerOpen::initMappingPolicy(String policyName) {
 	cout << "[Scheduler] [Info]: Initializing mapping policy" << endl;
-	if (policyName == "first_unused") {
+	if (policyName == "first_unused" || policyName == "tsp") {
 		vector<int> preferredCoresOrder;
 		for (core_id_t core_id = 0; core_id < (core_id_t)Sim()->getConfig()->getApplicationCores(); core_id++) {
 			int p = Sim()->getCfg()->getIntArray("scheduler/open/preferred_core", core_id);

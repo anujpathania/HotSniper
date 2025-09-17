@@ -51,7 +51,10 @@ ThermalComponentModel::ThermalComponentModel(unsigned int coreRows, unsigned int
     std::cout << "Passed 4" << std::endl;
     readDoubleMatrix(f, &BInv, numberThermalNodes, numberThermalNodes);
     std::cout << "Passed 5" << std::endl;
-    readDoubleVector(f, &G, numberNodesAmbient);
+    readDoubleVector(f, &G, numberofAmbientNodes);
+    for (int i = 0; i < numberofAmbientNodes; i++) {
+        std::cout << "G[" << i << "]: " << G[i] << std::endl; 
+    }
     std::cout << "Passed 6" << std::endl;
     readComponentSizes(std::string(FloorplanFilename.c_str()), areas, numberUnits);
 
@@ -187,8 +190,19 @@ bool ThermalComponentModel::readComponentSizes(const std::string &floorplanFilen
 double ThermalComponentModel::tsp(const std::vector<bool> &activeCores) const {
     std::vector<double> powerOfInactiveCores(activeCores.size(), inactivePower);
 
-    return tsp(activeCores, powerOfInactiveCores).at(0);
+    double res = 0.0;
+    std::vector<double> tsps = tsp(activeCores, powerOfInactiveCores);
+    
+    for (int i = 0; i < tsps.size(); i++) {
+        std::cout << "TSP Partial: " << tsps.at(i) << std::endl;
+        res += tsps.at(i);
+    }
+
+    std::cout << "!!!!!!!!!!!!!!!! TSP VALUE: " << res << std::endl;
+
+    return res;
 }
+
 
 std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCores, const std::vector<double> &powerOfInactiveCores) const {
     if (activeCores.size() != coreRows * coreColumns) {
@@ -223,6 +237,12 @@ std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCo
             minTSP = std::min(minTSP, coreSafePower);
         }
     }
+    
+    std::vector<double> oldRes(1);
+    oldRes.at(0) = minTSP;
+
+    return oldRes;
+
 
     double tspValue = 0;
     int n_active_cores = 0;
@@ -232,6 +252,7 @@ std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCo
         }
     }
     double PWorstStar = __DBL_MAX__;
+    std::cout << "WORST INIT: " << PWorstStar << std::endl;
     int coreIndexPWorstStar = -1;
 
     // TEMPORARY PBLOCKS code
@@ -258,15 +279,25 @@ std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCo
         double heatBlocksAndAmbient = 0;
 
         for(int j = 0; j < numberOfThermalNodes; j++){
-            heatBlocksAndAmbient += BInv[i][j] * ( Pblocks[j] + ambientTemperature * G[j] );
+            int g_offset = numberOfThermalNodes - numberofAmbientNodes;
+            if (j - g_offset < 0) {
+                heatBlocksAndAmbient += BInv[i][j] * Pblocks[j];
+            } else {
+                heatBlocksAndAmbient += BInv[i][j] * ( Pblocks[j] + ambientTemperature * G[j - g_offset] );
+            }
+            std::cout << "AMBIENT: " << heatBlocksAndAmbient << "G" << G[j] << std::endl;
         }
 
         double auxP = tdp - heatContributionInactiveCores;
+        std::cout << "AUX1: " << auxP << std::endl;
         auxP = auxP - heatBlocksAndAmbient;
+        std::cout << "AUX2: " << auxP << std::endl;
         auxP = auxP / heatContributionActiveCores;
+        std::cout << "AUX3: " << auxP << std::endl;
 
         if(auxP < PWorstStar){
             PWorstStar = auxP;
+            std::cout << "AUX: " << auxP  << " TDP " << tdp << std::endl;
             coreIndexPWorstStar = i;
         }
     }
@@ -293,6 +324,7 @@ std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCo
     }
 
     double maxTSP = (maxTemperature - pBlockSum - pInactSum) / areaSum;
+    std::cout << "MAXTSP:" << maxTSP << " p worst" << PWorstStar << std::endl;
     if(PWorstStar <= maxTSP)
         tspValue = PWorstStar;
     else
@@ -300,6 +332,7 @@ std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCo
 
     std::vector<double> tspValues(numberOfCoreNodes);
     for (unsigned int i = 0; i < numberOfCoreNodes; i++) {
+        std::cout << "TSP: " << tspValue << " area: " << areas[i] << std::endl;
         tspValues.at(i) = tspValue * areas[i];
     }
 

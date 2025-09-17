@@ -1,5 +1,5 @@
-#ifndef __TSP_H
-#define __TSP_H
+#ifndef __TSP_COMPONENT_H
+#define __TSP_COMPONENT_H
 
 
 #include <fstream>

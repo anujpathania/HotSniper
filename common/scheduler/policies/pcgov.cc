@@ -219,6 +219,7 @@ void PCGov::updatePowerBudgets(const std::vector<int> &oldFrequencies)
             unrestrictedCores.at(coreCounter) = (threadStates.at(coreCounter) == ThreadState::COMPUTE);
         }
         float uniformPerCorePowerBudget = thermalModel->tsp(unrestrictedCores);
+        std::cout << "~!!!!!!!!!!!!!!! UNIFORM CORE POWER BUDGET: " << uniformPerCorePowerBudget << std::endl;
         for (unsigned int coreCounter = 0; coreCounter < coreRows * coreColumns; coreCounter++)
         {
             if (unrestrictedCores.at(coreCounter))
