@@ -31,6 +31,7 @@ class SchedulerOpen : public SchedulerPinnedBase {
 	private:
 		int coreRows;
 		int coreColumns;
+		int nodesPerCore;
 
 		PerformanceCounters *performanceCounters;
 		MappingPolicy *mappingPolicy = NULL;

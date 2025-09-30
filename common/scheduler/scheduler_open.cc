@@ -161,6 +161,7 @@ SchedulerOpen::SchedulerOpen(ThreadManager *thread_manager)
 	arrivalInterval = atoi (Sim()->getCfg()->getString("scheduler/open/arrivalInterval").c_str());
 	numberOfTasks = Sim()->getCfg()->getInt("traceinput/num_apps");
 	numberOfCores = Sim()->getConfig()->getApplicationCores();
+	nodesPerCore = Sim()->getCfg()->getInt("general/nodes_per_core");
 	randomPriority = Sim()->getCfg() ->getBool("scheduler/open/randompriority");
 	
 
@@ -303,7 +304,7 @@ void SchedulerOpen::initMappingPolicy(String policyName) {
 		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
 		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
 		std::cout << "INIT PCGOV mapping TCM" << std::endl;
-		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
+		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, (unsigned int)nodesPerCore, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp, performanceCounters);
 		std::cout << "END INIT PCGOV mapping TCM" << std::endl;
 		mappingPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
 	} else {
@@ -335,7 +336,7 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
 		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
 		std::cout << "INIT PCGOV DVFS TCM" << std::endl;
-		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
+		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, (unsigned int)nodesPerCore, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp, performanceCounters);
 		std::cout << "End init PCGOV DVFS TCM" << std::endl;
 		float delta = Sim()->getCfg()->getFloat("scheduler/open/dvfs/pcgov/delta");
 		dvfsPolicy = new PCGov(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
@@ -347,7 +348,7 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
 		String floorplanFileName = Sim()->getCfg()->getString("periodic_thermal/floorplan");
 		double maxPower = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
-		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
+		thermalModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, (unsigned int)nodesPerCore, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp, performanceCounters);
 		// ThermalComponentModel thermalComponentModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, floorplanFileName, ambientTemperature, maxTemperature, inactivePower, tdp);
 		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
 	} else {

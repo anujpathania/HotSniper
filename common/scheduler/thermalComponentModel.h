@@ -6,10 +6,11 @@
 #include <iostream>
 #include <vector>
 #include "fixed_types.h"
+#include "performance_counters.h"
 
 class ThermalComponentModel {
 public:
-    ThermalComponentModel(unsigned int coreRows, unsigned int coreColumns, const String thermalModelFilename, const String floorplanFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp);
+    ThermalComponentModel(unsigned int coreRows, unsigned int coreColumns, unsigned int nodesPerCore, const String thermalModelFilename, const String floorplanFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp, const PerformanceCounters *performanceCounters);
 
     std::vector<double> tsp(const std::vector<bool> &activeCores, const std::vector<double> &powerOfInactiveCores) const;
     double tsp(const std::vector<bool> &activeCores) const;
@@ -21,6 +22,7 @@ public:
     float getInactivePower() const { return inactivePower; }
 
 private:
+    const PerformanceCounters *performanceCounters;
     double ambientTemperature;
     double maxTemperature;
     double inactivePower;
@@ -34,6 +36,7 @@ private:
 
     unsigned int coreRows;
     unsigned int coreColumns;
+    unsigned int nodesPerCore;
 
     unsigned int numberOfThermalNodes;
     unsigned int numberofAmbientNodes;

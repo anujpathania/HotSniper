@@ -342,7 +342,9 @@ def multi_program():
     base_configuration = ['4.0GHz', "maxFreq"]
     benchmark_set = (
         'parsec-blackscholes',
-        'parsec-x264',
+        'parsec-blackscholes',
+        'parsec-blackscholes',
+        'parsec-blackscholes',
     )
 
     if ENABLE_HEARTBEATS == True:
@@ -356,16 +358,18 @@ def multi_program():
         else:
             benchmarks = benchmarks + get_instance(benchmark, min_parallelism, input_set)
 
-    run(base_configuration, benchmarks)
+    for freq in (4,):
+            run(['{:.1f}GHz'.format(freq), 'maxFreq'], benchmarks)
 
     
 def test_static_power():
-    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
+    for freq in (1, 2, 3, 4):
+        run(['{:.1f}GHz'.format(freq), 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 4, input_set='simsmall'))
 
 
 def main():
     example()
-    #test_static_power()
+    # test_static_power()
     # multi_program()
 
     # example_symmetric_perforation()
