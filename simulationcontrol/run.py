@@ -290,7 +290,7 @@ def example():
         max_parallelism = get_feasible_parallelisms(benchmark)[-1]
         for freq in (4,):
             #for parallelism in (max_parallelism,):
-            for parallelism in (3, ):
+            for parallelism in (3., ):
                 # you can also use try_run instead
                 run(['{:.1f}GHz'.format(freq), 'tsp', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
@@ -363,13 +363,14 @@ def multi_program():
 
     
 def test_static_power():
-    for freq in (1, 2, 3, 4):
-        run(['{:.1f}GHz'.format(freq), 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 4, input_set='simsmall'))
+    for freq in (3.9,):
+        # run(['{:.1f}GHz'.format(freq), 'testStaticPower'], get_instance('parsec-blackscholes', 4, input_set='simsmall'))
+        run(['{:.1f}GHz'.format(freq), 'safeComponentPower'], get_instance('parsec-blackscholes', 4, input_set='simsmall'))
 
 
 def main():
-    example()
-    # test_static_power()
+    # example()
+    test_static_power()
     # multi_program()
 
     # example_symmetric_perforation()
