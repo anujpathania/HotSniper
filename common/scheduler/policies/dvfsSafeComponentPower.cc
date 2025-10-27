@@ -5,7 +5,7 @@
 
 using namespace std;
 
-DVFSSafeComponentPower::DVFSSafeComponentPower(const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, double maxTemp, String floorplanFileName, String safeComponenentPowerFile)
+DVFSSafeComponentPower::DVFSSafeComponentPower(const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, double maxTemp, String floorplanFileName, String safeComponentPowerFile)
 	: performanceCounters(performanceCounters), coreRows(coreRows), coreColumns(coreColumns), minFrequency(minFrequency), maxFrequency(maxFrequency), maxTemp(maxTemp) {
 	
 	this->components = readComponents(std::string(floorplanFileName.c_str()));

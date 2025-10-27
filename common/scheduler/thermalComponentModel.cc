@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <sstream>
 
-ThermalComponentModel::ThermalComponentModel(unsigned int coreRows, unsigned int coreColumns, unsigned int nodesPerCore, const String ThermalComponentModelFilename, const String FloorplanFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp, const PerformanceCounters *performanceCounters)
+ThermalComponentModel::ThermalComponentModel(unsigned int coreRows, unsigned int coreColumns, unsigned int nodesPerCore, const String ThermalComponentModelFilename, const String FloorplanFilename, const String InactivePowerFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp, const PerformanceCounters *performanceCounters)
     : performanceCounters(performanceCounters), ambientTemperature(ambientTemperature), maxTemperature(maxTemperature), inactivePower(inactivePower), tdp(tdp) {
     std::cout << "TCM INVOKED WHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO!" << std::endl;
     std::cout << coreRows << ", " << coreColumns << ", " << ThermalComponentModelFilename << "," << FloorplanFilename << ", " << ambientTemperature << ", " << maxTemperature << ", " << inactivePower << ", " << tdp << std::endl;
@@ -53,6 +53,7 @@ ThermalComponentModel::ThermalComponentModel(unsigned int coreRows, unsigned int
     // }
     std::cout << "Passed 6 " << numberUnits << std::endl;
     readComponentSizes(std::string(FloorplanFilename.c_str()), areas, numberUnits);
+    readInactivePowers(std::string(InactivePowerFilename.c_str()), inactivePowers, numberOfCoreNodes);
 
     std::cout << "Finished reading all files" << std::endl;
     // remaining file is not read
@@ -184,30 +185,62 @@ bool ThermalComponentModel::readComponentSizes(const std::string &floorplanFilen
 	return true;
 }
 
-double ThermalComponentModel::tsp(const std::vector<bool> &activeCores) const {
-    std::vector<double> powerOfInactiveCores(activeCores.size(), inactivePower);
+bool ThermalComponentModel::readInactivePowers(const std::string &inactivePowerFilename, double * &powers, unsigned int &node_count) const {
+    if(inactivePowerFilename.size() <= 0) {
+        return false;
+    }
 
-    double res = 0.0;
-    std::vector<double> tsps = tsp(activeCores, powerOfInactiveCores);
-    // std::cout << " TSPS COUNT" << tsps.size() << std::endl;
+    powers = new double[node_count];
+    for (int i = 0; i < node_count; i++) {
+        powers[i] = 0.0;
+    }
+
+	std::ifstream inputFile(inactivePowerFilename.c_str());
+	if (!inputFile.is_open() || !inputFile.good()) {
+		return false;
+	}
+
+	int i = 0;
+	while (inputFile.good()) {
+		std::string line;
+		getline(inputFile, line);
+
+		// Skip comments
+		if (line[0] == '#') {
+			continue;
+		}
+
+		try {
+			std::stringstream ss(line);
+			ss.exceptions(std::stringstream::goodbit);
+
+			double power;
+			ss >> power;
+			powers[i] = power;
+		} catch(...){
+			std::cout << "Error: File with the floorplan is invalid." << std::endl;
+			inputFile.close();
+			return false;
+		}
+
+		i++;
+	}
+
+    inputFile.close();
+
+	return true;
+}
+
+double ThermalComponentModel::tsp(const std::vector<bool> &activeCores) const {
+    std::vector<double> tsp_values = tsps(activeCores);
+
     std::vector<double> tspPerCore(4);
     for (int i = 0; i < activeCores.size(); i++) {
-        std::cout << "ACTIVE: " << i << ": " << activeCores.at(i) << std::endl;
         tspPerCore[i] = 0.0;
     }
-    int coreSize = tsps.size() / activeCores.size();
-    for (int i = 0; i < tsps.size(); i++) {
-        // tsps[i] = tsps[i] / 2;
-        // std::cout << "TSP Partial (" << i << "): " << tsps.at(i) << std::endl;
-        res += tsps.at(i);
-        // Sum
-        tspPerCore[i / coreSize] += tsps.at(i);
-        // Max
-        // if (tspPerCore[i / coreSize] < tsps.at(i)) {
-        //     tspPerCore[i / coreSize] = tsps.at(i);
-        // }
-        // Average
-        // tspPerCore[i / coreSize] += tsps.at(i) / coreSize;
+    int coreSize = tsp_values.size() / activeCores.size();
+    for (int i = 0; i < tsp_values.size(); i++) {
+        tspPerCore[i / coreSize] += tsp_values.at(i);
     }
 
     for (int i = 0; i < tspPerCore.size(); i++) {
@@ -221,67 +254,21 @@ double ThermalComponentModel::tsp(const std::vector<bool> &activeCores) const {
         }
     }
 
-    std::cout << "!!!!!!!!!!!!!!!! TSP VALUE: " << minTSP << std::endl;
-
     return minTSP;
 }
 
 
-std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCores, const std::vector<double> &powerOfInactiveCores) const {
+std::vector<double> ThermalComponentModel::tsps(const std::vector<bool> &activeCores) const {
     if (activeCores.size() != coreRows * coreColumns) {
         std::cout << "\n[Scheduler][TSP][Error]: Invalid system size: " << activeCores.size() << ", expected " << (coreRows * coreColumns) << "cores." << std::endl;
 		exit (1);
     }
 
-    int amtActiveCores = 0;
-    double idlePower = 0;
-    for (unsigned int i = 0; i < activeCores.size(); i++) {
-        if (activeCores.at(i)) {
-            amtActiveCores++;
-        } else {
-            idlePower += powerOfInactiveCores.at(i);
-        }
-    }
-
-    double minTSP = (tdp - idlePower) / amtActiveCores; // TDP constraint
-
-    if (amtActiveCores > 0) {
-        for (unsigned int core = 0; core < activeCores.size(); core++) {
-            double activeSum = 0;
-            double inactiveSum = 0;
-            for (unsigned int i = 0; i < activeCores.size(); i++) {
-                if (activeCores.at(i)) {
-                    activeSum += BInv[core][i];
-                } else {
-                    inactiveSum += powerOfInactiveCores.at(i) * BInv[core][i];
-                }
-            }
-            double coreSafePower = (maxTemperature - ambientTemperature - inactiveSum) / activeSum;
-            std::cout << "Max temp: " << maxTemperature << ", amb T: " << ambientTemperature << ", inact: " << inactiveSum << ", act: " << activeSum << std::endl;
-            std::cout <<" MINT TSP: " << minTSP << " CORE SAFE POWER" << coreSafePower << std::endl;
-            minTSP = std::min(minTSP, coreSafePower);
-            if (coreSafePower < minTSP) {
-                std::cout << "old auxp = " << coreSafePower << std::endl;
-            }
-            std::cout <<" AFTER MIN" << minTSP << std::endl;
-        }
-    }
-    
-    std::vector<double> oldRes(1);
-    oldRes.at(0) = minTSP;
-
-    std::cout << "OLD RES: " << oldRes.at(0) << std::endl;
-
-    // return oldRes;
-
-
     double tspValue = 0;
     int n_active_cores = 0;
     int n_active_components = 0;
     std::vector<bool> activeComponents(numberOfCoreNodes);
-    // std::cout << "Active cores: ";
     for (unsigned int i = 0; i < activeCores.size(); i++) {
-        // std::cout << activeCores.at(i);
         if (activeCores.at(i)) {
             n_active_cores++;
             n_active_components += nodesPerCore;
@@ -319,11 +306,11 @@ std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCo
     std::cout << "Node counts: " <<  numberOfCoreNodes << " , " << numberOfNonCoreNodes << " , " << numberOfThermalNodes << ", n_amb: " << numberofAmbientNodes << std::endl;
     // std::cout << "ac size: " << activeComponents.size() << " < " << numberOfThermalNodes << " NON CORE: " << numberOfNonCoreNodes << std::endl;
 
-    std::vector<double> powerOfInactiveComponents(numberOfCoreNodes);
-    for (unsigned int i = 0; i < numberOfCoreNodes; i++) {
-        powerOfInactiveComponents[i] = powerOfInactiveCores.at(i / nodesPerCore) * (areas[numberOfNonCoreNodes + i] / coreArea);
-        // std::cout << "COMPO INACT: " << powerOfInactiveComponents[i] << "index: " << i / nodesPerCore << std::endl;
-    }
+    // std::vector<double> powerOfInactiveComponents(numberOfCoreNodes);
+    // for (unsigned int i = 0; i < numberOfCoreNodes; i++) {
+    //     powerOfInactiveComponents[i] = powerOfInactiveCores.at(i / nodesPerCore) * (areas[numberOfNonCoreNodes + i] / coreArea);
+    //     // std::cout << "COMPO INACT: " << powerOfInactiveComponents[i] << "index: " << i / nodesPerCore << std::endl;
+    // }
     
     // Scientific variables from the paper:
     int L = numberOfCoreNodes + numberOfNonCoreNodes;
@@ -358,11 +345,11 @@ std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCo
             } else {
                 // std::cout << "InActive" << i << " < " << j << "NON_CORE: " << numberOfNonCoreNodes << std::endl;
                 // std::cout << "INACT INDEX: " << powerOfInactiveComponents.at(j - numberOfNonCoreNodes) << std::endl;
-                double b = BInv[i][j+numberOfNonCoreNodes];
+                // double b = BInv[i][j+numberOfNonCoreNodes];
                 // std::cout << "b" << b << std::endl;
-                double inact_comp = powerOfInactiveComponents.at(j);
+                // double inact_comp = powerOfInactiveComponents.at(j);
                 // std::cout << "c inact: " << inact_comp << std::endl;
-                heatContributionInactiveCores += powerOfInactiveComponents.at(j) * (BInv[i][j+numberOfNonCoreNodes]);
+                heatContributionInactiveCores += inactivePowers[j] * (BInv[i][j+numberOfNonCoreNodes]);
             }
         }
 
@@ -411,7 +398,10 @@ std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCo
     double pInactSum = 0.0;
     for (unsigned int i = 0; i < coreRows * coreColumns; i++) {
         if (!activeCores.at(i)) {
-            pInactSum += powerOfInactiveCores.at(i);
+            for (int j = 0; j < nodesPerCore; j++) {
+                pInactSum += inactivePowers[i+j];
+            }
+            // pInactSum += powerOfInactiveCores.at(i);
         }
     }
     double areaSum = 0.0;
@@ -439,7 +429,6 @@ std::vector<double> ThermalComponentModel::tsp(const std::vector<bool> &activeCo
 
     // return minTSP;
     // std::cout <<" NON CORE COUNT: " << numberOfNonCoreNodes << std::endl;
-    std::cout << "OLD RES: " << oldRes.at(0) << std::endl;
     return tspValues;
 }
 

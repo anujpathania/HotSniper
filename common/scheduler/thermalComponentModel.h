@@ -10,9 +10,9 @@
 
 class ThermalComponentModel {
 public:
-    ThermalComponentModel(unsigned int coreRows, unsigned int coreColumns, unsigned int nodesPerCore, const String thermalModelFilename, const String floorplanFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp, const PerformanceCounters *performanceCounters);
+    ThermalComponentModel(unsigned int coreRows, unsigned int coreColumns, unsigned int nodesPerCore, const String thermalModelFilename, const String floorplanFilename, const String inactivePowerFilename, double ambientTemperature, double maxTemperature, double inactivePower, double tdp, const PerformanceCounters *performanceCounters);
 
-    std::vector<double> tsp(const std::vector<bool> &activeCores, const std::vector<double> &powerOfInactiveCores) const;
+    std::vector<double> tsps(const std::vector<bool> &activeCores) const;
     double tsp(const std::vector<bool> &activeCores) const;
     std::vector<double> tspForManyCandidates(const std::vector<bool> &activeCores, const std::vector<int> &candidates) const;
     double worstCaseTSP(int amtActiveCores) const;
@@ -25,13 +25,14 @@ private:
     const PerformanceCounters *performanceCounters;
     double ambientTemperature;
     double maxTemperature;
-    double inactivePower;
     double tdp;
+    double inactivePower;
     template<typename T> T readValue(std::ifstream &file) const;
     std::string readLine(std::ifstream &file) const;
     void readDoubleMatrix(std::ifstream &file, double ***matrix, unsigned int rows, unsigned int columns) const;
     void readDoubleVector(std::ifstream &file, double **vector, unsigned int size) const;
     bool readComponentSizes(const std::string &floorplanFilename, double * &areas, int size) const;
+    bool readInactivePowers(const std::string &inactivePowerFilename, double * &pwoers, unsigned int &node_count) const;
     bool countNumberOfComponentsPerCore(const std::string &floorplanFilename, unsigned int &count);
 
     unsigned int coreRows;
@@ -46,6 +47,7 @@ private:
     double **BInv;
     double *G;
     double *areas;
+    double *inactivePowers;
 };
 
 #endif

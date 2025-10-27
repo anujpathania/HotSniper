@@ -262,12 +262,12 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 
 def example():
     for benchmark in (
-                      'parsec-blackscholes',
+                    #   'parsec-blackscholes',
                       #'parsec-bodytrack',
                       #'parsec-canneal',
                       #'parsec-dedup',
                       #'parsec-ferret'
-                      #'parsec-fluidanimate',
+                      'parsec-fluidanimate',
                       #'parsec-streamcluster',
                       #'parsec-swaptions',
                       #'parsec-x264',
@@ -292,7 +292,7 @@ def example():
             #for parallelism in (max_parallelism,):
             for parallelism in (3., ):
                 # you can also use try_run instead
-                run(['{:.1f}GHz'.format(freq), 'tsp', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
+                run(['{:.1f}GHz'.format(freq), 'PCGov', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
 def example_symmetric_perforation():
     for benchmark in (
@@ -369,8 +369,8 @@ def test_static_power():
 
 
 def main():
-    # example()
-    test_static_power()
+    example()
+    # test_static_power()
     # multi_program()
 
     # example_symmetric_perforation()
