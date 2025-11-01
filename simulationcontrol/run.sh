@@ -1,5 +1,7 @@
 # !/bin/bash
 
+# This script is used to rebuild the benchmarks and run the simulations.
+
 cd ..
 make
 

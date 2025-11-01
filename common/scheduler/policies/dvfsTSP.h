@@ -1,3 +1,7 @@
+/**
+ * This header implements the TSP power DVFS policy
+ */
+
 #ifndef __DVFS_TSP_H
 #define __DVFS_TSP_H
 

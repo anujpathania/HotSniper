@@ -17,8 +17,6 @@ PCGov::PCGov(ThermalComponentModel *thermalModel, PerformanceCounters *performan
             amds.push_back(amd);
             uniqueAMDs.insert(amd);
             threadStates.push_back(ThreadState::IDLE);
-            std::cout << powerBudgets.size() << std::endl;
-            std::cout << thermalModel->getInactivePower() << std::endl;
             powerBudgets.push_back(thermalModel->getInactivePower());
         }
     }
@@ -131,13 +129,6 @@ std::vector<int> PCGov::map(String taskName, int taskCoreRequirement, const vect
             float powerBudget = get<1>(mappingCandidates.at(mappingNb));
             float rating = (powerBudget - minPowerBudget) - alpha * (amdMax - minAmd);
             vector<int> cores = get<2>(mappingCandidates.at(mappingNb));
-            cout << "Mapping Candidate: rating; " << setprecision(3) << rating << ", power budget: " << setprecision(3) << powerBudget << " W, max. AMD: " << setprecision(3) << amdMax;
-            cout << ", used cores:";
-            for (unsigned int i = 0; i < cores.size(); i++)
-            {
-                cout << " " << cores.at(i);
-            }
-            cout << endl;
             if (rating > bestRating)
             {
                 bestRating = rating;
@@ -219,7 +210,6 @@ void PCGov::updatePowerBudgets(const std::vector<int> &oldFrequencies)
             unrestrictedCores.at(coreCounter) = (threadStates.at(coreCounter) == ThreadState::COMPUTE);
         }
         float uniformPerCorePowerBudget = thermalModel->tsp(unrestrictedCores);
-        std::cout << "~!!!!!!!!!!!!!!! UNIFORM CORE POWER BUDGET: " << uniformPerCorePowerBudget << std::endl;
         for (unsigned int coreCounter = 0; coreCounter < coreRows * coreColumns; coreCounter++)
         {
             if (unrestrictedCores.at(coreCounter))

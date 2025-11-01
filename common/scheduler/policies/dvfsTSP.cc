@@ -5,7 +5,7 @@
 
 using namespace std;
 
-DVFSTSP::DVFSTSP(thermalModel *thermalModel, const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, int frequencyStepSize)
+DVFSTSP::DVFSTSP(ThermalModel *thermalModel, const PerformanceCounters *performanceCounters, int coreRows, int coreColumns, int minFrequency, int maxFrequency, int frequencyStepSize)
 	: thermalModel(thermalModel), performanceCounters(performanceCounters), coreRows(coreRows), coreColumns(coreColumns), minFrequency(minFrequency), maxFrequency(maxFrequency), frequencyStepSize(frequencyStepSize){
 	
 }
@@ -14,7 +14,6 @@ std::vector<int> DVFSTSP::getFrequencies(const std::vector<int> &oldFrequencies,
 	std::vector<int> frequencies(coreRows * coreColumns);
 
 	float tsp = thermalModel->tsp(activeCores);
-	// std::cout << "~!!!!!!!!!!!!!!! DVFS TSP: " << uniformPerCorePowerBudget << std::endl;
 
 	for (unsigned int coreCounter = 0; coreCounter < coreRows * coreColumns; coreCounter++) {
 		if (activeCores.at(coreCounter)) {
