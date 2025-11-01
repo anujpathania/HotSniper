@@ -1,4 +1,3 @@
-import matplotlib
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -61,7 +60,6 @@ def plot_periodic_log(filename, core_level=False, no_display=True,
 # Plot dataframe 'fd' to display and write plot to file in pdf, png and eps.
 def do_plot(df, filename, plot_name='', no_display=True,
         x_label='Time (ms)', y_label='Metric'):
-    matplotlib.rcParams.update({'font.size': 22})
     fig, axs = plt.subplots(figsize=(12,12))
     df.plot(ax=axs)
     fp = Path(filename)
