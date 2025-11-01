@@ -262,12 +262,12 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 
 def example():
     for benchmark in (
-                    #   'parsec-blackscholes',
+                      'parsec-blackscholes',
                       #'parsec-bodytrack',
                       #'parsec-canneal',
                       #'parsec-dedup',
                       #'parsec-ferret'
-                      'parsec-fluidanimate',
+                    #   'parsec-fluidanimate',
                       #'parsec-streamcluster',
                       #'parsec-swaptions',
                       #'parsec-x264',
