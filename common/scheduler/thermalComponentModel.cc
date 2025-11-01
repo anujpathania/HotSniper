@@ -267,7 +267,6 @@ std::vector<double> ThermalComponentModel::tsps(const std::vector<bool> &activeC
     double PWorstStar = __DBL_MAX__;
     int coreIndexPWorstStar = -1;
 
-    // TEMPORARY PBLOCKS code
     double* Pblocks = new double[numberOfThermalNodes];
     for (unsigned int j = 0; j < numberOfThermalNodes; j++) {
         Pblocks[j] = 0;
@@ -280,7 +279,6 @@ std::vector<double> ThermalComponentModel::tsps(const std::vector<bool> &activeC
         coreArea += areas[i];
     }
     
-    // Scientific variables from the paper:
     int L = numberOfCoreNodes + numberOfNonCoreNodes;
     int M = numberOfCoreNodes;
     int N = numberOfThermalNodes;
