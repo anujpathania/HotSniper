@@ -262,12 +262,12 @@ def get_workload(benchmark, cores, parallelism=None, number_tasks=None, input_se
 
 def example():
     for benchmark in (
-                    #   'parsec-blackscholes',
+                      'parsec-blackscholes',
                       #'parsec-bodytrack',
                       #'parsec-canneal',
                       #'parsec-dedup',
                       #'parsec-ferret'
-                      'parsec-fluidanimate',
+                      #'parsec-fluidanimate',
                       #'parsec-streamcluster',
                       #'parsec-swaptions',
                       #'parsec-x264',
@@ -288,11 +288,11 @@ def example():
 
         min_parallelism = get_feasible_parallelisms(benchmark)[0]
         max_parallelism = get_feasible_parallelisms(benchmark)[-1]
-        for freq in (4,):
+        for freq in (1, 2):
             #for parallelism in (max_parallelism,):
-            for parallelism in (3., ):
+            for parallelism in (3, ):
                 # you can also use try_run instead
-                run(['{:.1f}GHz'.format(freq), 'PCGov', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
+                run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
 def example_symmetric_perforation():
     for benchmark in (
@@ -342,9 +342,7 @@ def multi_program():
     base_configuration = ['4.0GHz', "maxFreq"]
     benchmark_set = (
         'parsec-blackscholes',
-        'parsec-blackscholes',
-        'parsec-blackscholes',
-        'parsec-blackscholes',
+        'parsec-x264',
     )
 
     if ENABLE_HEARTBEATS == True:
@@ -358,19 +356,16 @@ def multi_program():
         else:
             benchmarks = benchmarks + get_instance(benchmark, min_parallelism, input_set)
 
-    for freq in (4,):
-            run(['{:.1f}GHz'.format(freq), 'maxFreq'], benchmarks)
+    run(base_configuration, benchmarks)
 
     
 def test_static_power():
-    for freq in (3.9,):
-        # run(['{:.1f}GHz'.format(freq), 'testStaticPower'], get_instance('parsec-blackscholes', 4, input_set='simsmall'))
-        run(['{:.1f}GHz'.format(freq), 'safeComponentPower'], get_instance('parsec-blackscholes', 4, input_set='simsmall'))
+    run(['4.0GHz', 'testStaticPower', 'slowDVFS'], get_instance('parsec-blackscholes', 3, input_set='simsmall'))
 
 
 def main():
     example()
-    # test_static_power()
+    #test_static_power()
     # multi_program()
 
     # example_symmetric_perforation()
