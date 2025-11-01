@@ -325,20 +325,15 @@ std::vector<double> ThermalComponentModel::tsps(const std::vector<bool> &activeC
         auxP = auxP - heatBlocksAndAmbient;
         auxP = auxP / heatContributionActiveCores;//* areas[i + numberOfNonCoreNodes];
         if(auxP < PWorstStar){
-            // std::cout << "Better: " << PWorstStar * coreArea << " > " << auxP * coreArea << std::endl;
             PWorstStar = auxP;
             coreIndexPWorstStar = i;
         }
-        std::cout << "P WORST: " << PWorstStar << std::endl;
     }
 
     double pBlockSum = 0.0;
     
     for (unsigned int i = 0; i < (numberOfCoreNodes + numberOfNonCoreNodes); i++) {
         pBlockSum += Pblocks[i];
-        if (Pblocks[i] > 0) {
-            std::cout << "NONNULL BLOCK: " << i << "," << Pblocks[i] << std::endl;
-        }
     }
 
     double pInactSum = 0.0;
@@ -351,17 +346,13 @@ std::vector<double> ThermalComponentModel::tsps(const std::vector<bool> &activeC
         }
     }
     double areaSum = 0.0;
-    std::cout << "n core nodes: " << numberOfCoreNodes << std::endl;
     for (unsigned int i = 0; i < numberOfCoreNodes; i++) {
         if (activeComponents.at(i)) {
             areaSum += areas[i + numberOfNonCoreNodes];
         }
     }
 
-    std::cout << "Max tgemp: " << maxTemperature << "< tdm: " << tdp << std::endl;
     double maxTSP = (tdp - pBlockSum - pInactSum) / areaSum;
-    // single core area: 0.000008.949
-    std::cout << "MAXTSP:" << maxTSP * coreArea << " p worst" << PWorstStar << std::endl;
     if(PWorstStar <= maxTSP)
         tspValue = PWorstStar;
     else
@@ -369,12 +360,9 @@ std::vector<double> ThermalComponentModel::tsps(const std::vector<bool> &activeC
 
     std::vector<double> tspValues(numberOfCoreNodes);
     for (unsigned int i = 0; i < numberOfCoreNodes; i++) {
-        // std::cout << "TSP: " << tspValue * areas[i + numberOfNonCoreNodes] << " area: " << areas[i + numberOfNonCoreNodes] << std::endl;
         tspValues.at(i) = tspValue;// * (areas[i + numberOfNonCoreNodes] / areas[coreIndexPWorstStar + numberOfNonCoreNodes]);
     }
 
-    // return minTSP;
-    // std::cout <<" NON CORE COUNT: " << numberOfNonCoreNodes << std::endl;
     return tspValues;
 }
 
@@ -442,7 +430,6 @@ double ThermalComponentModel::worstCaseTSP(int amtActiveCores) const {
         }
     }
 
-    std::cout << "MIN TSP:" << minTSP << std::endl;
     return minTSP;
 }
 
