@@ -298,11 +298,7 @@ std::vector<double> ThermalComponentModel::tsps(const std::vector<bool> &activeC
         // Compute the heat contributed by the inactive cores and the active cores
         for(unsigned int j = 0; j < M; j++){
             if (activeComponents.at(j)) {
-                if (BInv[i][j+numberOfNonCoreNodes] < 0) {
-                    neg_act_contribs++;
-                } else {
-                    pos_act_contribs++;
-                }
+                std::cout << BInv[i][j+numberOfNonCoreNodes] << std::endl;
                 heatContributionActiveCores += BInv[i][j+numberOfNonCoreNodes];// * areas[j+numberOfNonCoreNodes];
             } else {
                 heatContributionInactiveCores += inactivePowers[j] * (BInv[i][j+numberOfNonCoreNodes]);
@@ -322,8 +318,11 @@ std::vector<double> ThermalComponentModel::tsps(const std::vector<bool> &activeC
         }
 
         double auxP = maxTemperature - heatContributionInactiveCores;
+        std::cout << " AUXP1: " << auxP << std::endl;
         auxP = auxP - heatBlocksAndAmbient;
+        std::cout << " AUXP2: " << auxP << std::endl;
         auxP = auxP / heatContributionActiveCores;//* areas[i + numberOfNonCoreNodes];
+        std::cout << " AUXP3: " << auxP << std::endl;
         if(auxP < PWorstStar){
             PWorstStar = auxP;
             coreIndexPWorstStar = i;
@@ -360,7 +359,7 @@ std::vector<double> ThermalComponentModel::tsps(const std::vector<bool> &activeC
 
     std::vector<double> tspValues(numberOfCoreNodes);
     for (unsigned int i = 0; i < numberOfCoreNodes; i++) {
-        tspValues.at(i) = tspValue;// * (areas[i + numberOfNonCoreNodes] / areas[coreIndexPWorstStar + numberOfNonCoreNodes]);
+        tspValues.at(i) = tspValue;// (areas[i + numberOfNonCoreNodes] / areas[coreIndexPWorstStar + numberOfNonCoreNodes]);
     }
 
     return tspValues;
