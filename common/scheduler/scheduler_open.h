@@ -53,7 +53,8 @@ class SchedulerOpen : public SchedulerPinnedBase {
 		void DVFSTransitionDelayed(int coreCounter, int oldFrequency, int newFrequency);
 		void DVFSTransitionNotDelayed(int coreCounter);
 		void setFrequency(int coreCounter, int frequency);
-		ThermalComponentModel *thermalModel;
+		ThermalComponentModel *thermalComponentModel;
+		ThermalModel *thermalModel;
 		int minFrequency;
 		int maxFrequency;
 		int frequencyStepSize;
