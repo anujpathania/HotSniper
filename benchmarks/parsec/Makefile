@@ -1,6 +1,6 @@
-# We download the parsec 2.1 files from Figshare
-PARSEC_2.1_CORE_URL=https://uvaauas.figshare.com/ndownloader/files/45183391
-PARSEC_2.1_SIMSMALL_URL=https://uvaauas.figshare.com/ndownloader/files/45183310
+# We download the parsec 2.1 files from Zenodo
+PARSEC_2.1_CORE_URL=https://zenodo.org/records/17522770/files/parsec-2.1-core.tar.gz
+PARSEC_2.1_SIMSMALL_URL=https://zenodo.org/records/17522770/files/parsec-2.1-sim.tar.gz
 
 all : parsec-build
 HOOKS_DIR=../tools/hooks/
