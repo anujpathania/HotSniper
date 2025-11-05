@@ -428,7 +428,7 @@ double ThermalComponentModel::worstCaseTSP(int amtActiveCores) const {
     return minTSP;
 }
 
-void inplaceGauss(std::vector<std::vector<float>> &A, std::vector<float> &b) {
+void ThermalComponentModel::inplaceGauss(std::vector<std::vector<float>> &A, std::vector<float> &b) const {
     unsigned int n = b.size();
     for (unsigned int row = 0; row < n; row++) {
         // divide
