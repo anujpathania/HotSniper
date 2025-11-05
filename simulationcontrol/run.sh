@@ -15,4 +15,3 @@ cd ..
 
 cd simulationcontrol
 PYTHONIOENCODING="UTF-8" python3 run.py
-

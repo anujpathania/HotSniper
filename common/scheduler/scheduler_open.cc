@@ -338,6 +338,14 @@ void SchedulerOpen::initDVFSPolicy(String policyName) {
 		thermalComponentModel = new ThermalComponentModel((unsigned int)coreRows, (unsigned int)coreColumns, (unsigned int)nodesPerCore, thermalModelFilename, floorplanFileName, inactivePowerFileName, ambientTemperature, maxTemperature, inactivePower, tdp, performanceCounters);
 		float delta = Sim()->getCfg()->getFloat("scheduler/open/dvfs/pcgov/delta");
 		dvfsPolicy = new PCGov(thermalComponentModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize, delta);
+	} else if (policyName == "tsp") {
+		double ambientTemperature = Sim()->getCfg()->getFloat("periodic_thermal/ambient_temperature");
+		double maxTemperature = Sim()->getCfg()->getFloat("periodic_thermal/max_temperature");
+		double inactivePower = Sim()->getCfg()->getFloat("periodic_thermal/inactive_power");
+		double tdp = Sim()->getCfg()->getFloat("periodic_thermal/tdp");
+		String thermalModelFilename = Sim()->getCfg()->getString("periodic_thermal/thermal_model");
+		thermalModel = new ThermalModel((unsigned int)coreRows, (unsigned int)coreColumns, thermalModelFilename, ambientTemperature, maxTemperature, inactivePower, tdp);
+		dvfsPolicy = new DVFSTSP(thermalModel, performanceCounters, coreRows, coreColumns, minFrequency, maxFrequency, frequencyStepSize);
 	} else {
 		cout << "\n[Scheduler] [Error]: Unknown DVFS Algorithm" << endl;
  		exit (1);
