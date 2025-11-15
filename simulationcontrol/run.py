@@ -373,13 +373,13 @@ def test_static_power():
 
 
 def main():
-    # example()
-    #test_static_power()
+    example()
+    # test_static_power()
     # multi_program()
 
     # example_symmetric_perforation()
     # example_asymmetric_perforation()
-    example_pcgov()
+    # example_pcgov()
     
 if __name__ == '__main__':
     main()

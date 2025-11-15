@@ -379,9 +379,17 @@ std::vector<double> ThermalComponentModel::tspForManyCandidates(const std::vecto
             double inactiveSum = 0;
             for (unsigned int i = 0; i < activeCores.size(); i++) {
                 if (activeCores.at(i)) {
-                    activeSum += BInv[core][i];
+                    for (int j = 0; j < this->nodesPerCore; j++) {
+                        for (int k = 0; k < this->nodesPerCore; k++) {
+                            activeSum += BInv[core + j][i + k];
+                        }
+                    }
                 } else {
-                    inactiveSum += BInv[core][i];
+                    for (int j = 0; j < this->nodesPerCore; j++) {
+                        for (int k = 0; k < this->nodesPerCore; k++) {
+                            inactiveSum += BInv[core + j][i + k];
+                        }
+                    }
                 }
             }
 
@@ -396,36 +404,6 @@ std::vector<double> ThermalComponentModel::tspForManyCandidates(const std::vecto
     }
 
     return tsps;
-}
-
-double ThermalComponentModel::worstCaseTSP(int amtActiveCores) const {
-    double amtIdleCores = coreRows * coreColumns - amtActiveCores;
-    double minTSP = (tdp - amtIdleCores * inactivePower) / amtActiveCores; // TDP constraint
-
-    if (amtActiveCores > 0) {
-        for (unsigned int core = 0; core < (unsigned int)(coreRows * coreColumns); core++) {
-            std::vector<double> BInvRow(coreRows * coreColumns);
-            for (unsigned int i = 0; i < (unsigned int)(coreRows * coreColumns); i++) {
-                BInvRow.at(i) = BInv[core][i];
-            }
-            std::sort(BInvRow.begin(), BInvRow.end(), std::greater<double>()); // sort descending
-
-            double activeSum = 0;
-            double inactiveSum = 0;
-            for (unsigned int i = 0; i < (unsigned int)(coreRows * coreColumns); i++) {
-                if (i < (unsigned int)amtActiveCores) {
-                    activeSum += BInvRow.at(i);
-                } else {
-                    inactiveSum += BInvRow.at(i) * inactivePower;
-                }
-            }
-
-            double coreSafePower = (maxTemperature - ambientTemperature - inactiveSum) / activeSum;
-            minTSP = std::min(minTSP, coreSafePower);
-        }
-    }
-
-    return minTSP;
 }
 
 void ThermalComponentModel::inplaceGauss(std::vector<std::vector<float>> &A, std::vector<float> &b) const {

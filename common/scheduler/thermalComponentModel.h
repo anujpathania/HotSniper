@@ -15,7 +15,6 @@ public:
     std::vector<double> tsps(const std::vector<bool> &activeCores) const;
     double tsp(const std::vector<bool> &activeCores) const;
     std::vector<double> tspForManyCandidates(const std::vector<bool> &activeCores, const std::vector<int> &candidates) const;
-    double worstCaseTSP(int amtActiveCores) const;
     std::vector<double> powerBudgetMaxSteadyState(const std::vector<bool> &activeCores) const;
     std::vector<float> getSteadyState(const std::vector<double> &powers) const;
     void inplaceGauss(std::vector<std::vector<float>> &A, std::vector<float> &b) const;
