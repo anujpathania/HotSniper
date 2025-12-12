@@ -294,6 +294,15 @@ def example():
                 # you can also use try_run instead
                 run(['{:.1f}GHz'.format(freq), 'maxFreq', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
 
+def example_pcgov():
+    for benchmark in (
+                      'parsec-blackscholes',
+                    ):
+
+        for freq in (4, ):
+            for parallelism in (3,):
+                run(['{:.1f}GHz'.format(freq), 'PCGov', 'slowDVFS'], get_instance(benchmark, parallelism, input_set='simsmall'))
+
 def example_symmetric_perforation():
     for benchmark in (
                       'parsec-blackscholes',
@@ -365,11 +374,12 @@ def test_static_power():
 
 def main():
     example()
-    #test_static_power()
+    # test_static_power()
     # multi_program()
 
     # example_symmetric_perforation()
     # example_asymmetric_perforation()
+    # example_pcgov()
     
 if __name__ == '__main__':
     main()
